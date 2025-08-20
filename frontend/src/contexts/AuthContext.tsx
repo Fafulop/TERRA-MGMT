@@ -27,9 +27,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           const userData = await authService.getCurrentUser();
           setUser(userData);
-        } catch (error) {
-          localStorage.removeItem('token');
-          setToken(null);
+        } catch (error: any) {
+          console.error('Failed to get current user:', error);
+          // Only clear auth if it's an authentication error (401/403)
+          if (error?.response?.status === 401 || error?.response?.status === 403) {
+            localStorage.removeItem('token');
+            setToken(null);
+            setUser(null);
+          }
         }
       }
       setIsLoading(false);
@@ -66,6 +71,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     isLoading,
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

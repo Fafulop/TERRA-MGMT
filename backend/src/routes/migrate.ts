@@ -54,4 +54,49 @@ router.post('/add-attachments-table', async (req, res) => {
   }
 });
 
+router.post('/add-comments-table', async (req, res) => {
+  try {
+    // Create task_comments table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS task_comments (
+        id SERIAL PRIMARY KEY,
+        task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        comment TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create indexes for better performance
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_task_comments_task_id ON task_comments(task_id);
+      CREATE INDEX IF NOT EXISTS idx_task_comments_user_id ON task_comments(user_id);
+      CREATE INDEX IF NOT EXISTS idx_task_comments_created_at ON task_comments(created_at);
+    `);
+
+    // Create trigger for updated_at
+    await pool.query(`
+      DROP TRIGGER IF EXISTS update_task_comments_updated_at ON task_comments;
+      CREATE TRIGGER update_task_comments_updated_at
+          BEFORE UPDATE ON task_comments
+          FOR EACH ROW
+          EXECUTE FUNCTION update_updated_at_column();
+    `);
+
+    res.status(200).json({ 
+      message: 'Task comments table created successfully',
+      table: 'task_comments',
+      indexes: ['idx_task_comments_task_id', 'idx_task_comments_user_id', 'idx_task_comments_created_at'],
+      triggers: ['update_task_comments_updated_at']
+    });
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create task_comments table', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

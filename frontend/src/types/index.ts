@@ -48,3 +48,20 @@ export interface TaskFormData {
   priority: 'low' | 'medium' | 'high';
   dueDate?: string;
 }
+
+export interface Comment {
+  id: number;
+  taskId: number;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+  author: {
+    username: string;
+    firstName?: string;
+    lastName?: string;
+  };
+}
+
+export interface CommentFormData {
+  comment: string;
+}

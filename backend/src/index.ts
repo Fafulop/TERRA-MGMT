@@ -19,7 +19,7 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 5000 // Much higher limit for better UX
 });
 app.use(limiter);
 
@@ -36,6 +36,8 @@ app.get('/health', (req, res) => {
 import authRoutes from './routes/auth';
 import initRoutes from './routes/init';
 import migrateRoutes from './routes/migrate';
+import taskRoutes from './routes/tasks';
+import commentRoutes from './routes/comments';
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from './routes/uploadthing';
 
@@ -43,6 +45,8 @@ import { uploadRouter } from './routes/uploadthing';
 app.use('/api/auth', authRoutes);
 app.use('/api/init', initRoutes);
 app.use('/api/migrate', migrateRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/tasks', commentRoutes);
 
 // UploadThing routes
 app.use('/api/uploadthing', createRouteHandler({
