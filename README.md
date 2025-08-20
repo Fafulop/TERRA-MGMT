@@ -5,7 +5,9 @@ A fullstack task management application built with React, Express.js, TypeScript
 ## Features
 
 - ✅ User authentication (register/login)
-- ✅ Multi-user support
+- ✅ Multi-user support  
+- ✅ File upload system (images & PDFs)
+- ✅ Secure cloud storage with UploadThing
 - 🔄 Task CRUD operations (coming soon)
 - 📱 Responsive design with Tailwind CSS
 - 🚀 Ready for Railway deployment
@@ -20,6 +22,7 @@ A fullstack task management application built with React, Express.js, TypeScript
 - React Hook Form with Zod validation
 - Axios for API calls
 - React Query for state management
+- UploadThing for file uploads
 
 ### Backend
 - Node.js with Express.js
@@ -28,6 +31,13 @@ A fullstack task management application built with React, Express.js, TypeScript
 - JWT authentication
 - bcrypt for password hashing
 - Express validation
+- UploadThing integration
+
+### File Storage
+- UploadThing cloud storage
+- CDN distribution
+- Secure file uploads (images & PDFs)
+- JWT-based authentication
 
 ## Getting Started
 
@@ -56,10 +66,30 @@ cd ..
 ```bash
 # Copy and configure backend environment
 cp backend/.env.example backend/.env
-# Edit backend/.env with your database credentials
+# Edit backend/.env with your database credentials and UploadThing token
 
 # Copy and configure frontend environment  
 cp frontend/.env.example frontend/.env
+```
+
+**Backend Environment Variables (.env):**
+```env
+# Database
+DATABASE_URL=postgresql://postgres:password@localhost:5432/taskmanager
+
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key
+
+# File Uploads (UploadThing)
+UPLOADTHING_TOKEN='your-uploadthing-token'
+
+# CORS
+FRONTEND_URL=http://localhost:5173
+```
+
+**Frontend Environment Variables (.env):**
+```env
+VITE_API_URL=http://localhost:5000/api
 ```
 
 4. Set up the database:
@@ -67,11 +97,21 @@ cp frontend/.env.example frontend/.env
 # Create database
 createdb taskmanager
 
-# Run the SQL schema
-psql -d taskmanager -f backend/src/config/init-db.sql
+# Initialize database tables via API (with backend running)
+curl -X POST http://localhost:5000/api/init/db
+
+# Add file attachments table
+curl -X POST http://localhost:5000/api/migrate/add-attachments-table
 ```
 
-5. Start the development servers:
+5. Set up UploadThing (Optional - for file uploads):
+- Sign up at https://uploadthing.com
+- Create a new app
+- Copy the `UPLOADTHING_TOKEN` from your dashboard
+- Add it to your `backend/.env` file
+- File upload functionality will be available on the dashboard
+
+6. Start the development servers:
 ```bash
 npm run dev
 ```
@@ -106,6 +146,7 @@ railway add postgresql
 - `NODE_ENV=production`
 - `JWT_SECRET=your-production-jwt-secret`
 - `FRONTEND_URL=https://your-frontend-domain.railway.app`
+- `UPLOADTHING_TOKEN=your-uploadthing-token` (for file uploads)
 
 6. Deploy:
 ```bash

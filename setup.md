@@ -291,6 +291,7 @@ The database includes:
 | `JWT_SECRET` | JWT signing secret | `very-long-random-string` |
 | `FRONTEND_URL` | Frontend domain for CORS | `https://frontend-production-xxxx.up.railway.app` |
 | `DATABASE_URL` | PostgreSQL connection | `postgresql://...` |
+| `UPLOADTHING_TOKEN` | UploadThing authentication token | `eyJhcGlLZXkiOiJza19saXZlX...` |
 
 ### Frontend Variables (Railway)
 
@@ -491,6 +492,131 @@ After successful deployment, you can:
 4. **Set Up Custom Domain:**
    - Configure custom domain in Railway dashboard
    - Update CORS settings accordingly
+
+## UploadThing File Upload Integration
+
+### Overview
+
+This application uses **UploadThing** for secure file uploads (images and PDFs). UploadThing provides cloud storage, CDN distribution, and built-in security features.
+
+### Why UploadThing?
+
+- ✅ **Railway Compatible**: Works with ephemeral file systems
+- ✅ **Built for React**: Native React components and hooks
+- ✅ **Security**: Built-in authentication and file validation
+- ✅ **Performance**: Global CDN distribution
+- ✅ **Developer Experience**: Simple integration and great documentation
+
+### Authentication Setup
+
+UploadThing provides multiple authentication methods. We chose the **token approach** for simplicity:
+
+#### Method 1: Token (Our Choice) ✅
+```env
+UPLOADTHING_TOKEN='eyJhcGlLZXkiOiJza19saXZlX...'
+```
+**Advantages:**
+- Single environment variable
+- Contains API key + App ID + regions encoded together
+- Simpler configuration
+- Less chance of misconfiguration
+
+#### Method 2: Separate Keys (Alternative)
+```env
+UPLOADTHING_SECRET=sk_live_...
+UPLOADTHING_APP_ID=c4aeci7qjr
+```
+**When to use:**
+- Need fine-grained control
+- Different deployment strategies
+- Legacy integration requirements
+
+### Current Implementation
+
+**Backend Integration:**
+- **Route**: `/api/uploadthing`
+- **Authentication**: JWT token validation
+- **File Types**: Images (4MB max, 5 files) and PDFs (16MB max, 3 files)
+- **Security**: User authentication required for all uploads
+
+**Frontend Components:**
+- **UploadButton**: Click-to-upload interface
+- **UploadDropzone**: Drag-and-drop interface
+- **File Types**: Separated by type (images vs PDFs)
+
+**Database Integration:**
+- **Table**: `task_attachments`
+- **Fields**: file metadata, URLs, user references
+- **Future**: Will connect to specific tasks
+
+### File Upload Flow
+
+1. **User uploads file** via frontend component
+2. **Frontend validates** file type and size
+3. **JWT token sent** with upload request
+4. **Backend authenticates** user via middleware
+5. **File uploaded** to UploadThing cloud storage
+6. **Metadata saved** to database (future enhancement)
+7. **CDN URL returned** for immediate access
+
+### Configuration Files
+
+**Backend (.env):**
+```env
+UPLOADTHING_TOKEN='your-token-here'
+```
+
+**Frontend (automatic):**
+- Uses backend API routes
+- No additional frontend environment variables needed
+- Authentication handled via existing JWT system
+
+### Deployment Notes
+
+**Local Development:**
+- Token already configured in `backend/.env`
+- Works with local backend on port 5000
+
+**Railway Production:**
+- Add `UPLOADTHING_TOKEN` to Railway environment variables
+- Same token works for both local and production
+- No additional Railway configuration needed
+
+### API Endpoints
+
+| Endpoint | Method | Description | Auth Required |
+|----------|--------|-------------|---------------|
+| `/api/uploadthing` | POST | UploadThing webhook handler | No |
+| `/api/uploadthing/imageUploader` | POST | Upload images | Yes (JWT) |
+| `/api/uploadthing/pdfUploader` | POST | Upload PDFs | Yes (JWT) |
+
+### Usage Examples
+
+**Image Upload:**
+```tsx
+<FileUpload 
+  uploaderType="imageUploader"
+  variant="button"
+  onUploadComplete={(files) => console.log('Uploaded:', files)}
+/>
+```
+
+**PDF Upload with Dropzone:**
+```tsx
+<FileUpload 
+  uploaderType="pdfUploader"
+  variant="dropzone"
+  onUploadComplete={(files) => console.log('Uploaded:', files)}
+/>
+```
+
+### Future Enhancements
+
+- [ ] Connect uploads to specific tasks
+- [ ] File preview and thumbnail generation
+- [ ] File deletion functionality
+- [ ] Batch upload progress tracking
+- [ ] File sharing between users
 
 ## Support
 
