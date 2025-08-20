@@ -35,10 +35,22 @@ app.get('/health', (req, res) => {
 // Import routes
 import authRoutes from './routes/auth';
 import initRoutes from './routes/init';
+import migrateRoutes from './routes/migrate';
+import { createRouteHandler } from "uploadthing/express";
+import { uploadRouter } from './routes/uploadthing';
 
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/init', initRoutes);
+app.use('/api/migrate', migrateRoutes);
+
+// UploadThing routes
+app.use('/api/uploadthing', createRouteHandler({
+  router: uploadRouter,
+  config: {
+    token: process.env.UPLOADTHING_TOKEN,
+  },
+}));
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {
