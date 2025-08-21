@@ -13,6 +13,8 @@ const TaskCreator = React.lazy(() => import('./pages/TaskCreator'))
 const TaskEditor = React.lazy(() => import('./pages/TaskEditor'))
 const TaskDetail = React.lazy(() => import('./pages/TaskDetail'))
 const TaskList = React.lazy(() => import('./pages/TaskList'))
+const CashFlow = React.lazy(() => import('./pages/CashFlow'))
+const Cotizaciones = React.lazy(() => import('./pages/Cotizaciones'))
 
 const queryClient = new QueryClient()
 
@@ -43,6 +45,8 @@ function App() {
                 <Route path="/edit-task/:id" element={<TaskEditor />} />
                 <Route path="/task/:id" element={<TaskDetail />} />
                 <Route path="/tasks" element={<TaskList />} />
+                <Route path="/cash-flow" element={<CashFlow />} />
+                <Route path="/cotizaciones" element={<Cotizaciones />} />
                 <Route path="/" element={<Dashboard />} />
               </Routes>
             </Suspense>

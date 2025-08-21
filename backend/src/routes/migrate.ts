@@ -1,5 +1,7 @@
 import express from 'express';
 import pool from '../config/database';
+import fs from 'fs';
+import path from 'path';
 
 const router = express.Router();
 
@@ -186,6 +188,97 @@ router.post('/add-task-comment-attachments', async (req, res) => {
     console.error('Migration error:', error);
     res.status(500).json({ 
       error: 'Failed to create attachments table', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.post('/add-ledger-tables', async (req, res) => {
+  try {
+    // Read and execute the ledger migration SQL file
+    const sqlPath = path.join(__dirname, '..', 'config', 'add-ledger-tables.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+    
+    // Execute the SQL migration
+    await pool.query(sqlContent);
+
+    res.status(200).json({ 
+      message: 'Ledger tables created successfully',
+      tables: ['ledger_entries', 'ledger_attachments'],
+      indexes: [
+        'idx_ledger_entries_user_id',
+        'idx_ledger_entries_entry_type', 
+        'idx_ledger_entries_transaction_date',
+        'idx_ledger_entries_internal_id',
+        'idx_ledger_attachments_ledger_entry_id'
+      ],
+      triggers: ['update_ledger_entries_updated_at']
+    });
+  } catch (error) {
+    console.error('Ledger migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create ledger tables', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.post('/add-mxn-ledger-tables', async (req, res) => {
+  try {
+    // Read and execute the MXN ledger migration SQL file
+    const sqlPath = path.join(__dirname, '..', 'config', 'add-mxn-ledger-tables.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+    
+    // Execute the SQL migration
+    await pool.query(sqlContent);
+
+    res.status(200).json({ 
+      message: 'MXN ledger tables created successfully',
+      tables: ['ledger_entries_mxn', 'ledger_attachments_mxn'],
+      indexes: [
+        'idx_ledger_entries_mxn_user_id',
+        'idx_ledger_entries_mxn_entry_type', 
+        'idx_ledger_entries_mxn_transaction_date',
+        'idx_ledger_entries_mxn_internal_id',
+        'idx_ledger_attachments_mxn_ledger_entry_id'
+      ],
+      triggers: ['update_ledger_entries_mxn_updated_at']
+    });
+  } catch (error) {
+    console.error('MXN ledger migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create MXN ledger tables', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.post('/add-cotizaciones-tables', async (req, res) => {
+  try {
+    // Read and execute the cotizaciones migration SQL file
+    const sqlPath = path.join(__dirname, '..', 'config', 'add-cotizaciones-tables.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+    
+    // Execute the SQL migration
+    await pool.query(sqlContent);
+
+    res.status(200).json({ 
+      message: 'Cotizaciones tables created successfully',
+      tables: ['cotizaciones_entries', 'cotizaciones_attachments'],
+      indexes: [
+        'idx_cotizaciones_entries_user_id',
+        'idx_cotizaciones_entries_currency',
+        'idx_cotizaciones_entries_entry_type', 
+        'idx_cotizaciones_entries_transaction_date',
+        'idx_cotizaciones_entries_internal_id',
+        'idx_cotizaciones_attachments_cotizacion_entry_id'
+      ],
+      triggers: ['update_cotizaciones_entries_updated_at']
+    });
+  } catch (error) {
+    console.error('Cotizaciones migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create cotizaciones tables', 
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }

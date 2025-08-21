@@ -39,6 +39,9 @@ import migrateRoutes from './routes/migrate';
 import taskRoutes from './routes/tasks';
 import commentRoutes from './routes/comments';
 import attachmentRoutes from './routes/attachments';
+import ledgerRoutes from './routes/ledger';
+import ledgerMxnRoutes from './routes/ledgerMxn';
+import cotizacionesRoutes from './routes/cotizaciones';
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from './routes/uploadthing';
 
@@ -58,6 +61,9 @@ app.use('/api/migrate', migrateRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/tasks', commentRoutes);
 app.use('/api', attachmentRoutes);
+app.use('/api/ledger', ledgerRoutes);
+app.use('/api/ledger-mxn', ledgerMxnRoutes);
+app.use('/api/cotizaciones', cotizacionesRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {

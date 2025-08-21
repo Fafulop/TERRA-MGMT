@@ -41,7 +41,7 @@ const Dashboard: React.FC = () => {
       
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-8">
             {/* Task Management Section */}
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">
@@ -56,6 +56,38 @@ const Dashboard: React.FC = () => {
                 </button>
               </div>
               <p className="text-gray-500">Click "View My Tasks" to see all your tasks and create new ones!</p>
+            </div>
+
+            {/* Cash Flow Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Cash Flow
+                </h2>
+                <button
+                  onClick={() => navigate('/cash-flow')}
+                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                >
+                  Manage Cash Flow
+                </button>
+              </div>
+              <p className="text-gray-500">Track your income and expenses with dual currency support (USD/MXN)!</p>
+            </div>
+
+            {/* Cotizaciones Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Cotizaciones
+                </h2>
+                <button
+                  onClick={() => navigate('/cotizaciones')}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                >
+                  Manage Quotes
+                </button>
+              </div>
+              <p className="text-gray-500">Manage your quotes and quotations in multiple currencies!</p>
             </div>
 
             {/* File Upload Section */}
