@@ -4,6 +4,7 @@ import { Task } from '../types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { taskService } from '../services/tasks';
 import { useAuth } from '../contexts/AuthContext';
+import { useTaskPrefetching } from '../hooks/useTaskQueries';
 
 interface TaskCardProps {
   task: Task;
@@ -14,6 +15,7 @@ const TaskCard = ({ task }: TaskCardProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);
+  const { prefetchTaskDetail } = useTaskPrefetching();
 
   // Memoize color calculations to prevent unnecessary recalculations
   const priorityColor = useMemo(() => {
@@ -100,6 +102,7 @@ const TaskCard = ({ task }: TaskCardProps) => {
         <h3 
           className="text-lg font-semibold text-gray-900 flex-1 cursor-pointer hover:text-blue-600 transition-colors"
           onClick={() => navigate(`/task/${task.id}`)}
+          onMouseEnter={() => prefetchTaskDetail(task.id)}
           title="Click to view task details"
         >
           {task.title}

@@ -1,36 +1,41 @@
-import { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { taskService } from '../services/tasks';
 import TaskCard from '../components/TaskCard';
 import { Task } from '../types';
+import { useTasksOptimized, useTaskPrefetching } from '../hooks/useTaskQueries';
+import { useDebouncedSearch } from '../hooks/useDebounce';
 
 const TaskList = () => {
   const navigate = useNavigate();
   const { user, token, logout } = useAuth();
   const [filter, setFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('createdAt');
-
-  const { data: tasks = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => taskService.getTasks(token!),
-    enabled: !!token,
-    refetchOnWindowFocus: false,
-    refetchOnMount: true,
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    cacheTime: 1000 * 60 * 5, // 5 minutes
-    refetchInterval: false,
-    retry: 1
-  });
+  
+  // Use optimized query hook
+  const { data: tasks = [], isLoading, error, refetch } = useTasksOptimized();
+  const { prefetchTaskList } = useTaskPrefetching();
+  
+  // Debounced search functionality
+  const { searchValue, debouncedSearchValue, setSearchValue } = useDebouncedSearch('', 300);
 
   if (!user) {
     navigate('/login');
     return null;
   }
 
-  const filterTasks = (tasks: Task[]) => {
+  // Memoize expensive filtering and sorting operations
+  const { filteredTasks, taskCounts } = useMemo(() => {
     let filtered = tasks;
+
+    // Apply search filter
+    if (debouncedSearchValue) {
+      const searchLower = debouncedSearchValue.toLowerCase();
+      filtered = filtered.filter(task => 
+        task.title.toLowerCase().includes(searchLower) ||
+        task.description?.toLowerCase().includes(searchLower)
+      );
+    }
 
     // Apply status filter
     if (filter !== 'all') {
@@ -38,7 +43,7 @@ const TaskList = () => {
     }
 
     // Apply sorting
-    filtered.sort((a, b) => {
+    const sorted = [...filtered].sort((a, b) => {
       switch (sortBy) {
         case 'priority':
           const priorityOrder = { 'high': 3, 'medium': 2, 'low': 1 };
@@ -57,21 +62,16 @@ const TaskList = () => {
       }
     });
 
-    return filtered;
-  };
-
-  const filteredTasks = filterTasks(tasks);
-
-  const getTaskCounts = () => {
-    return {
+    // Calculate counts once
+    const counts = {
       all: tasks.length,
       pending: tasks.filter(t => t.status === 'pending').length,
       in_progress: tasks.filter(t => t.status === 'in_progress').length,
       completed: tasks.filter(t => t.status === 'completed').length
     };
-  };
 
-  const counts = getTaskCounts();
+    return { filteredTasks: sorted, taskCounts: counts };
+  }, [tasks, filter, sortBy, debouncedSearchValue]);
 
   if (isLoading) {
     return (
@@ -129,7 +129,7 @@ const TaskList = () => {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    All ({counts.all})
+                    All ({taskCounts.all})
                   </button>
                   <button
                     onClick={() => setFilter('pending')}
@@ -139,7 +139,7 @@ const TaskList = () => {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Pending ({counts.pending})
+                    Pending ({taskCounts.pending})
                   </button>
                   <button
                     onClick={() => setFilter('in_progress')}
@@ -149,7 +149,7 @@ const TaskList = () => {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    In Progress ({counts.in_progress})
+                    In Progress ({taskCounts.in_progress})
                   </button>
                   <button
                     onClick={() => setFilter('completed')}
@@ -159,8 +159,34 @@ const TaskList = () => {
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Completed ({counts.completed})
+                    Completed ({taskCounts.completed})
                   </button>
+                </div>
+
+                {/* Search Input */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search tasks..."
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    className="w-64 pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  {searchValue && (
+                    <button
+                      onClick={() => setSearchValue('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      <svg className="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
 
                 {/* Sort Dropdown */}

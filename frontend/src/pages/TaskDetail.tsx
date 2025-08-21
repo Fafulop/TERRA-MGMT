@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { taskService } from '../services/tasks';
+import { useTaskOptimized } from '../hooks/useTaskQueries';
 import CommentForm from '../components/CommentForm';
 import CommentList from '../components/CommentList';
 import AttachmentUpload from '../components/AttachmentUpload';
@@ -16,30 +17,21 @@ const TaskDetail = () => {
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [showAttachments, setShowAttachments] = useState(false);
 
-  // Fetch the task details
-  const { data: task, isLoading, error, refetch } = useQuery({
-    queryKey: ['task', id],
-    queryFn: () => taskService.getTaskById(parseInt(id!), token!),
-    enabled: !!token && !!id,
-    refetchOnWindowFocus: false,
-    refetchOnMount: true,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    cacheTime: 1000 * 60 * 10, // 10 minutes
-    refetchInterval: false,
-    retry: 1
-  });
+  // Fetch the task details using optimized hook
+  const taskId = id ? parseInt(id) : 0;
+  const { data: task, isLoading, error, refetch } = useTaskOptimized(taskId);
 
   const updateStatusMutation = useMutation({
     mutationFn: (newStatus: string) => 
-      taskService.updateTask(parseInt(id!), { status: newStatus }, token!),
+      taskService.updateTask(taskId, { status: newStatus }, token!),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['task', id] });
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     }
   });
 
   const deleteTaskMutation = useMutation({
-    mutationFn: () => taskService.deleteTask(parseInt(id!), token!),
+    mutationFn: () => taskService.deleteTask(taskId, token!),
     onSuccess: () => {
       navigate('/tasks');
     }
