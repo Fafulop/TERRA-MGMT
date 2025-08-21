@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { taskService } from '../services/tasks';
 import CommentForm from '../components/CommentForm';
 import CommentList from '../components/CommentList';
+import AttachmentUpload from '../components/AttachmentUpload';
+import AttachmentList from '../components/AttachmentList';
 
 const TaskDetail = () => {
   const navigate = useNavigate();
@@ -12,6 +14,7 @@ const TaskDetail = () => {
   const { user, token, logout } = useAuth();
   const queryClient = useQueryClient();
   const [showCommentForm, setShowCommentForm] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
 
   // Fetch the task details
   const { data: task, isLoading, error, refetch } = useQuery({
@@ -282,9 +285,38 @@ const TaskDetail = () => {
             </div>
           </div>
 
-          {/* Task Content Divider */}
-          <div className="px-6">
-            <hr className="border-gray-200" />
+          {/* Attachments Section */}
+          <div className="px-6 py-6 border-t border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Attachments</h3>
+              <button
+                onClick={() => setShowAttachments(!showAttachments)}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <svg 
+                  className="w-4 h-4 mr-2" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 00-2.828-2.828z" />
+                </svg>
+                {showAttachments ? 'Hide Attachments' : 'Manage Attachments'}
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <AttachmentList taskId={task.id} />
+              {showAttachments && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Add New Attachment</h4>
+                  <AttachmentUpload 
+                    taskId={task.id} 
+                    onAttachmentAdded={() => setShowAttachments(false)}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Comments Section */}

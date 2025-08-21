@@ -1,4 +1,4 @@
-import { Task, TaskFormData, Comment, CommentFormData } from '../types';
+import { Task, TaskFormData, Comment, CommentFormData, Attachment, AttachmentFormData } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -166,6 +166,99 @@ export const commentService = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to delete comment');
+    }
+  }
+};
+
+export const attachmentService = {
+  // Get all attachments for a task
+  getTaskAttachments: async (taskId: number, token: string): Promise<Attachment[]> => {
+    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/attachments`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch task attachments');
+    }
+
+    const result = await response.json();
+    return result.attachments;
+  },
+
+  // Get all attachments for a comment
+  getCommentAttachments: async (commentId: number, token: string): Promise<Attachment[]> => {
+    const response = await fetch(`${API_BASE_URL}/comments/${commentId}/attachments`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch comment attachments');
+    }
+
+    const result = await response.json();
+    return result.attachments;
+  },
+
+  // Create a new attachment for a task
+  createTaskAttachment: async (taskId: number, attachmentData: AttachmentFormData, token: string): Promise<Attachment> => {
+    const response = await fetch(`${API_BASE_URL}/tasks/${taskId}/attachments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(attachmentData)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create task attachment');
+    }
+
+    const result = await response.json();
+    return result.attachment;
+  },
+
+  // Create a new attachment for a comment
+  createCommentAttachment: async (commentId: number, attachmentData: AttachmentFormData, token: string): Promise<Attachment> => {
+    const response = await fetch(`${API_BASE_URL}/comments/${commentId}/attachments`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(attachmentData)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create comment attachment');
+    }
+
+    const result = await response.json();
+    return result.attachment;
+  },
+
+  // Delete an attachment
+  deleteAttachment: async (attachmentId: number, token: string): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete attachment');
     }
   }
 };

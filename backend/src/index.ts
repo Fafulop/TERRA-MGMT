@@ -38,8 +38,18 @@ import initRoutes from './routes/init';
 import migrateRoutes from './routes/migrate';
 import taskRoutes from './routes/tasks';
 import commentRoutes from './routes/comments';
+import attachmentRoutes from './routes/attachments';
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from './routes/uploadthing';
+
+// UploadThing routes - configured FIRST to avoid any middleware conflicts
+app.use('/api/uploadthing', createRouteHandler({
+  router: uploadRouter,
+  config: {
+    token: process.env.UPLOADTHING_TOKEN,
+    isDev: process.env.NODE_ENV !== 'production',
+  },
+}));
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -47,14 +57,7 @@ app.use('/api/init', initRoutes);
 app.use('/api/migrate', migrateRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/tasks', commentRoutes);
-
-// UploadThing routes
-app.use('/api/uploadthing', createRouteHandler({
-  router: uploadRouter,
-  config: {
-    token: process.env.UPLOADTHING_TOKEN,
-  },
-}));
+app.use('/api', attachmentRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {

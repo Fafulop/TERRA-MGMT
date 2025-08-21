@@ -29,14 +29,23 @@ task-manager-app/
 │   ├── src/
 │   │   ├── config/         # Database configuration
 │   │   │   ├── database.ts
-│   │   │   └── init-db.sql
+│   │   │   ├── init-db.sql
+│   │   │   └── add-*.sql   # Migration files
 │   │   ├── controllers/    # Route handlers
-│   │   │   └── authController.ts
+│   │   │   ├── authController.ts
+│   │   │   ├── taskController.ts
+│   │   │   ├── commentController.ts
+│   │   │   └── attachmentController.ts
 │   │   ├── middleware/     # Custom middleware
 │   │   │   └── auth.ts
 │   │   ├── routes/         # API routes
 │   │   │   ├── auth.ts
-│   │   │   └── init.ts
+│   │   │   ├── init.ts
+│   │   │   ├── migrate.ts
+│   │   │   ├── tasks.ts
+│   │   │   ├── comments.ts
+│   │   │   ├── attachments.ts
+│   │   │   └── uploadthing.ts
 │   │   └── index.ts        # Server entry point
 │   ├── package.json
 │   ├── tsconfig.json
@@ -44,16 +53,29 @@ task-manager-app/
 ├── frontend/               # React application
 │   ├── src/
 │   │   ├── components/     # Reusable components
+│   │   │   ├── FileUpload.tsx
+│   │   │   ├── CommentForm.tsx
+│   │   │   ├── CommentList.tsx
+│   │   │   ├── TaskCard.tsx
+│   │   │   ├── AttachmentUpload.tsx
+│   │   │   └── AttachmentList.tsx
 │   │   ├── contexts/       # React contexts
 │   │   │   └── AuthContext.tsx
 │   │   ├── pages/          # Page components
 │   │   │   ├── Dashboard.tsx
 │   │   │   ├── Login.tsx
-│   │   │   └── Register.tsx
+│   │   │   ├── Register.tsx
+│   │   │   ├── TaskCreator.tsx
+│   │   │   ├── TaskEditor.tsx
+│   │   │   ├── TaskDetail.tsx
+│   │   │   └── TaskList.tsx
 │   │   ├── services/       # API services
-│   │   │   └── auth.ts
+│   │   │   ├── auth.ts
+│   │   │   └── tasks.ts
 │   │   ├── types/          # TypeScript types
 │   │   │   └── index.ts
+│   │   ├── utils/          # Utility functions
+│   │   │   └── uploadthing.ts
 │   │   └── main.tsx        # React entry point
 │   ├── package.json
 │   ├── vite.config.ts
@@ -63,6 +85,8 @@ task-manager-app/
 ├── Procfile               # Process definition
 ├── nixpacks.toml          # Build configuration
 ├── package.json           # Root workspace configuration
+├── README.md              # Project overview
+├── setup.md               # This setup guide
 └── .gitignore
 ```
 

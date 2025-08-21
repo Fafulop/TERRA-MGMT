@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { commentService } from '../services/tasks';
 import { Comment, CommentFormData } from '../types';
+import AttachmentList from './AttachmentList';
+import AttachmentUpload from './AttachmentUpload';
 
 interface CommentListProps {
   taskId: number;
@@ -13,6 +15,8 @@ const CommentList = ({ taskId }: CommentListProps) => {
   const queryClient = useQueryClient();
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editFormData, setEditFormData] = useState<CommentFormData>({ comment: '' });
+  const [showAttachmentsFor, setShowAttachmentsFor] = useState<number | null>(null);
+  const [addingAttachmentTo, setAddingAttachmentTo] = useState<number | null>(null);
 
   const { data: comments = [], isLoading, error } = useQuery({
     queryKey: ['task-comments', taskId],
@@ -69,6 +73,16 @@ const CommentList = ({ taskId }: CommentListProps) => {
   const handleEditCancel = () => {
     setEditingCommentId(null);
     setEditFormData({ comment: '' });
+  };
+
+  const handleAddAttachment = (commentId: number) => {
+    setAddingAttachmentTo(commentId);
+  };
+
+  const handleAttachmentAdded = () => {
+    setAddingAttachmentTo(null);
+    // Refresh the comment attachments
+    queryClient.invalidateQueries({ queryKey: ['comment-attachments'] });
   };
 
   const handleEditSubmit = (commentId: number) => {
@@ -149,29 +163,40 @@ const CommentList = ({ taskId }: CommentListProps) => {
                 </div>
               </div>
             </div>
-            {user?.username === comment.author.username && (
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleEditStart(comment)}
-                  className="text-gray-400 hover:text-blue-600"
-                  title="Edit comment"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => handleDelete(comment.id)}
-                  disabled={deleteCommentMutation.isPending}
-                  className="text-gray-400 hover:text-red-600"
-                  title="Delete comment"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            )}
+            <div className="flex space-x-2">
+              {user?.username === comment.author.username && (
+                <>
+                  <button
+                    onClick={() => handleEditStart(comment)}
+                    className="text-gray-400 hover:text-blue-600"
+                    title="Edit comment"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(comment.id)}
+                    disabled={deleteCommentMutation.isPending}
+                    className="text-gray-400 hover:text-red-600"
+                    title="Delete comment"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => handleAddAttachment(comment.id)}
+                className="text-gray-400 hover:text-green-600"
+                title="Add attachment"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 00-2.828-2.828z" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {editingCommentId === comment.id ? (
@@ -199,10 +224,40 @@ const CommentList = ({ taskId }: CommentListProps) => {
               </div>
             </div>
           ) : (
-            <div className="prose max-w-none">
-              <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">
-                {comment.comment}
-              </p>
+            <div className="space-y-3">
+              <div className="prose max-w-none">
+                <p className="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">
+                  {comment.comment}
+                </p>
+              </div>
+              
+              {/* Comment Attachments */}
+              <div className="border-t border-gray-100 pt-3">
+                <AttachmentList commentId={comment.id} />
+              </div>
+
+              {/* Add Attachment Interface */}
+              {addingAttachmentTo === comment.id && (
+                <div className="border-t border-gray-100 pt-3 mt-3">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h5 className="text-sm font-medium text-blue-900">Add Attachment to Comment</h5>
+                      <button
+                        onClick={() => setAddingAttachmentTo(null)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <AttachmentUpload 
+                      commentId={comment.id} 
+                      onAttachmentAdded={handleAttachmentAdded}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

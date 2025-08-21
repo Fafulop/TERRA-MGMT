@@ -3,7 +3,7 @@ import { UploadButton, UploadDropzone } from '../utils/uploadthing';
 
 interface FileUploadProps {
   onUploadComplete?: (files: any[]) => void;
-  uploaderType?: 'imageUploader' | 'pdfUploader';
+  uploaderType?: 'imageUploader' | 'pdfUploader' | 'fileUploader';
   variant?: 'button' | 'dropzone';
 }
 
@@ -29,12 +29,27 @@ export default function FileUpload({
   const handleUploadError = (error: Error) => {
     setIsUploading(false);
     console.error('Upload error:', error);
-    alert(`Upload failed: ${error.message}`);
+    
+    // More user-friendly error messages
+    let errorMessage = 'Upload failed. Please try again.';
+    if (error.message.includes('token') || error.message.includes('auth')) {
+      errorMessage = 'Authentication error. Please log in and try again.';
+    } else if (error.message.includes('size')) {
+      errorMessage = 'File is too large. Please choose a smaller file.';
+    } else if (error.message.includes('type')) {
+      errorMessage = 'File type not supported. Please choose a different file.';
+    }
+    
+    alert(errorMessage);
   };
 
   // Get auth token from localStorage
   const getToken = () => {
-    return localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No authentication token found');
+    }
+    return token;
   };
 
   if (variant === 'dropzone') {

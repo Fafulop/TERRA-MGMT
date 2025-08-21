@@ -99,4 +99,96 @@ router.post('/add-comments-table', async (req, res) => {
   }
 });
 
+router.post('/add-attachments-table', async (req, res) => {
+  try {
+    // Create attachments table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS attachments (
+        id SERIAL PRIMARY KEY,
+        task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+        comment_id INTEGER REFERENCES task_comments(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        file_name VARCHAR(255) NOT NULL,
+        file_url TEXT NOT NULL,
+        file_size INTEGER,
+        file_type VARCHAR(100),
+        attachment_type VARCHAR(20) NOT NULL CHECK (attachment_type IN ('file', 'url')),
+        url_title VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        
+        CONSTRAINT check_attachment_parent CHECK (
+          (task_id IS NOT NULL AND comment_id IS NULL) OR 
+          (task_id IS NULL AND comment_id IS NOT NULL)
+        )
+      )
+    `);
+
+    // Create indexes for better performance
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);
+      CREATE INDEX IF NOT EXISTS idx_attachments_comment_id ON attachments(comment_id);
+      CREATE INDEX IF NOT EXISTS idx_attachments_user_id ON attachments(user_id);
+      CREATE INDEX IF NOT EXISTS idx_attachments_created_at ON attachments(created_at);
+    `);
+
+    res.status(200).json({ 
+      message: 'Attachments table created successfully',
+      table: 'attachments',
+      indexes: ['idx_attachments_task_id', 'idx_attachments_comment_id', 'idx_attachments_user_id', 'idx_attachments_created_at']
+    });
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create attachments table', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.post('/add-task-comment-attachments', async (req, res) => {
+  try {
+    // Create attachments table for tasks and comments
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS attachments (
+        id SERIAL PRIMARY KEY,
+        task_id INTEGER REFERENCES tasks(id) ON DELETE CASCADE,
+        comment_id INTEGER REFERENCES task_comments(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        file_name VARCHAR(255) NOT NULL,
+        file_url TEXT NOT NULL,
+        file_size INTEGER,
+        file_type VARCHAR(100),
+        attachment_type VARCHAR(20) NOT NULL CHECK (attachment_type IN ('file', 'url')),
+        url_title VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        
+        CONSTRAINT check_attachment_parent CHECK (
+          (task_id IS NOT NULL AND comment_id IS NULL) OR 
+          (task_id IS NULL AND comment_id IS NOT NULL)
+        )
+      )
+    `);
+
+    // Create indexes for better performance
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_attachments_task_id ON attachments(task_id);
+      CREATE INDEX IF NOT EXISTS idx_attachments_comment_id ON attachments(comment_id);
+      CREATE INDEX IF NOT EXISTS idx_attachments_user_id ON attachments(user_id);
+      CREATE INDEX IF NOT EXISTS idx_attachments_created_at ON attachments(created_at);
+    `);
+
+    res.status(200).json({ 
+      message: 'Task and comment attachments table created successfully',
+      table: 'attachments',
+      indexes: ['idx_attachments_task_id', 'idx_attachments_comment_id', 'idx_attachments_user_id', 'idx_attachments_created_at']
+    });
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create attachments table', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

@@ -65,3 +65,30 @@ export interface Comment {
 export interface CommentFormData {
   comment: string;
 }
+
+export interface Attachment {
+  id: number;
+  taskId?: number;
+  commentId?: number;
+  fileName: string;
+  fileUrl: string;
+  fileSize?: number;
+  fileType?: string;
+  attachmentType: 'file' | 'url';
+  urlTitle?: string;
+  createdAt: string;
+  uploadedBy: {
+    username: string;
+    firstName?: string;
+    lastName?: string;
+  };
+}
+
+export interface AttachmentFormData {
+  fileName: string;
+  fileUrl: string;
+  fileSize?: number;
+  fileType?: string;
+  attachmentType: 'file' | 'url';
+  urlTitle?: string;
+}
