@@ -4,7 +4,8 @@ import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { TaskFormData, AttachmentFormData } from '../types';
 import { taskService, attachmentService } from '../services/tasks';
-import FileUpload from '../components/FileUpload';
+import { useAttachmentManager } from '../hooks/useAttachmentManager';
+import AttachmentSection from '../components/AttachmentSection';
 
 const TaskCreator = () => {
   const navigate = useNavigate();
@@ -18,25 +19,36 @@ const TaskCreator = () => {
     dueDate: ''
   });
 
-  // File attachments
-  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
-  const [fileAttachments, setFileAttachments] = useState<{file: any, title: string}[]>([]);
-
-  // URL attachments
-  const [urlAttachments, setUrlAttachments] = useState<{url: string, title: string}[]>([]);
-  const [urlForm, setUrlForm] = useState({ url: '', title: '' });
+  // Attachment management
+  const {
+    uploadedFiles,
+    fileAttachments,
+    urlAttachments,
+    urlForm,
+    handleFileUpload,
+    addFileAttachment,
+    updateFileAttachment,
+    removeFileAttachment,
+    addUrlAttachment,
+    removeUrlAttachment,
+    updateUrlForm,
+    getAttachmentData
+  } = useAttachmentManager();
 
   const createTaskWithAttachmentsMutation = useMutation({
-    mutationFn: async (data: { task: TaskFormData, fileAttachments: any[], urlAttachments: any[] }) => {
+    mutationFn: async (data: { task: TaskFormData }) => {
       // First create the task
       const task = await taskService.createTask(data.task, token!);
       const taskId = task.id;
+
+      // Get attachment data from hook
+      const { fileAttachments: currentFileAttachments, urlAttachments: currentUrlAttachments } = getAttachmentData();
 
       // Then create all attachments
       const attachmentPromises = [];
 
       // Add file attachments
-      for (const fileAttachment of data.fileAttachments) {
+      for (const fileAttachment of currentFileAttachments) {
         const attachmentData: AttachmentFormData = {
           fileName: fileAttachment.title,
           fileUrl: fileAttachment.file.url || fileAttachment.file.fileUrl,
@@ -50,7 +62,7 @@ const TaskCreator = () => {
       }
 
       // Add URL attachments
-      for (const urlAttachment of data.urlAttachments) {
+      for (const urlAttachment of currentUrlAttachments) {
         const attachmentData: AttachmentFormData = {
           fileName: urlAttachment.title,
           fileUrl: urlAttachment.url,
@@ -79,43 +91,11 @@ const TaskCreator = () => {
     }));
   };
 
-  const handleFileUpload = (files: any[]) => {
-    setUploadedFiles(prev => [...prev, ...files]);
-  };
-
-  const addFileAttachment = (file: any) => {
-    setFileAttachments(prev => [...prev, { file, title: file.name || 'Uploaded File' }]);
-    setUploadedFiles(prev => prev.filter(f => f !== file));
-  };
-
-  const updateFileAttachment = (index: number, field: string, value: string) => {
-    setFileAttachments(prev => prev.map((item, i) => 
-      i === index ? { ...item, [field]: value } : item
-    ));
-  };
-
-  const removeFileAttachment = (index: number) => {
-    setFileAttachments(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const addUrlAttachment = () => {
-    if (urlForm.url.trim() && urlForm.title.trim()) {
-      setUrlAttachments(prev => [...prev, { ...urlForm }]);
-      setUrlForm({ url: '', title: '' });
-    }
-  };
-
-  const removeUrlAttachment = (index: number) => {
-    setUrlAttachments(prev => prev.filter((_, i) => i !== index));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.title.trim()) {
       createTaskWithAttachmentsMutation.mutate({
-        task: formData,
-        fileAttachments,
-        urlAttachments
+        task: formData
       });
     }
   };
@@ -206,128 +186,22 @@ const TaskCreator = () => {
               </div>
             </div>
 
-            {/* File Upload Section */}
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Attach Files</h3>
-              
-              <div className="space-y-4">
-                <FileUpload
-                  onUploadComplete={handleFileUpload}
-                  uploaderType="fileUploader"
-                  variant="dropzone"
-                />
-
-                {uploadedFiles.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-gray-700">Uploaded Files (Add Details):</h4>
-                    {uploadedFiles.map((file, index) => (
-                      <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-medium text-blue-900">📄 {file.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => addFileAttachment(file)}
-                            className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                          >
-                            Add to Task
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {fileAttachments.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-gray-700">File Attachments:</h4>
-                    {fileAttachments.map((attachment, index) => (
-                      <div key={index} className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-green-900">📄 {attachment.file.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeFileAttachment(index)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">Title *</label>
-                          <input
-                            type="text"
-                            value={attachment.title}
-                            onChange={(e) => updateFileAttachment(index, 'title', e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            placeholder="File title"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* URL Attachments Section */}
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Attach URLs</h3>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
-                    <input
-                      type="url"
-                      value={urlForm.url}
-                      onChange={(e) => setUrlForm({ ...urlForm, url: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="https://example.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                    <input
-                      type="text"
-                      value={urlForm.title}
-                      onChange={(e) => setUrlForm({ ...urlForm, title: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Link title"
-                    />
-                  </div>
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={addUrlAttachment}
-                  disabled={!urlForm.url.trim() || !urlForm.title.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-                >
-                  Add URL
-                </button>
-
-                {urlAttachments.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-700">URL Attachments:</h4>
-                    {urlAttachments.map((attachment, index) => (
-                      <div key={index} className="bg-purple-50 border border-purple-200 rounded-lg p-3 flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-purple-900">🔗 {attachment.title}</div>
-                          <div className="text-sm text-purple-700">{attachment.url}</div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeUrlAttachment(index)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Attachments Section */}
+            <AttachmentSection
+              uploadedFiles={uploadedFiles}
+              fileAttachments={fileAttachments}
+              onFileUpload={handleFileUpload}
+              onAddFileAttachment={addFileAttachment}
+              onUpdateFileAttachment={updateFileAttachment}
+              onRemoveFileAttachment={removeFileAttachment}
+              urlAttachments={urlAttachments}
+              urlForm={urlForm}
+              onUpdateUrlForm={updateUrlForm}
+              onAddUrlAttachment={addUrlAttachment}
+              onRemoveUrlAttachment={removeUrlAttachment}
+              showTitle={true}
+              compact={false}
+            />
 
             {/* Submit Section */}
             <div className="border-t border-gray-200 pt-6">

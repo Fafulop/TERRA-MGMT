@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Task } from '../types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -15,28 +15,45 @@ const TaskCard = ({ task }: TaskCardProps) => {
   const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
+  // Memoize color calculations to prevent unnecessary recalculations
+  const priorityColor = useMemo(() => {
+    switch (task.priority) {
       case 'high': return 'bg-red-100 text-red-800 border-red-200';
       case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'low': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
-  };
+  }, [task.priority]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
+  const statusColor = useMemo(() => {
+    switch (task.status) {
       case 'completed': return 'bg-green-100 text-green-800 border-green-200';
       case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'pending': return 'bg-gray-100 text-gray-800 border-gray-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
-  };
+  }, [task.status]);
 
   const updateStatusMutation = useMutation({
     mutationFn: (newStatus: string) => 
       taskService.updateTask(task.id, { status: newStatus }, token!),
-    onSuccess: () => {
+    onMutate: async (newStatus) => {
+      // Optimistic update for better UX
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      const previousTasks = queryClient.getQueryData(['tasks']);
+      
+      queryClient.setQueryData(['tasks'], (old: Task[]) =>
+        old?.map(t => t.id === task.id ? { ...t, status: newStatus } : t) || []
+      );
+      
+      return { previousTasks };
+    },
+    onError: (err, newStatus, context) => {
+      // Revert on error
+      queryClient.setQueryData(['tasks'], context?.previousTasks);
+    },
+    onSettled: () => {
+      // Refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     }
   });
@@ -119,10 +136,10 @@ const TaskCard = ({ task }: TaskCardProps) => {
       )}
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${priorityColor}`}>
           {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
         </span>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(task.status)}`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium border ${statusColor}`}>
           {task.status.replace('_', ' ').charAt(0).toUpperCase() + task.status.replace('_', ' ').slice(1)}
         </span>
         {task.dueDate && (
@@ -155,4 +172,16 @@ const TaskCard = ({ task }: TaskCardProps) => {
   );
 };
 
-export default TaskCard;
+// Memoize component to prevent unnecessary re-renders
+export default React.memo(TaskCard, (prevProps, nextProps) => {
+  // Only re-render if task data that affects display has changed
+  return (
+    prevProps.task.id === nextProps.task.id &&
+    prevProps.task.status === nextProps.task.status &&
+    prevProps.task.title === nextProps.task.title &&
+    prevProps.task.description === nextProps.task.description &&
+    prevProps.task.priority === nextProps.task.priority &&
+    prevProps.task.dueDate === nextProps.task.dueDate &&
+    prevProps.task.updatedAt === nextProps.task.updatedAt
+  );
+});

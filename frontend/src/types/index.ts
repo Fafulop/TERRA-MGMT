@@ -92,3 +92,46 @@ export interface AttachmentFormData {
   attachmentType: 'file' | 'url';
   urlTitle?: string;
 }
+
+// Enhanced file upload types
+export interface UploadedFile {
+  id: string;
+  name: string;
+  url: string;
+  fileUrl: string;
+  size: number;
+  type: string;
+  uploadedBy?: number;
+}
+
+export interface FileAttachment {
+  file: UploadedFile;
+  title: string;
+}
+
+export interface UrlAttachment {
+  url: string;
+  title: string;
+}
+
+export interface AttachmentData {
+  fileAttachments: FileAttachment[];
+  urlAttachments: UrlAttachment[];
+}
+
+// API Error types
+export interface ApiError {
+  error: string;
+  code?: string;
+  details?: Record<string, string>;
+  timestamp?: string;
+}
+
+// Mutation context types for optimistic updates
+export interface TaskMutationContext {
+  previousTasks?: Task[];
+}
+
+export interface CommentMutationContext {
+  previousComments?: Comment[];
+}
