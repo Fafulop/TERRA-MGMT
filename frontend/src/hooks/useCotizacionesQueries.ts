@@ -1,168 +1,56 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { 
   cotizacionesService, 
   CotizacionesEntry, 
   CotizacionesEntryFormData, 
   CotizacionesFilters 
 } from '../services/cotizaciones';
+import { createFinancialHooks } from './useBaseFinancialQueries';
 
-// Query keys for consistent cache management (Cotizaciones)
-export const cotizacionesKeys = {
-  all: ['cotizaciones'] as const,
-  entries: () => [...cotizacionesKeys.all, 'entries'] as const,
-  entry: (id: number) => [...cotizacionesKeys.all, 'entry', id] as const,
-  summary: () => [...cotizacionesKeys.all, 'summary'] as const,
-  filtered: (filters: CotizacionesFilters) => [...cotizacionesKeys.entries(), 'filtered', filters] as const,
+// Create service wrapper that matches the expected interface
+const serviceWrapper = {
+  getEntries: cotizacionesService.getCotizacionesEntries,
+  getEntry: cotizacionesService.getCotizacionesEntry,
+  createEntry: cotizacionesService.createCotizacionesEntry,
+  updateEntry: cotizacionesService.updateCotizacionesEntry,
+  deleteEntry: cotizacionesService.deleteCotizacionesEntry,
+  getSummary: cotizacionesService.getCotizacionesSummary,
+  exportData: cotizacionesService.exportCotizacionesData
 };
+
+// Create generic hooks for cotizaciones
+const cotizacionesHooks = createFinancialHooks('cotizaciones', serviceWrapper as any);
+
+// Export query keys
+export const cotizacionesKeys = cotizacionesHooks.queryKeys;
 
 // Hook to get cotizaciones entries with filtering
-export const useCotizacionesEntries = (filters?: CotizacionesFilters & { limit?: number; offset?: number }) => {
-  return useQuery({
-    queryKey: cotizacionesKeys.filtered(filters || {}),
-    queryFn: () => cotizacionesService.getCotizacionesEntries(filters),
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    refetchOnWindowFocus: false,
-    retry: 2,
-  });
-};
+export const useCotizacionesEntries = cotizacionesHooks.useEntries;
 
 // Hook to get a single cotizaciones entry
-export const useCotizacionesEntry = (id: number) => {
-  return useQuery({
-    queryKey: cotizacionesKeys.entry(id),
-    queryFn: () => cotizacionesService.getCotizacionesEntry(id),
-    enabled: !!id && id > 0,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 2,
-  });
-};
+export const useCotizacionesEntry = cotizacionesHooks.useEntry;
 
 // Hook to get cotizaciones summary
 export const useCotizacionesSummary = (startDate?: string, endDate?: string, currency?: 'USD' | 'MXN') => {
-  return useQuery({
-    queryKey: [...cotizacionesKeys.summary(), startDate, endDate, currency],
-    queryFn: () => cotizacionesService.getCotizacionesSummary(startDate, endDate, currency),
-    staleTime: 1000 * 60 * 3, // 3 minutes
-    retry: 2,
-  });
+  return cotizacionesHooks.useSummary(startDate, endDate, currency);
 };
 
 // Hook to create a new cotizaciones entry
-export const useCreateCotizacionesEntry = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CotizacionesEntryFormData) => cotizacionesService.createCotizacionesEntry(data),
-    onSuccess: (newEntry) => {
-      // Invalidate and refetch cotizaciones entries
-      queryClient.invalidateQueries({ queryKey: cotizacionesKeys.entries() });
-      queryClient.invalidateQueries({ queryKey: cotizacionesKeys.summary() });
-      
-      // Add the new entry to existing queries (optimistic update)
-      queryClient.setQueriesData(
-        { queryKey: cotizacionesKeys.entries() },
-        (oldData: any) => {
-          if (oldData?.entries) {
-            return {
-              ...oldData,
-              entries: [newEntry, ...oldData.entries],
-            };
-          }
-          return oldData;
-        }
-      );
-    },
-    onError: (error) => {
-      console.error('Error creating cotizaciones entry:', error);
-    },
-  });
-};
+export const useCreateCotizacionesEntry = cotizacionesHooks.useCreateEntry;
 
 // Hook to update a cotizaciones entry
-export const useUpdateCotizacionesEntry = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<CotizacionesEntryFormData> }) =>
-      cotizacionesService.updateCotizacionesEntry(id, data),
-    onSuccess: (updatedEntry, { id }) => {
-      // Update the specific entry in cache
-      queryClient.setQueryData(cotizacionesKeys.entry(id), updatedEntry);
-      
-      // Invalidate entries list to refetch
-      queryClient.invalidateQueries({ queryKey: cotizacionesKeys.entries() });
-      queryClient.invalidateQueries({ queryKey: cotizacionesKeys.summary() });
-    },
-    onError: (error) => {
-      console.error('Error updating cotizaciones entry:', error);
-    },
-  });
-};
+export const useUpdateCotizacionesEntry = cotizacionesHooks.useUpdateEntry;
 
 // Hook to delete a cotizaciones entry
-export const useDeleteCotizacionesEntry = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: number) => cotizacionesService.deleteCotizacionesEntry(id),
-    onSuccess: (_, deletedId) => {
-      // Remove the entry from cache
-      queryClient.removeQueries({ queryKey: cotizacionesKeys.entry(deletedId) });
-      
-      // Update entries list by removing the deleted entry
-      queryClient.setQueriesData(
-        { queryKey: cotizacionesKeys.entries() },
-        (oldData: any) => {
-          if (oldData?.entries) {
-            return {
-              ...oldData,
-              entries: oldData.entries.filter((entry: CotizacionesEntry) => entry.id !== deletedId),
-            };
-          }
-          return oldData;
-        }
-      );
-      
-      // Invalidate summary to refetch
-      queryClient.invalidateQueries({ queryKey: cotizacionesKeys.summary() });
-    },
-    onError: (error) => {
-      console.error('Error deleting cotizaciones entry:', error);
-    },
-  });
-};
+export const useDeleteCotizacionesEntry = cotizacionesHooks.useDeleteEntry;
 
 // Hook for prefetching cotizaciones data
 export const useCotizacionesPrefetching = () => {
-  const queryClient = useQueryClient();
-
-  const prefetchCotizacionesEntries = (filters?: CotizacionesFilters) => {
-    queryClient.prefetchQuery({
-      queryKey: cotizacionesKeys.filtered(filters || {}),
-      queryFn: () => cotizacionesService.getCotizacionesEntries(filters),
-      staleTime: 1000 * 60 * 2,
-    });
-  };
-
-  const prefetchCotizacionesEntry = (id: number) => {
-    queryClient.prefetchQuery({
-      queryKey: cotizacionesKeys.entry(id),
-      queryFn: () => cotizacionesService.getCotizacionesEntry(id),
-      staleTime: 1000 * 60 * 5,
-    });
-  };
-
-  const prefetchCotizacionesSummary = (startDate?: string, endDate?: string, currency?: 'USD' | 'MXN') => {
-    queryClient.prefetchQuery({
-      queryKey: [...cotizacionesKeys.summary(), startDate, endDate, currency],
-      queryFn: () => cotizacionesService.getCotizacionesSummary(startDate, endDate, currency),
-      staleTime: 1000 * 60 * 3,
-    });
-  };
-
+  const basePrefetching = cotizacionesHooks.usePrefetching();
+  
   return {
-    prefetchCotizacionesEntries,
-    prefetchCotizacionesEntry,
-    prefetchCotizacionesSummary,
+    prefetchCotizacionesEntries: basePrefetching.prefetchEntries,
+    prefetchCotizacionesEntry: basePrefetching.prefetchEntry,
+    prefetchCotizacionesSummary: basePrefetching.prefetchSummary,
   };
 };

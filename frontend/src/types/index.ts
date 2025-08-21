@@ -135,3 +135,63 @@ export interface TaskMutationContext {
 export interface CommentMutationContext {
   previousComments?: Comment[];
 }
+
+// Accounting Ledger Types
+export interface LedgerEntry {
+  id: number;
+  amount: number; // Positive for money in, negative for money out
+  concept: string;
+  bankAccount: string;
+  internalId: string;
+  bankMovementId?: string;
+  entryType: 'income' | 'expense';
+  date: string;
+  userId: number;
+  createdAt: string;
+  updatedAt: string;
+  attachments?: LedgerAttachment[];
+  attachmentCount?: number; // For list view optimization
+}
+
+export interface LedgerAttachment {
+  id: number;
+  ledgerEntryId: number;
+  fileName: string;
+  fileUrl: string;
+  fileSize?: number;
+  fileType?: string;
+  attachmentType: 'file' | 'url';
+  urlTitle?: string;
+  createdAt: string;
+  uploadedBy: {
+    username: string;
+    firstName?: string;
+    lastName?: string;
+  };
+}
+
+export interface LedgerEntryFormData {
+  amount: number;
+  concept: string;
+  bankAccount: string;
+  bankMovementId?: string;
+  entryType: 'income' | 'expense';
+  date: string;
+  fileAttachments: FileAttachment[];
+}
+
+export interface LedgerFilters {
+  entryType?: 'income' | 'expense' | 'all';
+  bankAccount?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  searchTerm?: string;
+}
+
+export interface LedgerSummary {
+  totalIncome: number;
+  totalExpenses: number;
+  netCashFlow: number;
+  periodStart: string;
+  periodEnd: string;
+}
