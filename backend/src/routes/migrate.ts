@@ -504,4 +504,116 @@ router.post('/add-area-subarea-ledger-mxn', async (req, res) => {
   }
 });
 
+router.post('/create-areas-tables', async (req, res) => {
+  try {
+    console.log('Starting migration to create areas and subareas tables...');
+    
+    // Step 1: Create areas table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS areas (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE,
+        description TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Created areas table');
+    
+    // Step 2: Create subareas table with foreign key to areas
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS subareas (
+        id SERIAL PRIMARY KEY,
+        area_id INTEGER NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(area_id, name)
+      )
+    `);
+    console.log('✓ Created subareas table');
+    
+    // Step 3: Add indexes for performance
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_areas_name ON areas(name);
+      CREATE INDEX IF NOT EXISTS idx_subareas_area_id ON subareas(area_id);
+      CREATE INDEX IF NOT EXISTS idx_subareas_name ON subareas(name);
+    `);
+    console.log('✓ Added indexes for performance');
+    
+    // Step 4: Add update triggers (check if function exists first)
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION update_updated_at_column()
+      RETURNS TRIGGER AS $$
+      BEGIN
+          NEW.updated_at = CURRENT_TIMESTAMP;
+          RETURN NEW;
+      END;
+      $$ language 'plpgsql';
+    `);
+    
+    await pool.query(`
+      DROP TRIGGER IF EXISTS update_areas_updated_at ON areas;
+      CREATE TRIGGER update_areas_updated_at
+          BEFORE UPDATE ON areas
+          FOR EACH ROW
+          EXECUTE FUNCTION update_updated_at_column();
+    `);
+    
+    await pool.query(`
+      DROP TRIGGER IF EXISTS update_subareas_updated_at ON subareas;
+      CREATE TRIGGER update_subareas_updated_at
+          BEFORE UPDATE ON subareas
+          FOR EACH ROW
+          EXECUTE FUNCTION update_updated_at_column();
+    `);
+    console.log('✓ Added update triggers');
+    
+    // Step 5: Insert default data
+    await pool.query(`
+      INSERT INTO areas (name, description) VALUES 
+        ('General', 'General purpose area for miscellaneous items'),
+        ('Finance', 'Financial operations and accounting'),
+        ('Operations', 'Day-to-day business operations'),
+        ('Marketing', 'Marketing and promotional activities'),
+        ('Human Resources', 'HR and personnel management')
+      ON CONFLICT (name) DO NOTHING
+    `);
+    console.log('✓ Inserted default areas');
+    
+    await pool.query(`
+      INSERT INTO subareas (area_id, name, description) VALUES 
+        ((SELECT id FROM areas WHERE name = 'General'), 'Miscellaneous', 'General miscellaneous items'),
+        ((SELECT id FROM areas WHERE name = 'Finance'), 'Accounting', 'General accounting tasks'),
+        ((SELECT id FROM areas WHERE name = 'Finance'), 'Budgeting', 'Budget planning and management'),
+        ((SELECT id FROM areas WHERE name = 'Operations'), 'Administration', 'Administrative tasks'),
+        ((SELECT id FROM areas WHERE name = 'Operations'), 'Customer Service', 'Customer support and service'),
+        ((SELECT id FROM areas WHERE name = 'Marketing'), 'Digital Marketing', 'Online marketing activities'),
+        ((SELECT id FROM areas WHERE name = 'Marketing'), 'Content Creation', 'Content development and management'),
+        ((SELECT id FROM areas WHERE name = 'Human Resources'), 'Recruitment', 'Hiring and recruitment processes'),
+        ((SELECT id FROM areas WHERE name = 'Human Resources'), 'Training', 'Employee training and development')
+      ON CONFLICT (area_id, name) DO NOTHING
+    `);
+    console.log('✓ Inserted default subareas');
+    
+    console.log('Areas and subareas tables migration completed successfully!');
+    res.status(200).json({ 
+      message: 'Areas and subareas tables created successfully!',
+      tables: ['areas', 'subareas'],
+      indexes: ['idx_areas_name', 'idx_subareas_area_id', 'idx_subareas_name'],
+      triggers: ['update_areas_updated_at', 'update_subareas_updated_at'],
+      default_areas: ['General', 'Finance', 'Operations', 'Marketing', 'Human Resources'],
+      default_subareas_count: 9
+    });
+    
+  } catch (error) {
+    console.error('Areas tables migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create areas and subareas tables', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
