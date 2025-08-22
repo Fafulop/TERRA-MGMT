@@ -16,6 +16,10 @@ export interface BaseFinancialEntry {
   description?: string;
   created_at: string;
   updated_at: string;
+  // User information (available when viewing all entries)
+  username?: string;
+  first_name?: string;
+  last_name?: string;
   attachments?: Array<{
     id: number;
     fileName: string;

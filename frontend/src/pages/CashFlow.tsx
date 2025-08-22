@@ -155,7 +155,7 @@ const CashFlow = () => {
                 {activeCurrency} Accounting Ledger
               </h2>
               <p className="text-gray-600">
-                Track your income and expenses in {activeCurrency === 'USD' ? 'US Dollars' : 'Mexican Pesos'}
+                View all users' income and expenses in {activeCurrency === 'USD' ? 'US Dollars' : 'Mexican Pesos'}
               </p>
             </div>
             <button
@@ -226,6 +226,7 @@ const CashFlow = () => {
             onEditEntry={handleEditEntry}
             onDeleteEntry={handleDeleteEntry}
             onViewAttachments={handleViewAttachments}
+            currentUserId={user?.id}
             isLoading={currentIsLoading}
           />
 

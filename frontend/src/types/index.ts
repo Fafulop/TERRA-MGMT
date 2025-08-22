@@ -147,6 +147,10 @@ export interface LedgerEntry {
   entryType: 'income' | 'expense';
   date: string;
   userId: number;
+  // User information (available when viewing all entries)
+  username?: string;
+  firstName?: string;
+  lastName?: string;
   createdAt: string;
   updatedAt: string;
   attachments?: LedgerAttachment[];

@@ -10,7 +10,7 @@ const generateInternalId = (): string => {
   return `TXN-${timestamp}-${random}`;
 };
 
-// Get all ledger entries for a user
+// Get all ledger entries (for all users)
 export const getLedgerEntries = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
@@ -31,14 +31,18 @@ export const getLedgerEntries = async (req: AuthRequest, res: Response) => {
     let query = `
       SELECT 
         le.*,
+        u.username,
+        u.first_name,
+        u.last_name,
         COUNT(la.id) as attachment_count
       FROM ledger_entries le
       LEFT JOIN ledger_attachments la ON le.id = la.ledger_entry_id
-      WHERE le.user_id = $1
+      LEFT JOIN users u ON le.user_id = u.id
+      WHERE 1=1
     `;
     
-    const queryParams: any[] = [userId];
-    let paramIndex = 2;
+    const queryParams: any[] = [];
+    let paramIndex = 1;
 
     // Add filters
     if (entryType && entryType !== 'all') {
@@ -76,7 +80,7 @@ export const getLedgerEntries = async (req: AuthRequest, res: Response) => {
     }
 
     query += `
-      GROUP BY le.id
+      GROUP BY le.id, u.username, u.first_name, u.last_name
       ORDER BY le.transaction_date DESC, le.created_at DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
@@ -96,12 +100,15 @@ export const getLedgerEntries = async (req: AuthRequest, res: Response) => {
       entryType: row.entry_type,
       date: row.transaction_date,
       userId: row.user_id,
+      username: row.username,
+      firstName: row.first_name,
+      lastName: row.last_name,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       attachmentCount: parseInt(row.attachment_count) || 0
     }));
     
-    // Get summary totals
+    // Get summary totals for all users
     const summaryQuery = `
       SELECT 
         COALESCE(SUM(CASE WHEN entry_type = 'income' THEN amount ELSE 0 END), 0) as total_income,
@@ -109,10 +116,10 @@ export const getLedgerEntries = async (req: AuthRequest, res: Response) => {
         COALESCE(SUM(amount), 0) as net_cash_flow,
         COUNT(*) as total_entries
       FROM ledger_entries 
-      WHERE user_id = $1
+      WHERE 1=1
     `;
     
-    const summaryResult = await db.query(summaryQuery, [userId]);
+    const summaryResult = await db.query(summaryQuery);
     
     res.json({
       entries: mappedEntries,
@@ -129,18 +136,28 @@ export const getLedgerEntries = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Get a single ledger entry with attachments
+// Get a single ledger entry with attachments (any user can view)
 export const getLedgerEntry = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
     const { id } = req.params;
 
-    // Get ledger entry
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    // Get ledger entry with user information
     const entryQuery = `
-      SELECT * FROM ledger_entries 
-      WHERE id = $1 AND user_id = $2
+      SELECT 
+        le.*,
+        u.username,
+        u.first_name,
+        u.last_name
+      FROM ledger_entries le
+      LEFT JOIN users u ON le.user_id = u.id
+      WHERE le.id = $1
     `;
-    const entryResult = await db.query(entryQuery, [id, userId]);
+    const entryResult = await db.query(entryQuery, [id]);
 
     if (entryResult.rows.length === 0) {
       return res.status(404).json({ error: 'Ledger entry not found' });
@@ -171,6 +188,9 @@ export const getLedgerEntry = async (req: AuthRequest, res: Response) => {
       entryType: entry.entry_type,
       date: entry.transaction_date,
       userId: entry.user_id,
+      username: entry.username,
+      firstName: entry.first_name,
+      lastName: entry.last_name,
       createdAt: entry.created_at,
       updatedAt: entry.updated_at,
       attachments: attachmentsResult.rows.map((att: any) => ({
@@ -435,17 +455,22 @@ export const deleteLedgerEntry = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Get ledger summary/dashboard data
+// Get ledger summary/dashboard data (for all users)
 export const getLedgerSummary = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
     const { startDate, endDate } = req.query;
 
     let dateFilter = '';
-    const queryParams: any[] = [userId];
+    const queryParams: any[] = [];
     
     if (startDate && endDate) {
-      dateFilter = 'AND transaction_date BETWEEN $2 AND $3';
+      dateFilter = 'AND transaction_date BETWEEN $1 AND $2';
       queryParams.push(startDate as string, endDate as string);
     }
 
@@ -458,7 +483,7 @@ export const getLedgerSummary = async (req: AuthRequest, res: Response) => {
         COUNT(CASE WHEN entry_type = 'income' THEN 1 END) as income_entries,
         COUNT(CASE WHEN entry_type = 'expense' THEN 1 END) as expense_entries
       FROM ledger_entries 
-      WHERE user_id = $1 ${dateFilter}
+      WHERE 1=1 ${dateFilter}
     `;
 
     const result = await db.query(summaryQuery, queryParams);

@@ -205,7 +205,7 @@ const Cotizaciones = () => {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Cotizaciones Ledger</h2>
-              <p className="text-gray-600">Manage quotes and quotations in USD and MXN currencies</p>
+              <p className="text-gray-600">View all quotes and quotations from all users in USD and MXN currencies</p>
             </div>
             <button
               onClick={() => setShowEntryForm(!showEntryForm)}
@@ -275,6 +275,7 @@ const Cotizaciones = () => {
             onEditEntry={handleEditEntry}
             onDeleteEntry={handleDeleteEntry}
             onViewAttachments={handleViewAttachments}
+            currentUserId={user?.id}
             isLoading={isLoading}
           />
 
