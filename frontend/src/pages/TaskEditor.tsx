@@ -13,7 +13,9 @@ const TaskEditor = () => {
     title: '',
     description: '',
     priority: 'medium',
-    dueDate: ''
+    dueDate: '',
+    area: '',
+    subarea: ''
   });
 
   // Fetch the task to edit
@@ -38,7 +40,9 @@ const TaskEditor = () => {
         title: task.title,
         description: task.description || '',
         priority: task.priority,
-        dueDate: task.dueDate ? task.dueDate.split('T')[0] : '' // Convert to YYYY-MM-DD format
+        dueDate: task.dueDate ? task.dueDate.split('T')[0] : '', // Convert to YYYY-MM-DD format
+        area: task.area,
+        subarea: task.subarea
       });
     }
   }, [task]);
@@ -54,7 +58,7 @@ const TaskEditor = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.title.trim()) {
+    if (formData.title.trim() && formData.area.trim() && formData.subarea.trim()) {
       updateTaskMutation.mutate(formData);
     }
   };
@@ -145,6 +149,41 @@ const TaskEditor = () => {
               />
             </div>
 
+            {/* Area and Subarea */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="area" className="block text-sm font-medium text-gray-700 mb-2">
+                  Area *
+                </label>
+                <input
+                  type="text"
+                  id="area"
+                  name="area"
+                  required
+                  value={formData.area}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter area classification..."
+                />
+              </div>
+
+              <div>
+                <label htmlFor="subarea" className="block text-sm font-medium text-gray-700 mb-2">
+                  Subarea *
+                </label>
+                <input
+                  type="text"
+                  id="subarea"
+                  name="subarea"
+                  required
+                  value={formData.subarea}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter subarea classification..."
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
@@ -194,7 +233,7 @@ const TaskEditor = () => {
             <div className="flex gap-4 pt-4">
               <button
                 type="submit"
-                disabled={updateTaskMutation.isPending || !formData.title.trim()}
+                disabled={updateTaskMutation.isPending || !formData.title.trim() || !formData.area.trim() || !formData.subarea.trim()}
                 className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {updateTaskMutation.isPending ? 'Updating...' : 'Update Task'}

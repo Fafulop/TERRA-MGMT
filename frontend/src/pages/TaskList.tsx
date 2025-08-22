@@ -33,7 +33,9 @@ const TaskList = () => {
       const searchLower = debouncedSearchValue.toLowerCase();
       filtered = filtered.filter(task => 
         task.title.toLowerCase().includes(searchLower) ||
-        task.description?.toLowerCase().includes(searchLower)
+        task.description?.toLowerCase().includes(searchLower) ||
+        task.area.toLowerCase().includes(searchLower) ||
+        task.subarea.toLowerCase().includes(searchLower)
       );
     }
 
@@ -57,6 +59,10 @@ const TaskList = () => {
           return a.title.localeCompare(b.title);
         case 'status':
           return a.status.localeCompare(b.status);
+        case 'area':
+          return a.area.localeCompare(b.area);
+        case 'subarea':
+          return a.subarea.localeCompare(b.subarea);
         default: // createdAt
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
@@ -167,7 +173,7 @@ const TaskList = () => {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search tasks..."
+                    placeholder="Search tasks, area, subarea..."
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
                     className="w-64 pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -200,6 +206,8 @@ const TaskList = () => {
                   <option value="priority">Sort by Priority</option>
                   <option value="dueDate">Sort by Due Date</option>
                   <option value="status">Sort by Status</option>
+                  <option value="area">Sort by Area</option>
+                  <option value="subarea">Sort by Subarea</option>
                 </select>
               </div>
 

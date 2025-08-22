@@ -73,7 +73,9 @@ export const getMxnLedgerEntries = async (req: AuthRequest, res: Response) => {
       query += ` AND (
         le.concept ILIKE $${paramIndex} OR 
         le.internal_id ILIKE $${paramIndex} OR 
-        le.bank_movement_id ILIKE $${paramIndex}
+        le.bank_movement_id ILIKE $${paramIndex} OR
+        le.area ILIKE $${paramIndex} OR
+        le.subarea ILIKE $${paramIndex}
       )`;
       queryParams.push(`%${search}%`);
       paramIndex++;
@@ -99,6 +101,8 @@ export const getMxnLedgerEntries = async (req: AuthRequest, res: Response) => {
       bankMovementId: row.bank_movement_id,
       entryType: row.entry_type,
       date: row.transaction_date,
+      area: row.area,
+      subarea: row.subarea,
       userId: row.user_id,
       username: row.username,
       firstName: row.first_name,
@@ -188,6 +192,8 @@ export const getMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
       bankMovementId: entry.bank_movement_id,
       entryType: entry.entry_type,
       date: entry.transaction_date,
+      area: entry.area,
+      subarea: entry.subarea,
       userId: entry.user_id,
       username: entry.username,
       firstName: entry.first_name,
@@ -234,14 +240,25 @@ export const createMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
       bankMovementId,
       entryType,
       date,
+      area,
+      subarea,
       fileAttachments = []
     } = req.body;
 
     // Validate required fields
-    if (!amount || !concept || !bankAccount || !entryType || !date) {
+    if (!amount || !concept || !bankAccount || !entryType || !date || !area || !subarea) {
       return res.status(400).json({ 
-        error: 'Missing required fields: amount, concept, bankAccount, entryType, date' 
+        error: 'Missing required fields: amount, concept, bankAccount, entryType, date, area, subarea' 
       });
+    }
+
+    // Validate area and subarea
+    if (!area.trim()) {
+      return res.status(400).json({ error: 'Area cannot be empty' });
+    }
+
+    if (!subarea.trim()) {
+      return res.status(400).json({ error: 'Subarea cannot be empty' });
     }
 
     // Validate entry type
@@ -257,9 +274,9 @@ export const createMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
     const entryQuery = `
       INSERT INTO ledger_entries_mxn (
         user_id, amount, concept, bank_account, internal_id, 
-        bank_movement_id, entry_type, transaction_date
+        bank_movement_id, entry_type, transaction_date, area, subarea
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `;
     
@@ -271,7 +288,9 @@ export const createMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
       internalId,
       bankMovementId || null,
       entryType,
-      date
+      date,
+      area.trim(),
+      subarea.trim()
     ];
 
     const entryResult = await client.query(entryQuery, entryValues);
@@ -341,6 +360,8 @@ export const createMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
       bankMovementId: entry.bank_movement_id,
       entryType: entry.entry_type,
       date: entry.transaction_date,
+      area: entry.area,
+      subarea: entry.subarea,
       userId: entry.user_id,
       createdAt: entry.created_at,
       updatedAt: entry.updated_at,
@@ -369,7 +390,9 @@ export const updateMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
       bankAccount,
       bankMovementId,
       entryType,
-      date
+      date,
+      area,
+      subarea
     } = req.body;
 
     // Check if entry exists and belongs to user
@@ -378,6 +401,15 @@ export const updateMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
     
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: 'MXN ledger entry not found' });
+    }
+
+    // Validate area and subarea if provided
+    if (area !== undefined && !area.trim()) {
+      return res.status(400).json({ error: 'Area cannot be empty' });
+    }
+
+    if (subarea !== undefined && !subarea.trim()) {
+      return res.status(400).json({ error: 'Subarea cannot be empty' });
     }
 
     // Apply amount sign based on entry type
@@ -392,8 +424,10 @@ export const updateMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
         bank_movement_id = $4,
         entry_type = $5,
         transaction_date = $6,
+        area = $7,
+        subarea = $8,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $7 AND user_id = $8
+      WHERE id = $9 AND user_id = $10
       RETURNING *
     `;
     
@@ -404,6 +438,8 @@ export const updateMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
       bankMovementId || null,
       entryType,
       date,
+      area?.trim() || null,
+      subarea?.trim() || null,
       id,
       userId
     ];
@@ -421,6 +457,8 @@ export const updateMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
       bankMovementId: entry.bank_movement_id,
       entryType: entry.entry_type,
       date: entry.transaction_date,
+      area: entry.area,
+      subarea: entry.subarea,
       userId: entry.user_id,
       createdAt: entry.created_at,
       updatedAt: entry.updated_at,

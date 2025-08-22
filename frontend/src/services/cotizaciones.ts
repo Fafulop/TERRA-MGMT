@@ -10,14 +10,20 @@ import { FileAttachment } from '../types';
 // Cotizaciones-specific types extending base types
 export interface CotizacionesEntry extends BaseFinancialEntry {
   currency: 'USD' | 'MXN';
+  area: string;
+  subarea: string;
 }
 
 export interface CotizacionesEntryFormData extends BaseFinancialFormData {
   currency: 'USD' | 'MXN';
+  area: string;
+  subarea: string;
 }
 
 export interface CotizacionesFilters extends BaseFinancialFilters {
   currency?: 'USD' | 'MXN';
+  area?: string;
+  subarea?: string;
 }
 
 export interface CotizacionesSummary {

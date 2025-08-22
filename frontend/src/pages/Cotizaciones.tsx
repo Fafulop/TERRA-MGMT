@@ -233,6 +233,68 @@ const Cotizaciones = () => {
             </button>
           </div>
 
+          {/* Filters */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Currency
+                </label>
+                <select
+                  value={filters.currency || ''}
+                  onChange={(e) => setFilters(prev => ({ ...prev, currency: e.target.value as 'USD' | 'MXN' || undefined }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">All Currencies</option>
+                  <option value="USD">🇺🇸 USD</option>
+                  <option value="MXN">🇲🇽 MXN</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Entry Type
+                </label>
+                <select
+                  value={filters.entry_type || ''}
+                  onChange={(e) => setFilters(prev => ({ ...prev, entry_type: e.target.value as 'income' | 'expense' || undefined }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">All Types</option>
+                  <option value="income">💰 Income</option>
+                  <option value="expense">💸 Expense</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Area
+                </label>
+                <input
+                  type="text"
+                  value={filters.area || ''}
+                  onChange={(e) => setFilters(prev => ({ ...prev, area: e.target.value || undefined }))}
+                  placeholder="Filter by area..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subarea
+                </label>
+                <input
+                  type="text"
+                  value={filters.subarea || ''}
+                  onChange={(e) => setFilters(prev => ({ ...prev, subarea: e.target.value || undefined }))}
+                  placeholder="Filter by subarea..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Entry Form */}
           {showEntryForm && (
             <CotizacionesEntryForm

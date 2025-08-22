@@ -15,6 +15,8 @@ export interface Task {
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
   dueDate?: string;
+  area: string;
+  subarea: string;
   userId: number;
   // User information (available when viewing all tasks)
   username?: string;
@@ -51,6 +53,8 @@ export interface TaskFormData {
   description?: string;
   priority: 'low' | 'medium' | 'high';
   dueDate?: string;
+  area: string;
+  subarea: string;
 }
 
 export interface Comment {
@@ -150,6 +154,8 @@ export interface LedgerEntry {
   bankMovementId?: string;
   entryType: 'income' | 'expense';
   date: string;
+  area: string;
+  subarea: string;
   userId: number;
   // User information (available when viewing all entries)
   username?: string;
@@ -185,6 +191,8 @@ export interface LedgerEntryFormData {
   bankMovementId?: string;
   entryType: 'income' | 'expense';
   date: string;
+  area: string;
+  subarea: string;
   fileAttachments: FileAttachment[];
 }
 
@@ -194,6 +202,8 @@ export interface LedgerFilters {
   dateFrom?: string;
   dateTo?: string;
   searchTerm?: string;
+  area?: string;
+  subarea?: string;
 }
 
 export interface LedgerSummary {

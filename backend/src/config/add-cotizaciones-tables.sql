@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS cotizaciones_entries (
     bank_account VARCHAR(255) NOT NULL,
     entry_type VARCHAR(20) NOT NULL CHECK (entry_type IN ('income', 'expense')),
     transaction_date DATE NOT NULL,
+    area VARCHAR(255) NOT NULL, -- Required area field
+    subarea VARCHAR(255) NOT NULL, -- Required subarea field
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -38,6 +40,8 @@ CREATE INDEX IF NOT EXISTS idx_cotizaciones_entries_currency ON cotizaciones_ent
 CREATE INDEX IF NOT EXISTS idx_cotizaciones_entries_entry_type ON cotizaciones_entries(entry_type);
 CREATE INDEX IF NOT EXISTS idx_cotizaciones_entries_transaction_date ON cotizaciones_entries(transaction_date);
 CREATE INDEX IF NOT EXISTS idx_cotizaciones_entries_internal_id ON cotizaciones_entries(internal_id);
+CREATE INDEX IF NOT EXISTS idx_cotizaciones_entries_area ON cotizaciones_entries(area);
+CREATE INDEX IF NOT EXISTS idx_cotizaciones_entries_subarea ON cotizaciones_entries(subarea);
 CREATE INDEX IF NOT EXISTS idx_cotizaciones_attachments_cotizacion_entry_id ON cotizaciones_attachments(cotizacion_entry_id);
 
 -- Create trigger for updated_at column

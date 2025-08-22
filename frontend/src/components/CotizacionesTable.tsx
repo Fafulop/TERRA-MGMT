@@ -95,6 +95,9 @@ const CotizacionesTable: React.FC<CotizacionesTableProps> = ({
                 Concept
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Area & Subarea
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Bank Account
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -168,6 +171,15 @@ const CotizacionesTable: React.FC<CotizacionesTableProps> = ({
                       {entry.description}
                     </div>
                   )}
+                </td>
+                
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {entry.area}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {entry.subarea}
+                  </div>
                 </td>
                 
                 <td className="px-6 py-4 whitespace-nowrap">

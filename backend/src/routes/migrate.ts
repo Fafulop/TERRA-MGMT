@@ -284,4 +284,224 @@ router.post('/add-cotizaciones-tables', async (req, res) => {
   }
 });
 
+router.post('/add-area-subarea-cotizaciones', async (req, res) => {
+  try {
+    console.log('Starting migration to add area and subarea to cotizaciones_entries...');
+    
+    // Step 1: Add the columns
+    await pool.query(`
+      ALTER TABLE cotizaciones_entries 
+      ADD COLUMN IF NOT EXISTS area VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS subarea VARCHAR(255)
+    `);
+    console.log('✓ Added columns area and subarea');
+    
+    // Step 2: Update existing records with default values
+    const updateResult = await pool.query(`
+      UPDATE cotizaciones_entries 
+      SET area = 'General', subarea = 'Miscellaneous' 
+      WHERE area IS NULL OR subarea IS NULL
+    `);
+    console.log(`✓ Updated ${updateResult.rowCount} existing records with default values`);
+    
+    // Step 3: Make columns NOT NULL
+    await pool.query(`
+      ALTER TABLE cotizaciones_entries 
+      ALTER COLUMN area SET NOT NULL,
+      ALTER COLUMN subarea SET NOT NULL
+    `);
+    console.log('✓ Set columns as NOT NULL');
+    
+    // Step 4: Add indexes
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_cotizaciones_entries_area ON cotizaciones_entries(area)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_cotizaciones_entries_subarea ON cotizaciones_entries(subarea)
+    `);
+    console.log('✓ Added indexes for performance');
+    
+    console.log('Migration completed successfully!');
+    res.status(200).json({ 
+      message: 'Cotizaciones area/subarea migration completed successfully!',
+      table: 'cotizaciones_entries',
+      columns_added: ['area', 'subarea'],
+      indexes_added: ['idx_cotizaciones_entries_area', 'idx_cotizaciones_entries_subarea'],
+      records_updated: updateResult.rowCount
+    });
+    
+  } catch (error) {
+    console.error('Cotizaciones area/subarea migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to add area and subarea to cotizaciones_entries', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.post('/add-area-subarea-tasks', async (req, res) => {
+  try {
+    console.log('Starting migration to add area and subarea to tasks...');
+    
+    // Step 1: Add the columns
+    await pool.query(`
+      ALTER TABLE tasks 
+      ADD COLUMN IF NOT EXISTS area VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS subarea VARCHAR(255)
+    `);
+    console.log('✓ Added columns area and subarea');
+    
+    // Step 2: Update existing records with default values
+    const updateResult = await pool.query(`
+      UPDATE tasks 
+      SET area = 'General', subarea = 'Miscellaneous' 
+      WHERE area IS NULL OR subarea IS NULL
+    `);
+    console.log(`✓ Updated ${updateResult.rowCount} existing records with default values`);
+    
+    // Step 3: Make columns NOT NULL
+    await pool.query(`
+      ALTER TABLE tasks 
+      ALTER COLUMN area SET NOT NULL,
+      ALTER COLUMN subarea SET NOT NULL
+    `);
+    console.log('✓ Set columns as NOT NULL');
+    
+    // Step 4: Add indexes
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_tasks_area ON tasks(area)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_tasks_subarea ON tasks(subarea)
+    `);
+    console.log('✓ Added indexes for performance');
+    
+    console.log('Migration completed successfully!');
+    res.status(200).json({ 
+      message: 'Tasks area/subarea migration completed successfully!',
+      table: 'tasks',
+      columns_added: ['area', 'subarea'],
+      indexes_added: ['idx_tasks_area', 'idx_tasks_subarea'],
+      records_updated: updateResult.rowCount
+    });
+    
+  } catch (error) {
+    console.error('Tasks area/subarea migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to add area and subarea to tasks', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.post('/add-area-subarea-ledger-usd', async (req, res) => {
+  try {
+    console.log('Starting migration to add area and subarea to USD ledger_entries...');
+    
+    // Step 1: Add the columns
+    await pool.query(`
+      ALTER TABLE ledger_entries 
+      ADD COLUMN IF NOT EXISTS area VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS subarea VARCHAR(255)
+    `);
+    console.log('✓ Added columns area and subarea to ledger_entries');
+    
+    // Step 2: Update existing records with default values
+    const updateResult = await pool.query(`
+      UPDATE ledger_entries 
+      SET area = 'General', subarea = 'Miscellaneous' 
+      WHERE area IS NULL OR subarea IS NULL
+    `);
+    console.log(`✓ Updated ${updateResult.rowCount} existing USD ledger records with default values`);
+    
+    // Step 3: Make columns NOT NULL
+    await pool.query(`
+      ALTER TABLE ledger_entries 
+      ALTER COLUMN area SET NOT NULL,
+      ALTER COLUMN subarea SET NOT NULL
+    `);
+    console.log('✓ Set columns as NOT NULL');
+    
+    // Step 4: Add indexes
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ledger_entries_area ON ledger_entries(area)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ledger_entries_subarea ON ledger_entries(subarea)
+    `);
+    console.log('✓ Added indexes for performance');
+    
+    console.log('USD Ledger area/subarea migration completed successfully!');
+    res.status(200).json({ 
+      message: 'USD Ledger area/subarea migration completed successfully!',
+      table: 'ledger_entries',
+      columns_added: ['area', 'subarea'],
+      indexes_added: ['idx_ledger_entries_area', 'idx_ledger_entries_subarea'],
+      records_updated: updateResult.rowCount
+    });
+    
+  } catch (error) {
+    console.error('USD Ledger area/subarea migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to add area and subarea to USD ledger_entries', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.post('/add-area-subarea-ledger-mxn', async (req, res) => {
+  try {
+    console.log('Starting migration to add area and subarea to MXN ledger_entries_mxn...');
+    
+    // Step 1: Add the columns
+    await pool.query(`
+      ALTER TABLE ledger_entries_mxn 
+      ADD COLUMN IF NOT EXISTS area VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS subarea VARCHAR(255)
+    `);
+    console.log('✓ Added columns area and subarea to ledger_entries_mxn');
+    
+    // Step 2: Update existing records with default values
+    const updateResult = await pool.query(`
+      UPDATE ledger_entries_mxn 
+      SET area = 'General', subarea = 'Miscellaneous' 
+      WHERE area IS NULL OR subarea IS NULL
+    `);
+    console.log(`✓ Updated ${updateResult.rowCount} existing MXN ledger records with default values`);
+    
+    // Step 3: Make columns NOT NULL
+    await pool.query(`
+      ALTER TABLE ledger_entries_mxn 
+      ALTER COLUMN area SET NOT NULL,
+      ALTER COLUMN subarea SET NOT NULL
+    `);
+    console.log('✓ Set columns as NOT NULL');
+    
+    // Step 4: Add indexes
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ledger_entries_mxn_area ON ledger_entries_mxn(area)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ledger_entries_mxn_subarea ON ledger_entries_mxn(subarea)
+    `);
+    console.log('✓ Added indexes for performance');
+    
+    console.log('MXN Ledger area/subarea migration completed successfully!');
+    res.status(200).json({ 
+      message: 'MXN Ledger area/subarea migration completed successfully!',
+      table: 'ledger_entries_mxn',
+      columns_added: ['area', 'subarea'],
+      indexes_added: ['idx_ledger_entries_mxn_area', 'idx_ledger_entries_mxn_subarea'],
+      records_updated: updateResult.rowCount
+    });
+    
+  } catch (error) {
+    console.error('MXN Ledger area/subarea migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to add area and subarea to MXN ledger_entries_mxn', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

@@ -138,6 +138,20 @@ const TaskCard = ({ task }: TaskCardProps) => {
         <p className="text-gray-600 mb-4 text-sm">{task.description}</p>
       )}
 
+      {/* Area and Subarea */}
+      <div className="mb-4">
+        <div className="flex flex-wrap gap-2">
+          <div className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
+            <span className="mr-1">📍</span>
+            {task.area}
+          </div>
+          <div className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-cyan-100 text-cyan-800 border border-cyan-200">
+            <span className="mr-1">🔹</span>
+            {task.subarea}
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-wrap gap-2 mb-4">
         <span className={`px-2 py-1 rounded-full text-xs font-medium border ${priorityColor}`}>
           {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
@@ -200,6 +214,8 @@ export default React.memo(TaskCard, (prevProps, nextProps) => {
     prevProps.task.description === nextProps.task.description &&
     prevProps.task.priority === nextProps.task.priority &&
     prevProps.task.dueDate === nextProps.task.dueDate &&
+    prevProps.task.area === nextProps.task.area &&
+    prevProps.task.subarea === nextProps.task.subarea &&
     prevProps.task.updatedAt === nextProps.task.updatedAt &&
     prevProps.task.username === nextProps.task.username &&
     prevProps.task.firstName === nextProps.task.firstName &&

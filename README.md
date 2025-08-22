@@ -18,6 +18,14 @@ A comprehensive fullstack task management application built with React, Express.
 - ✅ **Multiple File Types** - Support for images, PDFs, and various document formats
 - ✅ **Attachment Management** - View, organize, and manage all task/comment attachments
 
+### Business Management
+- ✅ **Contacts Management** - Complete contact management with required Area/Subarea organization
+- ✅ **Documents Management** - Upload and organize business documents with mandatory categorization
+- ✅ **Ledger Accounting** - Track income and expenses with attached supporting documents
+- ✅ **Cash Flow Tracking** - Monitor financial transactions across different currencies (USD/MXN)
+- ✅ **Quotations System** - Create and manage business quotations with automated calculations
+- ✅ **Cross-User Visibility** - All users can view business data, but only owners can edit their entries
+
 ### User Experience
 - ✅ **User Authentication** - Secure register/login with JWT tokens
 - ✅ **Multi-user Support** - Collaborate with other users on tasks
@@ -60,7 +68,11 @@ A comprehensive fullstack task management application built with React, Express.
 - **Tasks Table** - Core task management with ownership tracking
 - **Comments Table** - Follow-up comments linked to specific tasks
 - **Attachments Table** - File and URL attachments for tasks and comments
-- **Foreign Key Relationships** - Proper data integrity and relationships
+- **Contacts Table** - Business contact management with area/subarea organization
+- **Documents Table** - Document management with mandatory categorization and file attachments
+- **Ledger Entries Table** - Financial transaction tracking with supporting documents
+- **Cotizaciones Table** - Business quotations with automated calculations
+- **Foreign Key Relationships** - Proper data integrity and relationships across all modules
 
 ## Performance Optimizations
 
@@ -150,6 +162,18 @@ curl -X POST http://localhost:5000/api/migrate/add-comments-table
 
 # Add attachments table (for file and URL attachments)
 curl -X POST http://localhost:5000/api/migrate/add-attachments-table
+
+# Add contacts table (for business contact management)
+curl -X POST http://localhost:5000/api/migrate/add-contacts-table
+
+# Add documents table (for document management)
+curl -X POST http://localhost:5000/api/migrate/add-documents-table
+
+# Add ledger tables (for financial tracking)
+curl -X POST http://localhost:5000/api/migrate/add-ledger-table
+
+# Add cotizaciones table (for quotations management)
+curl -X POST http://localhost:5000/api/migrate/add-cotizaciones-table
 ```
 
 5. Set up UploadThing (Required for file uploads):
@@ -215,7 +239,11 @@ task-manager-app/
 │   │   │   ├── authController.ts
 │   │   │   ├── taskController.ts
 │   │   │   ├── commentController.ts
-│   │   │   └── attachmentController.ts
+│   │   │   ├── attachmentController.ts
+│   │   │   ├── contactsController.ts
+│   │   │   ├── documentsController.ts
+│   │   │   ├── ledgerController.ts
+│   │   │   └── cotizacionesController.ts
 │   │   ├── middleware/     # Custom middleware
 │   │   │   └── auth.ts
 │   │   ├── routes/         # API routes
@@ -223,6 +251,10 @@ task-manager-app/
 │   │   │   ├── tasks.ts
 │   │   │   ├── comments.ts
 │   │   │   ├── attachments.ts
+│   │   │   ├── contacts.ts
+│   │   │   ├── documents.ts
+│   │   │   ├── ledger.ts
+│   │   │   ├── cotizaciones.ts
 │   │   │   ├── uploadthing.ts
 │   │   │   └── migrate.ts
 │   │   └── index.ts        # Server entry point
@@ -236,24 +268,44 @@ task-manager-app/
 │   │   │   ├── CommentForm.tsx
 │   │   │   ├── CommentList.tsx
 │   │   │   ├── TaskCard.tsx            # Memoized with optimistic updates
-│   │   │   └── AttachmentList.tsx
+│   │   │   ├── AttachmentList.tsx
+│   │   │   ├── ContactForm.tsx
+│   │   │   ├── ContactsTable.tsx
+│   │   │   ├── DocumentForm.tsx
+│   │   │   ├── DocumentsTable.tsx
+│   │   │   ├── DocumentFilesModal.tsx
+│   │   │   ├── LedgerForm.tsx
+│   │   │   └── CotizacionForm.tsx
 │   │   ├── contexts/       # React contexts
 │   │   │   └── AuthContext.tsx
 │   │   ├── hooks/          # Custom hooks for performance
 │   │   │   ├── useAttachmentManager.ts # Shared attachment logic
 │   │   │   ├── useTaskQueries.ts       # Optimized React Query hooks
+│   │   │   ├── useContactsQueries.ts   # Contact management queries
+│   │   │   ├── useDocumentsQueries.ts  # Document management queries
+│   │   │   ├── useLedgerQueries.ts     # Ledger management queries
+│   │   │   ├── useCotizacionesQueries.ts # Quotations management queries
 │   │   │   └── useDebounce.ts          # Debounced search functionality
 │   │   ├── pages/          # Page components (code-split with React.lazy)
 │   │   │   ├── Dashboard.tsx
 │   │   │   ├── TaskCreator.tsx         # Optimized with shared hooks
 │   │   │   ├── TaskDetail.tsx          # Enhanced caching
 │   │   │   ├── TaskEditor.tsx
-│   │   │   └── TaskList.tsx            # Memoized filtering & search
+│   │   │   ├── TaskList.tsx            # Memoized filtering & search
+│   │   │   ├── Contactos.tsx           # Contact management page
+│   │   │   ├── Documentos.tsx          # Document management page
+│   │   │   ├── Ledger.tsx              # Financial ledger page
+│   │   │   ├── LedgerMxn.tsx           # MXN currency ledger page
+│   │   │   └── Cotizaciones.tsx        # Quotations management page
 │   │   ├── services/       # API services
 │   │   │   ├── auth.ts
-│   │   │   └── tasks.ts
+│   │   │   ├── tasks.ts
+│   │   │   ├── contacts.ts
+│   │   │   ├── documents.ts
+│   │   │   ├── ledger.ts
+│   │   │   └── cotizaciones.ts
 │   │   ├── types/          # TypeScript types
-│   │   │   └── index.ts                # Enhanced with proper file types
+│   │   │   └── index.ts                # Enhanced with comprehensive business types
 │   │   └── main.tsx        # React entry point
 │   ├── package.json
 │   └── vite.config.ts
@@ -290,6 +342,36 @@ task-manager-app/
 - `POST /api/comments/:commentId/attachments` - Create comment attachment
 - `DELETE /api/attachments/:id` - Delete attachment (owner only)
 
+### Contacts
+- `GET /api/contacts` - Get all contacts with filtering and pagination
+- `POST /api/contacts` - Create new contact (requires auth)
+- `GET /api/contacts/summary` - Get contacts summary statistics
+- `GET /api/contacts/:id` - Get specific contact details
+- `PUT /api/contacts/:id` - Update contact (owner only)
+- `DELETE /api/contacts/:id` - Delete contact (owner only)
+
+### Documents
+- `GET /api/documents` - Get all documents with filtering and pagination
+- `POST /api/documents` - Create new document (requires auth, requires file attachments)
+- `GET /api/documents/summary` - Get documents summary statistics
+- `GET /api/documents/:id` - Get specific document details
+- `PUT /api/documents/:id` - Update document (owner only)
+- `DELETE /api/documents/:id` - Delete document (owner only)
+
+### Ledger
+- `GET /api/ledger` - Get ledger entries with filtering
+- `POST /api/ledger` - Create new ledger entry (requires auth)
+- `GET /api/ledger/summary` - Get financial summary
+- `PUT /api/ledger/:id` - Update ledger entry (owner only)
+- `DELETE /api/ledger/:id` - Delete ledger entry (owner only)
+
+### Cotizaciones
+- `GET /api/cotizaciones` - Get quotations with filtering
+- `POST /api/cotizaciones` - Create new quotation (requires auth)
+- `GET /api/cotizaciones/summary` - Get quotations summary
+- `PUT /api/cotizaciones/:id` - Update quotation (owner only)
+- `DELETE /api/cotizaciones/:id` - Delete quotation (owner only)
+
 ### File Upload
 - `POST /api/uploadthing` - UploadThing webhook handler
 - File upload endpoints are handled by UploadThing integration
@@ -298,6 +380,10 @@ task-manager-app/
 - `POST /api/init/db` - Initialize database tables
 - `POST /api/migrate/add-comments-table` - Add comments table
 - `POST /api/migrate/add-attachments-table` - Add attachments table
+- `POST /api/migrate/add-contacts-table` - Add contacts table
+- `POST /api/migrate/add-documents-table` - Add documents table
+- `POST /api/migrate/add-ledger-table` - Add ledger tables
+- `POST /api/migrate/add-cotizaciones-table` - Add cotizaciones table
 
 ## Application Features
 

@@ -4,6 +4,8 @@ import { generateCotizacionId } from '../utils/idGenerator';
 
 interface CotizacionesFormData extends BaseFinancialFormData {
   currency: 'USD' | 'MXN';
+  area: string;
+  subarea: string;
 }
 
 class CotizacionesController extends BaseFinancialController {
@@ -64,6 +66,18 @@ class CotizacionesController extends BaseFinancialController {
       if (filters.search) {
         whereClause += ` AND (e.concept ILIKE $${paramIndex} OR e.description ILIKE $${paramIndex})`;
         params.push(`%${filters.search}%`);
+        paramIndex++;
+      }
+
+      if (filters.area) {
+        whereClause += ` AND e.area ILIKE $${paramIndex}`;
+        params.push(`%${filters.area}%`);
+        paramIndex++;
+      }
+
+      if (filters.subarea) {
+        whereClause += ` AND e.subarea ILIKE $${paramIndex}`;
+        params.push(`%${filters.subarea}%`);
         paramIndex++;
       }
 
@@ -227,8 +241,8 @@ class CotizacionesController extends BaseFinancialController {
   }
 
   protected validateEntryData(data: CotizacionesFormData): void {
-    if (!data.amount || !data.currency || !data.concept || !data.bank_account || !data.entry_type || !data.transaction_date) {
-      throw new Error('Validation error: Missing required fields: amount, currency, concept, bank_account, entry_type, transaction_date');
+    if (!data.amount || !data.currency || !data.concept || !data.bank_account || !data.entry_type || !data.transaction_date || !data.area || !data.subarea) {
+      throw new Error('Validation error: Missing required fields: amount, currency, concept, bank_account, entry_type, transaction_date, area, subarea');
     }
 
     if (!['USD', 'MXN'].includes(data.currency)) {
@@ -237,6 +251,14 @@ class CotizacionesController extends BaseFinancialController {
 
     if (!['income', 'expense'].includes(data.entry_type)) {
       throw new Error('Validation error: Entry type must be income or expense');
+    }
+
+    if (!data.area.trim()) {
+      throw new Error('Validation error: Area cannot be empty');
+    }
+
+    if (!data.subarea.trim()) {
+      throw new Error('Validation error: Subarea cannot be empty');
     }
   }
 

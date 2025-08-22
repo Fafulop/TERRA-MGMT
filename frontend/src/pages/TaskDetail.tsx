@@ -201,6 +201,14 @@ const TaskDetail = () => {
                 <div className={`w-2 h-2 rounded-full mr-2 ${task.status === 'completed' ? 'bg-green-500' : task.status === 'in_progress' ? 'bg-blue-500' : 'bg-gray-400'}`}></div>
                 {task.status.replace('_', ' ').charAt(0).toUpperCase() + task.status.replace('_', ' ').slice(1)}
               </span>
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800 border border-indigo-200">
+                <span className="mr-1">📍</span>
+                {task.area}
+              </span>
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-cyan-100 text-cyan-800 border border-cyan-200">
+                <span className="mr-1">🔹</span>
+                {task.subarea}
+              </span>
               {task.dueDate && (
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 border border-purple-200">
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,6 +235,14 @@ const TaskDetail = () => {
                 <div>
                   <dt className="font-medium text-gray-500">Task ID</dt>
                   <dd className="mt-1 text-gray-900">#{task.id}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-gray-500">Area</dt>
+                  <dd className="mt-1 text-gray-900">{task.area}</dd>
+                </div>
+                <div>
+                  <dt className="font-medium text-gray-500">Subarea</dt>
+                  <dd className="mt-1 text-gray-900">{task.subarea}</dd>
                 </div>
                 <div>
                   <dt className="font-medium text-gray-500">Priority Level</dt>

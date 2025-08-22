@@ -21,6 +21,8 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
     bankMovementId: '',
     entryType: 'income',
     date: new Date().toISOString().split('T')[0], // Today's date
+    area: '',
+    subarea: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -74,6 +76,14 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
 
     if (!formData.date) {
       newErrors.date = 'Date is required';
+    }
+
+    if (!formData.area.trim()) {
+      newErrors.area = 'Area is required';
+    }
+
+    if (!formData.subarea.trim()) {
+      newErrors.subarea = 'Subarea is required';
     }
 
     setErrors(newErrors);
@@ -200,6 +210,49 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
           {errors.concept && (
             <p className="mt-1 text-sm text-red-600">{errors.concept}</p>
           )}
+        </div>
+
+        {/* Area and Subarea */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label htmlFor="area" className="block text-sm font-medium text-gray-700 mb-2">
+              Area *
+            </label>
+            <input
+              type="text"
+              id="area"
+              name="area"
+              value={formData.area}
+              onChange={handleInputChange}
+              className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                errors.area ? 'border-red-300' : 'border-gray-300'
+              }`}
+              placeholder="Enter area classification..."
+            />
+            {errors.area && (
+              <p className="mt-1 text-sm text-red-600">{errors.area}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="subarea" className="block text-sm font-medium text-gray-700 mb-2">
+              Subarea *
+            </label>
+            <input
+              type="text"
+              id="subarea"
+              name="subarea"
+              value={formData.subarea}
+              onChange={handleInputChange}
+              className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                errors.subarea ? 'border-red-300' : 'border-gray-300'
+              }`}
+              placeholder="Enter subarea classification..."
+            />
+            {errors.subarea && (
+              <p className="mt-1 text-sm text-red-600">{errors.subarea}</p>
+            )}
+          </div>
         </div>
 
         {/* Bank Account */}

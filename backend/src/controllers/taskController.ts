@@ -4,7 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 
 export const createTask = async (req: AuthRequest, res: Response) => {
   try {
-    const { title, description, priority = 'medium', dueDate } = req.body;
+    const { title, description, priority = 'medium', dueDate, area, subarea } = req.body;
     const userId = req.userId;
 
     if (!userId) {
@@ -15,15 +15,23 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Title is required' });
     }
 
+    if (!area || area.trim() === '') {
+      return res.status(400).json({ error: 'Area is required' });
+    }
+
+    if (!subarea || subarea.trim() === '') {
+      return res.status(400).json({ error: 'Subarea is required' });
+    }
+
     const validPriorities = ['low', 'medium', 'high'];
     if (!validPriorities.includes(priority)) {
       return res.status(400).json({ error: 'Invalid priority value' });
     }
 
     const query = `
-      INSERT INTO tasks (title, description, priority, due_date, user_id, status)
-      VALUES ($1, $2, $3, $4, $5, 'pending')
-      RETURNING id, title, description, priority, due_date, status, user_id, created_at, updated_at
+      INSERT INTO tasks (title, description, priority, due_date, area, subarea, user_id, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+      RETURNING id, title, description, priority, due_date, area, subarea, status, user_id, created_at, updated_at
     `;
 
     const values = [
@@ -31,6 +39,8 @@ export const createTask = async (req: AuthRequest, res: Response) => {
       description?.trim() || null,
       priority,
       dueDate || null,
+      area.trim(),
+      subarea.trim(),
       userId
     ];
 
@@ -45,6 +55,8 @@ export const createTask = async (req: AuthRequest, res: Response) => {
         description: task.description,
         priority: task.priority,
         dueDate: task.due_date,
+        area: task.area,
+        subarea: task.subarea,
         status: task.status,
         userId: task.user_id,
         createdAt: task.created_at,
@@ -71,7 +83,9 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
         t.title, 
         t.description, 
         t.priority, 
-        t.due_date, 
+        t.due_date,
+        t.area,
+        t.subarea,
         t.status, 
         t.user_id, 
         t.created_at, 
@@ -91,6 +105,8 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
       description: task.description,
       priority: task.priority,
       dueDate: task.due_date,
+      area: task.area,
+      subarea: task.subarea,
       status: task.status,
       userId: task.user_id,
       username: task.username,
@@ -122,7 +138,9 @@ export const getTaskById = async (req: AuthRequest, res: Response) => {
         t.title, 
         t.description, 
         t.priority, 
-        t.due_date, 
+        t.due_date,
+        t.area,
+        t.subarea,
         t.status, 
         t.user_id, 
         t.created_at, 
@@ -149,6 +167,8 @@ export const getTaskById = async (req: AuthRequest, res: Response) => {
         description: task.description,
         priority: task.priority,
         dueDate: task.due_date,
+        area: task.area,
+        subarea: task.subarea,
         status: task.status,
         userId: task.user_id,
         username: task.username,
@@ -167,7 +187,7 @@ export const getTaskById = async (req: AuthRequest, res: Response) => {
 export const updateTask = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, description, priority, status, dueDate } = req.body;
+    const { title, description, priority, status, dueDate, area, subarea } = req.body;
     const userId = req.userId;
 
     if (!userId) {
@@ -224,6 +244,22 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
       values.push(dueDate || null);
     }
 
+    if (area !== undefined) {
+      if (!area.trim()) {
+        return res.status(400).json({ error: 'Area cannot be empty' });
+      }
+      updates.push(`area = $${paramCount++}`);
+      values.push(area.trim());
+    }
+
+    if (subarea !== undefined) {
+      if (!subarea.trim()) {
+        return res.status(400).json({ error: 'Subarea cannot be empty' });
+      }
+      updates.push(`subarea = $${paramCount++}`);
+      values.push(subarea.trim());
+    }
+
     if (updates.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
@@ -235,7 +271,7 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
       UPDATE tasks
       SET ${updates.join(', ')}
       WHERE id = $${paramCount++} AND user_id = $${paramCount++}
-      RETURNING id, title, description, priority, due_date, status, user_id, created_at, updated_at
+      RETURNING id, title, description, priority, due_date, area, subarea, status, user_id, created_at, updated_at
     `;
 
     const result = await pool.query(query, values);
@@ -249,6 +285,8 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
         description: task.description,
         priority: task.priority,
         dueDate: task.due_date,
+        area: task.area,
+        subarea: task.subarea,
         status: task.status,
         userId: task.user_id,
         createdAt: task.created_at,

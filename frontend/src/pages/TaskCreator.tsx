@@ -16,7 +16,9 @@ const TaskCreator = () => {
     title: '',
     description: '',
     priority: 'medium',
-    dueDate: ''
+    dueDate: '',
+    area: '',
+    subarea: ''
   });
 
   // Attachment management
@@ -93,7 +95,7 @@ const TaskCreator = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.title.trim()) {
+    if (formData.title.trim() && formData.area.trim() && formData.subarea.trim()) {
       createTaskWithAttachmentsMutation.mutate({
         task: formData
       });
@@ -152,6 +154,41 @@ const TaskCreator = () => {
                 />
               </div>
 
+              {/* Area and Subarea */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="area" className="block text-sm font-medium text-gray-700 mb-2">
+                    Area *
+                  </label>
+                  <input
+                    type="text"
+                    id="area"
+                    name="area"
+                    required
+                    value={formData.area}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter area classification..."
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="subarea" className="block text-sm font-medium text-gray-700 mb-2">
+                    Subarea *
+                  </label>
+                  <input
+                    type="text"
+                    id="subarea"
+                    name="subarea"
+                    required
+                    value={formData.subarea}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter subarea classification..."
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
@@ -208,7 +245,7 @@ const TaskCreator = () => {
               <div className="flex gap-4">
                 <button
                   type="submit"
-                  disabled={createTaskWithAttachmentsMutation.isPending || !formData.title.trim()}
+                  disabled={createTaskWithAttachmentsMutation.isPending || !formData.title.trim() || !formData.area.trim() || !formData.subarea.trim()}
                   className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {createTaskWithAttachmentsMutation.isPending ? 'Creating Task...' : 'Create Task'}
