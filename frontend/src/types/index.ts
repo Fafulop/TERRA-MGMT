@@ -203,3 +203,117 @@ export interface LedgerSummary {
   periodStart: string;
   periodEnd: string;
 }
+
+// Contacts Types
+export interface Contact {
+  id: number;
+  user_id: number;
+  internal_id: string;
+  
+  // Basic contact information
+  name: string;
+  company?: string;
+  position?: string;
+  email?: string;
+  phone?: string;
+  mobile?: string;
+  
+  // Address information
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  
+  // Business information
+  contact_type: 'business' | 'client' | 'supplier' | 'partner' | 'prospect' | 'vendor';
+  status: 'active' | 'inactive' | 'archived';
+  area: string;
+  subarea: string;
+  industry?: string;
+  website?: string;
+  
+  // Additional information
+  notes?: string;
+  tags?: string[];
+  
+  // User information (available when viewing all contacts)
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  
+  // Metadata
+  created_at: string;
+  updated_at: string;
+  attachment_count?: number;
+  attachments?: ContactAttachment[];
+}
+
+export interface ContactAttachment {
+  id: number;
+  contact_id: number;
+  fileName: string;
+  fileUrl: string;
+  fileSize?: number;
+  fileType?: string;
+  attachmentType: 'file' | 'url';
+  urlTitle?: string;
+  createdAt: string;
+  uploadedBy: {
+    username: string;
+    firstName?: string;
+    lastName?: string;
+  };
+}
+
+export interface ContactFormData {
+  name: string;
+  company?: string;
+  position?: string;
+  email?: string;
+  phone?: string;
+  mobile?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  contact_type: 'business' | 'client' | 'supplier' | 'partner' | 'prospect' | 'vendor';
+  status: 'active' | 'inactive' | 'archived';
+  area: string;
+  subarea: string;
+  industry?: string;
+  website?: string;
+  notes?: string;
+  tags?: string[];
+  fileAttachments: FileAttachment[];
+}
+
+export interface ContactFilters {
+  contact_type?: string;
+  status?: string;
+  company?: string;
+  area?: string;
+  subarea?: string;
+  search?: string;
+}
+
+export interface ContactsResponse {
+  contacts: Contact[];
+  summary: ContactsSummary;
+  pagination: {
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+export interface ContactsSummary {
+  total_contacts: number;
+  active_contacts: number;
+  inactive_contacts: number;
+  clients: number;
+  suppliers: number;
+  partners: number;
+  prospects: number;
+}
