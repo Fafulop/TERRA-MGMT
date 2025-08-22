@@ -43,6 +43,7 @@ import ledgerRoutes from './routes/ledger';
 import ledgerMxnRoutes from './routes/ledgerMxn';
 import cotizacionesRoutes from './routes/cotizaciones';
 import contactsRoutes from './routes/contacts';
+import documentsRoutes from './routes/documents';
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from './routes/uploadthing';
 
@@ -66,6 +67,7 @@ app.use('/api/ledger', ledgerRoutes);
 app.use('/api/ledger-mxn', ledgerMxnRoutes);
 app.use('/api/cotizaciones', cotizacionesRoutes);
 app.use('/api/contacts', contactsRoutes);
+app.use('/api/documents', documentsRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {

@@ -317,3 +317,89 @@ export interface ContactsSummary {
   partners: number;
   prospects: number;
 }
+
+// Documents Types
+export interface Document {
+  id: number;
+  user_id: number;
+  internal_id: string;
+  
+  // Required document information
+  document_name: string;
+  area: string;
+  subarea: string;
+  
+  // Optional document information
+  description?: string;
+  document_type?: string;
+  version: string;
+  status: 'active' | 'archived' | 'draft';
+  tags?: string[];
+  
+  // User information (available when viewing all documents)
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  
+  // Metadata
+  created_at: string;
+  updated_at: string;
+  attachment_count?: number;
+  attachments?: DocumentAttachment[];
+}
+
+export interface DocumentAttachment {
+  id: number;
+  document_id: number;
+  fileName: string;
+  fileUrl: string;
+  fileSize?: number;
+  fileType?: string;
+  attachmentType: 'file' | 'url';
+  urlTitle?: string;
+  createdAt: string;
+  uploadedBy: {
+    username: string;
+    firstName?: string;
+    lastName?: string;
+  };
+}
+
+export interface DocumentFormData {
+  document_name: string;
+  area: string;
+  subarea: string;
+  description?: string;
+  document_type?: string;
+  version?: string;
+  status: 'active' | 'archived' | 'draft';
+  tags?: string[];
+  fileAttachments: FileAttachment[];
+}
+
+export interface DocumentFilters {
+  status?: string;
+  area?: string;
+  subarea?: string;
+  document_type?: string;
+  search?: string;
+}
+
+export interface DocumentsResponse {
+  documents: Document[];
+  summary: DocumentsSummary;
+  pagination: {
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
+export interface DocumentsSummary {
+  total_documents: number;
+  active_documents: number;
+  draft_documents: number;
+  archived_documents: number;
+  total_areas: number;
+  total_subareas: number;
+}
