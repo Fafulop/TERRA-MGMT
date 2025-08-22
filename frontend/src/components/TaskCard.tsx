@@ -166,6 +166,21 @@ const TaskCard = ({ task }: TaskCardProps) => {
       </div>
 
       <div className="text-xs text-gray-500 mt-3 space-y-1">
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
+            <div className="h-5 w-5 rounded-full bg-gray-300 flex items-center justify-center">
+              <span className="text-xs font-medium text-gray-700">
+                {task.firstName ? task.firstName[0] : task.username?.[0] || 'U'}
+              </span>
+            </div>
+            <span className="text-gray-700">
+              Created by {task.firstName && task.lastName 
+                ? `${task.firstName} ${task.lastName}`
+                : task.username || 'Unknown User'
+              }
+            </span>
+          </div>
+        </div>
         <div>Created: {formatDateTime(task.createdAt)}</div>
         {task.updatedAt !== task.createdAt && (
           <div>Updated: {formatDateTime(task.updatedAt)}</div>
@@ -185,6 +200,9 @@ export default React.memo(TaskCard, (prevProps, nextProps) => {
     prevProps.task.description === nextProps.task.description &&
     prevProps.task.priority === nextProps.task.priority &&
     prevProps.task.dueDate === nextProps.task.dueDate &&
-    prevProps.task.updatedAt === nextProps.task.updatedAt
+    prevProps.task.updatedAt === nextProps.task.updatedAt &&
+    prevProps.task.username === nextProps.task.username &&
+    prevProps.task.firstName === nextProps.task.firstName &&
+    prevProps.task.lastName === nextProps.task.lastName
   );
 });

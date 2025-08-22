@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import FileUpload from '../components/FileUpload';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -41,7 +40,7 @@ const Dashboard: React.FC = () => {
       
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-8">
             {/* Task Management Section */}
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">
@@ -90,48 +89,52 @@ const Dashboard: React.FC = () => {
               <p className="text-gray-500">Manage your quotes and quotations in multiple currencies!</p>
             </div>
 
-            {/* File Upload Section */}
+            {/* Areas Section */}
             <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-                File Uploads
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">Upload Images</h3>
-                  <FileUpload 
-                    uploaderType="imageUploader"
-                    variant="button"
-                    onUploadComplete={(files) => {
-                      console.log('Images uploaded:', files);
-                      alert(`Successfully uploaded ${files.length} image(s)!`);
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">Upload PDFs</h3>
-                  <FileUpload 
-                    uploaderType="pdfUploader"
-                    variant="button"
-                    onUploadComplete={(files) => {
-                      console.log('PDFs uploaded:', files);
-                      alert(`Successfully uploaded ${files.length} PDF(s)!`);
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">Drag & Drop Zone (Images)</h3>
-                  <FileUpload 
-                    uploaderType="imageUploader"
-                    variant="dropzone"
-                    onUploadComplete={(files) => {
-                      console.log('Files uploaded via dropzone:', files);
-                      alert(`Successfully uploaded ${files.length} file(s)!`);
-                    }}
-                  />
-                </div>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Areas
+                </h2>
+                <button
+                  onClick={() => navigate('/areas')}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  Manage Areas
+                </button>
               </div>
+              <p className="text-gray-500">Manage organizational areas and departments!</p>
+            </div>
+
+            {/* Contactos Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Contactos
+                </h2>
+                <button
+                  onClick={() => navigate('/contactos')}
+                  className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                >
+                  Manage Contacts
+                </button>
+              </div>
+              <p className="text-gray-500">Manage your business contacts and relationships!</p>
+            </div>
+
+            {/* Documentos Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Documentos
+                </h2>
+                <button
+                  onClick={() => navigate('/documentos')}
+                  className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                >
+                  Manage Documents
+                </button>
+              </div>
+              <p className="text-gray-500">Manage and organize your business documents!</p>
             </div>
           </div>
         </div>

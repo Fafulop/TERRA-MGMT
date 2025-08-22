@@ -15,6 +15,9 @@ const TaskDetail = React.lazy(() => import('./pages/TaskDetail'))
 const TaskList = React.lazy(() => import('./pages/TaskList'))
 const CashFlow = React.lazy(() => import('./pages/CashFlow'))
 const Cotizaciones = React.lazy(() => import('./pages/Cotizaciones'))
+const Areas = React.lazy(() => import('./pages/Areas'))
+const Contactos = React.lazy(() => import('./pages/Contactos'))
+const Documentos = React.lazy(() => import('./pages/Documentos'))
 
 const queryClient = new QueryClient()
 
@@ -47,6 +50,9 @@ function App() {
                 <Route path="/tasks" element={<TaskList />} />
                 <Route path="/cash-flow" element={<CashFlow />} />
                 <Route path="/cotizaciones" element={<Cotizaciones />} />
+                <Route path="/areas" element={<Areas />} />
+                <Route path="/contactos" element={<Contactos />} />
+                <Route path="/documentos" element={<Documentos />} />
                 <Route path="/" element={<Dashboard />} />
               </Routes>
             </Suspense>

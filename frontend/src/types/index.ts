@@ -16,6 +16,10 @@ export interface Task {
   priority: 'low' | 'medium' | 'high';
   dueDate?: string;
   userId: number;
+  // User information (available when viewing all tasks)
+  username?: string;
+  firstName?: string;
+  lastName?: string;
   createdAt: string;
   updatedAt: string;
 }

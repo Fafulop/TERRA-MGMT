@@ -66,9 +66,22 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
     }
 
     const query = `
-      SELECT id, title, description, priority, due_date, status, user_id, created_at, updated_at
-      FROM tasks
-      ORDER BY created_at DESC
+      SELECT 
+        t.id, 
+        t.title, 
+        t.description, 
+        t.priority, 
+        t.due_date, 
+        t.status, 
+        t.user_id, 
+        t.created_at, 
+        t.updated_at,
+        u.username,
+        u.first_name,
+        u.last_name
+      FROM tasks t
+      LEFT JOIN users u ON t.user_id = u.id
+      ORDER BY t.created_at DESC
     `;
 
     const result = await pool.query(query);
@@ -80,6 +93,9 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
       dueDate: task.due_date,
       status: task.status,
       userId: task.user_id,
+      username: task.username,
+      firstName: task.first_name,
+      lastName: task.last_name,
       createdAt: task.created_at,
       updatedAt: task.updated_at
     }));
@@ -101,9 +117,22 @@ export const getTaskById = async (req: AuthRequest, res: Response) => {
     }
 
     const query = `
-      SELECT id, title, description, priority, due_date, status, user_id, created_at, updated_at
-      FROM tasks
-      WHERE id = $1
+      SELECT 
+        t.id, 
+        t.title, 
+        t.description, 
+        t.priority, 
+        t.due_date, 
+        t.status, 
+        t.user_id, 
+        t.created_at, 
+        t.updated_at,
+        u.username,
+        u.first_name,
+        u.last_name
+      FROM tasks t
+      LEFT JOIN users u ON t.user_id = u.id
+      WHERE t.id = $1
     `;
 
     const result = await pool.query(query, [id]);
@@ -122,6 +151,9 @@ export const getTaskById = async (req: AuthRequest, res: Response) => {
         dueDate: task.due_date,
         status: task.status,
         userId: task.user_id,
+        username: task.username,
+        firstName: task.first_name,
+        lastName: task.last_name,
         createdAt: task.created_at,
         updatedAt: task.updated_at
       }
