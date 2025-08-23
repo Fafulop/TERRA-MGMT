@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { Pool } from 'pg';
 import db from '../config/database';
 import { AuthRequest } from '../middleware/auth';
+import { mapLedgerEntries, mapLedgerEntryWithAttachments, DatabaseLedgerEntry } from '../utils/ledgerMappers';
+import { buildLedgerFilters, buildLedgerEntriesQuery, buildSingleLedgerEntryQuery, buildLedgerSummaryQuery, LedgerQueryFilters } from '../utils/queryBuilders';
 
 // Generate unique internal ID for ledger entries
 const generateInternalId = (): string => {
@@ -18,114 +20,41 @@ export const getLedgerEntries = async (req: AuthRequest, res: Response) => {
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
+    
     const { 
       entryType, 
       bankAccount, 
       dateFrom, 
       dateTo, 
       search,
+      por_realizar,
       limit = 50,
       offset = 0 
     } = req.query;
 
-    let query = `
-      SELECT 
-        le.*,
-        le.transaction_date as date,
-        le.por_realizar,
-        u.username,
-        u.first_name,
-        u.last_name,
-        COUNT(la.id) as attachment_count
-      FROM ledger_entries le
-      LEFT JOIN ledger_attachments la ON le.id = la.ledger_entry_id
-      LEFT JOIN users u ON le.user_id = u.id
-      WHERE 1=1
-    `;
+    // Build filters using utility function
+    const filters: LedgerQueryFilters = {
+      entryType: entryType as string,
+      bankAccount: bankAccount as string,
+      dateFrom: dateFrom as string,
+      dateTo: dateTo as string,
+      search: search as string,
+      por_realizar: por_realizar as string
+    };
+
+    const filterResult = buildLedgerFilters(filters, 2);
+    const query = buildLedgerEntriesQuery('ledger_entries', 'ledger_attachments', filterResult.whereClause) + 
+      ` LIMIT $${filterResult.paramIndex} OFFSET $${filterResult.paramIndex + 1}`;
     
-    const queryParams: any[] = [];
-    let paramIndex = 1;
-
-    // Add filters
-    if (entryType && entryType !== 'all') {
-      query += ` AND le.entry_type = $${paramIndex}`;
-      queryParams.push(entryType);
-      paramIndex++;
-    }
-
-    if (bankAccount) {
-      query += ` AND le.bank_account = $${paramIndex}`;
-      queryParams.push(bankAccount);
-      paramIndex++;
-    }
-
-    if (dateFrom) {
-      query += ` AND le.transaction_date >= $${paramIndex}`;
-      queryParams.push(dateFrom);
-      paramIndex++;
-    }
-
-    if (dateTo) {
-      query += ` AND le.transaction_date <= $${paramIndex}`;
-      queryParams.push(dateTo);
-      paramIndex++;
-    }
-
-    if (search) {
-      query += ` AND (
-        le.concept ILIKE $${paramIndex} OR 
-        le.internal_id ILIKE $${paramIndex} OR 
-        le.bank_movement_id ILIKE $${paramIndex} OR
-        le.area ILIKE $${paramIndex} OR
-        le.subarea ILIKE $${paramIndex}
-      )`;
-      queryParams.push(`%${search}%`);
-      paramIndex++;
-    }
-
-    query += `
-      GROUP BY le.id, u.username, u.first_name, u.last_name
-      ORDER BY le.transaction_date DESC, le.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `;
-    
-    queryParams.push(limit, offset);
+    const queryParams = [userId, ...filterResult.queryParams, limit, offset];
 
     const result = await db.query(query, queryParams);
     
-    // Map database columns to camelCase for frontend
-    const mappedEntries = result.rows.map((row: any) => ({
-      id: row.id,
-      amount: parseFloat(row.amount),
-      concept: row.concept,
-      bankAccount: row.bank_account,
-      internalId: row.internal_id,
-      bankMovementId: row.bank_movement_id,
-      entryType: row.entry_type,
-      date: row.transaction_date,
-      area: row.area,
-      subarea: row.subarea,
-      por_realizar: row.por_realizar,
-      userId: row.user_id,
-      username: row.username,
-      firstName: row.first_name,
-      lastName: row.last_name,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      attachmentCount: parseInt(row.attachment_count) || 0
-    }));
+    // Use utility function for mapping
+    const mappedEntries = mapLedgerEntries(result.rows as DatabaseLedgerEntry[]);
     
-    // Get summary totals for all users
-    const summaryQuery = `
-      SELECT 
-        COALESCE(SUM(CASE WHEN entry_type = 'income' THEN amount ELSE 0 END), 0) as total_income,
-        COALESCE(SUM(CASE WHEN entry_type = 'expense' THEN ABS(amount) ELSE 0 END), 0) as total_expenses,
-        COALESCE(SUM(amount), 0) as net_cash_flow,
-        COUNT(*) as total_entries
-      FROM ledger_entries 
-      WHERE 1=1
-    `;
-    
+    // Get summary totals using utility function
+    const summaryQuery = buildLedgerSummaryQuery('ledger_entries');
     const summaryResult = await db.query(summaryQuery);
     
     res.json({
@@ -153,19 +82,8 @@ export const getLedgerEntry = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Get ledger entry with user information
-    const entryQuery = `
-      SELECT 
-        le.*,
-        le.transaction_date as date,
-        le.por_realizar,
-        u.username,
-        u.first_name,
-        u.last_name
-      FROM ledger_entries le
-      LEFT JOIN users u ON le.user_id = u.id
-      WHERE le.id = $1
-    `;
+    // Get ledger entry with user information using utility function
+    const entryQuery = buildSingleLedgerEntryQuery('ledger_entries', 'ledger_attachments');
     const entryResult = await db.query(entryQuery, [id]);
 
     if (entryResult.rows.length === 0) {
@@ -187,40 +105,13 @@ export const getLedgerEntry = async (req: AuthRequest, res: Response) => {
     const attachmentsResult = await db.query(attachmentsQuery, [id]);
 
     const entry = entryResult.rows[0];
-    const mappedEntry = {
-      id: entry.id,
-      amount: parseFloat(entry.amount),
-      concept: entry.concept,
-      bankAccount: entry.bank_account,
-      internalId: entry.internal_id,
-      bankMovementId: entry.bank_movement_id,
-      entryType: entry.entry_type,
-      date: entry.transaction_date,
-      area: entry.area,
-      subarea: entry.subarea,
-      por_realizar: entry.por_realizar,
-      userId: entry.user_id,
-      username: entry.username,
-      firstName: entry.first_name,
-      lastName: entry.last_name,
-      createdAt: entry.created_at,
-      updatedAt: entry.updated_at,
-      attachments: attachmentsResult.rows.map((att: any) => ({
-        id: att.id,
-        ledgerEntryId: att.ledger_entry_id,
-        fileName: att.file_name,
-        fileUrl: att.file_url,
-        fileSize: att.file_size,
-        fileType: att.file_type,
-        attachmentType: att.attachment_type,
-        createdAt: att.created_at,
-        uploadedBy: {
-          username: att.username,
-          firstName: att.first_name,
-          lastName: att.last_name
-        }
-      }))
+    // Manually add attachments to entry object for utility function
+    const entryWithAttachments = {
+      ...entry,
+      attachments: attachmentsResult.rows
     };
+    
+    const mappedEntry = mapLedgerEntryWithAttachments(entryWithAttachments as DatabaseLedgerEntry & { attachments: any[] });
 
     res.json(mappedEntry);
   } catch (error) {
@@ -356,24 +247,8 @@ export const createLedgerEntry = async (req: AuthRequest, res: Response) => {
     const completeResult = await db.query(completeEntryQuery, [ledgerEntry.id]);
     const entry = completeResult.rows[0];
     
-    // Map to camelCase for frontend
-    const mappedEntry = {
-      id: entry.id,
-      amount: parseFloat(entry.amount),
-      concept: entry.concept,
-      bankAccount: entry.bank_account,
-      internalId: entry.internal_id,
-      bankMovementId: entry.bank_movement_id,
-      entryType: entry.entry_type,
-      date: entry.transaction_date,
-      area: entry.area,
-      subarea: entry.subarea,
-      por_realizar: entry.por_realizar,
-      userId: entry.user_id,
-      createdAt: entry.created_at,
-      updatedAt: entry.updated_at,
-      attachments: entry.attachments || []
-    };
+    // Use utility function for mapping
+    const mappedEntry = mapLedgerEntryWithAttachments(entry as DatabaseLedgerEntry & { attachments: any[] });
     
     res.status(201).json(mappedEntry);
   } catch (error) {
@@ -456,23 +331,8 @@ export const updateLedgerEntry = async (req: AuthRequest, res: Response) => {
     const result = await db.query(updateQuery, updateValues);
     const entry = result.rows[0];
     
-    // Map to camelCase for frontend
-    const mappedEntry = {
-      id: entry.id,
-      amount: parseFloat(entry.amount),
-      concept: entry.concept,
-      bankAccount: entry.bank_account,
-      internalId: entry.internal_id,
-      bankMovementId: entry.bank_movement_id,
-      entryType: entry.entry_type,
-      date: entry.transaction_date,
-      area: entry.area,
-      subarea: entry.subarea,
-      por_realizar: entry.por_realizar,
-      userId: entry.user_id,
-      createdAt: entry.created_at,
-      updatedAt: entry.updated_at
-    };
+    // Use utility function for mapping
+    const mappedEntry = mapLedgerEntryWithAttachments(entry as DatabaseLedgerEntry & { attachments: any[] });
     
     res.json(mappedEntry);
   } catch (error) {
