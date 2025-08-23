@@ -1,10 +1,9 @@
-import { useQuery, useMutation, useQueryClient, UseQueryResult, UseMutationResult } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { 
   BaseFinancialService,
   BaseFinancialEntry, 
   BaseFinancialFormData, 
-  BaseFinancialFilters,
-  BaseFinancialEntriesResponse
+  BaseFinancialFilters
 } from '../services/BaseFinancialService';
 
 // Generic query key factory

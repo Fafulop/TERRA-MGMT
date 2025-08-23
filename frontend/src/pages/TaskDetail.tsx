@@ -19,7 +19,7 @@ const TaskDetail = () => {
 
   // Fetch the task details using optimized hook
   const taskId = id ? parseInt(id) : 0;
-  const { data: task, isLoading, error, refetch } = useTaskOptimized(taskId);
+  const { data: task, isLoading, error } = useTaskOptimized(taskId);
 
   const updateStatusMutation = useMutation({
     mutationFn: (newStatus: string) => 

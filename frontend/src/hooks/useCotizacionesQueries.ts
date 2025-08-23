@@ -1,9 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
 import { 
-  cotizacionesService, 
-  CotizacionesEntry, 
-  CotizacionesEntryFormData, 
-  CotizacionesFilters 
+  cotizacionesService
 } from '../services/cotizaciones';
 import { createFinancialHooks } from './useBaseFinancialQueries';
 

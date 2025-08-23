@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LedgerEntryForm from '../components/LedgerEntryForm';
 import LedgerTable from '../components/LedgerTable';
 import { LedgerEntryFormData, LedgerFilters } from '../types';
-import { useLedgerEntries, useCreateLedgerEntry, useUpdateLedgerEntry, useDeleteLedgerEntry, useLedgerEntry, useMarkLedgerAsRealized } from '../hooks/useLedgerQueries';
-import { useLedgerMxnEntries, useCreateLedgerMxnEntry, useUpdateLedgerMxnEntry, useDeleteLedgerMxnEntry, useLedgerMxnEntry, useMarkLedgerMxnAsRealized } from '../hooks/useLedgerMxnQueries';
+import { useLedgerEntries, useCreateLedgerEntry, useDeleteLedgerEntry, useMarkLedgerAsRealized } from '../hooks/useLedgerQueries';
+import { useLedgerMxnEntries, useCreateLedgerMxnEntry, useDeleteLedgerMxnEntry, useMarkLedgerMxnAsRealized as useMarkLedgerMxnAsRealized } from '../hooks/useLedgerMxnQueries';
 
 type Currency = 'USD' | 'MXN';
 
@@ -13,20 +13,18 @@ const CashFlow = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showEntryForm, setShowEntryForm] = useState(false);
-  const [filters, setFilters] = useState<LedgerFilters>({});
+  const [filters] = useState<LedgerFilters>({});
   const [activeCurrency, setActiveCurrency] = useState<Currency>('USD');
 
   // USD React Query hooks
   const { data: usdLedgerData, isLoading: usdIsLoading, error: usdError, refetch: usdRefetch } = useLedgerEntries(filters);
   const createUsdEntryMutation = useCreateLedgerEntry();
-  const updateUsdEntryMutation = useUpdateLedgerEntry();
   const deleteUsdEntryMutation = useDeleteLedgerEntry();
   const markUsdAsRealizedMutation = useMarkLedgerAsRealized();
 
   // MXN React Query hooks
   const { data: mxnLedgerData, isLoading: mxnIsLoading, error: mxnError, refetch: mxnRefetch } = useLedgerMxnEntries(filters);
   const createMxnEntryMutation = useCreateLedgerMxnEntry();
-  const updateMxnEntryMutation = useUpdateLedgerMxnEntry();
   const deleteMxnEntryMutation = useDeleteLedgerMxnEntry();
   const markMxnAsRealizedMutation = useMarkLedgerMxnAsRealized();
 

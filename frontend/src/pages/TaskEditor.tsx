@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { TaskFormData, Task } from '../types';
+import { TaskFormData } from '../types';
 import { taskService } from '../services/tasks';
 import AreaSubareaSelector from '../components/AreaSubareaSelector';
 

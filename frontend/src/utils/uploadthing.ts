@@ -3,7 +3,8 @@ import {
   generateUploadDropzone,
 } from "@uploadthing/react";
 
-import type { OurFileRouter } from "../../../backend/src/routes/uploadthing";
+// import type { OurFileRouter } from "../../../backend/src/routes/uploadthing";
+type OurFileRouter = any; // Temporary fix for deployment
 
 // Get the backend URL without the /api suffix for UploadThing
 const getUploadThingUrl = () => {

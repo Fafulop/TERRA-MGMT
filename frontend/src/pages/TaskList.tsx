@@ -1,20 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import TaskCard from '../components/TaskCard';
-import { Task } from '../types';
 import { useTasksOptimized, useTaskPrefetching } from '../hooks/useTaskQueries';
 import { useDebouncedSearch } from '../hooks/useDebounce';
 
 const TaskList = () => {
   const navigate = useNavigate();
-  const { user, token, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [filter, setFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('createdAt');
   
   // Use optimized query hook
   const { data: tasks = [], isLoading, error, refetch } = useTasksOptimized();
-  const { prefetchTaskList } = useTaskPrefetching();
   
   // Debounced search functionality
   const { searchValue, debouncedSearchValue, setSearchValue } = useDebouncedSearch('', 300);

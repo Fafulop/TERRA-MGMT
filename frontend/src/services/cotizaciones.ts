@@ -5,7 +5,6 @@ import {
   BaseFinancialFilters,
   BaseFinancialEntriesResponse 
 } from './BaseFinancialService';
-import { FileAttachment } from '../types';
 
 // Cotizaciones-specific types extending base types
 export interface CotizacionesEntry extends BaseFinancialEntry {

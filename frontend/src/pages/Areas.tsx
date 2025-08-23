@@ -18,7 +18,7 @@ const Areas: React.FC = () => {
   const [showSubareaModal, setShowSubareaModal] = useState(false);
   const [editingArea, setEditingArea] = useState<AreaWithSubareas | null>(null);
   const [editingSubarea, setEditingSubarea] = useState<Subarea | null>(null);
-  const [selectedAreaForSubarea, setSelectedAreaForSubarea] = useState<number | null>(null);
+  const [, setSelectedAreaForSubarea] = useState<number | null>(null);
   
   // Form states
   const [areaForm, setAreaForm] = useState<AreaFormData>({ name: '', description: '' });

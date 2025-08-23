@@ -162,5 +162,3 @@ export const getDisplayConversion = async (
   }
 };
 
-// Export types for use in other files
-export type { ConversionResult };

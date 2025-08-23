@@ -1,7 +1,7 @@
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { taskService, commentService, attachmentService } from '../services/tasks';
-import { Task, Comment, Attachment } from '../types';
+import { Comment, Attachment } from '../types';
 
 // Custom hook for prefetching task details
 export const useTaskPrefetching = () => {

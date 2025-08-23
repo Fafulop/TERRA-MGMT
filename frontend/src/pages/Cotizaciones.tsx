@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import CotizacionesEntryForm from '../components/CotizacionesEntryForm';
@@ -20,7 +20,6 @@ const Cotizaciones = () => {
   // React Query hooks
   const { data: cotizacionesData, isLoading, error, refetch } = useCotizacionesEntries(filters);
   const createEntryMutation = useCreateCotizacionesEntry();
-  const updateEntryMutation = useUpdateCotizacionesEntry();
   const deleteEntryMutation = useDeleteCotizacionesEntry();
 
   if (!user) {
@@ -333,7 +332,7 @@ const Cotizaciones = () => {
 
           {/* Cotizaciones Table */}
           <CotizacionesTable
-            entries={cotizacionesData?.entries || []}
+            entries={cotizacionesData?.entries as any[] || []}
             onEditEntry={handleEditEntry}
             onDeleteEntry={handleDeleteEntry}
             onViewAttachments={handleViewAttachments}
