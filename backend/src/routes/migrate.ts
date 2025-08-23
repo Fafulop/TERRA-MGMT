@@ -853,4 +853,80 @@ router.get('/check-por-realizar-column', async (req: Request, res: Response) => 
   }
 });
 
+// Add contacts tables migration
+router.post('/add-contacts-tables', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting contacts tables migration...');
+    
+    // Read and execute the contacts migration SQL file
+    const sqlPath = path.join(__dirname, '..', 'config', 'add-contacts-tables.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+    
+    // Execute the SQL migration
+    await pool.query(sqlContent);
+
+    res.status(200).json({ 
+      message: 'Contacts tables created successfully!',
+      tables: ['contacts', 'contact_attachments'],
+      indexes: [
+        'idx_contacts_user_id',
+        'idx_contacts_internal_id',
+        'idx_contacts_name',
+        'idx_contacts_company',
+        'idx_contacts_email',
+        'idx_contacts_contact_type',
+        'idx_contacts_status',
+        'idx_contacts_created_at',
+        'idx_contact_attachments_contact_id',
+        'idx_contact_attachments_uploaded_by'
+      ],
+      triggers: ['trigger_contacts_updated_at']
+    });
+  } catch (error) {
+    console.error('Contacts migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create contacts tables', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Add documents tables migration
+router.post('/add-documents-tables', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting documents tables migration...');
+    
+    // Read and execute the documents migration SQL file
+    const sqlPath = path.join(__dirname, '..', 'config', 'add-documents-tables.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+    
+    // Execute the SQL migration
+    await pool.query(sqlContent);
+
+    res.status(200).json({ 
+      message: 'Documents tables created successfully!',
+      tables: ['documents', 'document_attachments'],
+      indexes: [
+        'idx_documents_user_id',
+        'idx_documents_internal_id',
+        'idx_documents_name',
+        'idx_documents_area',
+        'idx_documents_subarea',
+        'idx_documents_status',
+        'idx_documents_created_at',
+        'idx_document_attachments_document_id',
+        'idx_document_attachments_uploaded_by'
+      ],
+      triggers: ['trigger_documents_updated_at'],
+      constraints: ['check_document_name_not_empty', 'check_area_not_empty', 'check_subarea_not_empty']
+    });
+  } catch (error) {
+    console.error('Documents migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create documents tables', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
