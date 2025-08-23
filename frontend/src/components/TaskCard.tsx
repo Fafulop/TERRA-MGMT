@@ -14,7 +14,7 @@ const TaskCard = ({ task }: TaskCardProps) => {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [, setIsUpdating] = useState(false);
   const { prefetchTaskDetail } = useTaskPrefetching();
 
   // Memoize color calculations to prevent unnecessary recalculations
@@ -50,7 +50,7 @@ const TaskCard = ({ task }: TaskCardProps) => {
       
       return { previousTasks };
     },
-    onError: (err, newStatus, context) => {
+    onError: (_err, _newStatus, context) => {
       // Revert on error
       queryClient.setQueryData(['tasks'], context?.previousTasks);
     },

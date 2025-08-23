@@ -143,7 +143,7 @@ const AreaContentDisplay: React.FC<AreaContentDisplayProps> = ({
           <div className="text-sm text-gray-600">Tasks</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-slate-600">{counts.personalTasks || 0}</div>
+          <div className="text-2xl font-bold text-slate-600">{(counts as any).personalTasks || 0}</div>
           <div className="text-sm text-gray-600">Personal Tasks</div>
         </div>
         <div className="text-center">

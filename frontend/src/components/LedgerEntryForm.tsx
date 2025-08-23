@@ -35,8 +35,7 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
     handleFileUpload,
     addFileAttachment,
     updateFileAttachment,
-    removeFileAttachment,
-    resetAttachments
+    removeFileAttachment
   } = useAttachmentManager();
 
   const bankAccounts = [

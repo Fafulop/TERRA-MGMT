@@ -7,7 +7,6 @@ import { CotizacionesEntryFormData, CotizacionesFilters } from '../services/coti
 import { 
   useCotizacionesEntries, 
   useCreateCotizacionesEntry, 
-  useUpdateCotizacionesEntry, 
   useDeleteCotizacionesEntry 
 } from '../hooks/useCotizacionesQueries';
 

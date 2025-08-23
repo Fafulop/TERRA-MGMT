@@ -147,7 +147,7 @@ const CommentForm = ({ taskId, onCommentAdded }: CommentFormProps) => {
     setUploadedFiles([]);
     setFileAttachments([]);
     setUrlAttachments([]);
-    setUrlForm({ url: '', title: '', description: '' });
+    setUrlForm({ url: '', title: '' });
     setShowAttachments(false);
   };
 

@@ -15,7 +15,7 @@ const CommentList = ({ taskId }: CommentListProps) => {
   const queryClient = useQueryClient();
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editFormData, setEditFormData] = useState<CommentFormData>({ comment: '' });
-  const [showAttachmentsFor, setShowAttachmentsFor] = useState<number | null>(null);
+  const [, setShowAttachmentsFor] = useState<number | null>(null);
   const [addingAttachmentTo, setAddingAttachmentTo] = useState<number | null>(null);
 
   const { data: comments = [], isLoading, error } = useQuery({

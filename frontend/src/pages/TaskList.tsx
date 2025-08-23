@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import TaskCard from '../components/TaskCard';
-import { useTasksOptimized, useTaskPrefetching } from '../hooks/useTaskQueries';
+import { useTasksOptimized } from '../hooks/useTaskQueries';
 import { useDebouncedSearch } from '../hooks/useDebounce';
 
 const TaskList = () => {

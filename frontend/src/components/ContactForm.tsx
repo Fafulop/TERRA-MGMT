@@ -57,10 +57,10 @@ const ContactForm: React.FC<ContactFormProps> = ({
   };
 
   const handleAddTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+    if (tagInput.trim() && !formData.tags?.includes(tagInput.trim())) {
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, tagInput.trim()]
+        tags: [...(prev.tags || []), tagInput.trim()]
       }));
       setTagInput('');
     }
@@ -69,7 +69,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
   const handleRemoveTag = (tagToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+      tags: prev.tags?.filter(tag => tag !== tagToRemove) || []
     }));
   };
 
@@ -382,9 +382,9 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 Add
               </button>
             </div>
-            {formData.tags.length > 0 && (
+            {formData.tags && formData.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {formData.tags.map((tag, index) => (
+                {formData.tags?.map((tag, index) => (
                   <span
                     key={index}
                     className="inline-flex items-center px-2 py-1 bg-teal-100 text-teal-800 text-sm rounded-full"

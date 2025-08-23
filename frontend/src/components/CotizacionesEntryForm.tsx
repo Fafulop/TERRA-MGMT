@@ -37,8 +37,7 @@ const CotizacionesEntryForm: React.FC<CotizacionesEntryFormProps> = ({
     handleFileUpload,
     addFileAttachment,
     updateFileAttachment,
-    removeFileAttachment,
-    resetAttachments
+    removeFileAttachment
   } = useAttachmentManager();
 
   const validateForm = () => {

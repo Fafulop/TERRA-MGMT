@@ -207,7 +207,7 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
               value={filters.por_realizar || 'all'}
               onChange={(e) => setFilters(prev => ({ 
                 ...prev, 
-                por_realizar: e.target.value === 'all' ? undefined : e.target.value 
+                por_realizar: e.target.value === 'all' ? undefined : e.target.value as 'realized' | 'por_realizar'
               }))}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
