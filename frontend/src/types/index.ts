@@ -156,6 +156,7 @@ export interface LedgerEntry {
   date: string;
   area: string;
   subarea: string;
+  por_realizar?: boolean; // Future transaction not yet realized
   userId: number;
   // User information (available when viewing all entries)
   username?: string;
@@ -193,6 +194,7 @@ export interface LedgerEntryFormData {
   date: string;
   area: string;
   subarea: string;
+  por_realizar?: boolean; // Future transaction not yet realized
   fileAttachments: FileAttachment[];
 }
 
@@ -204,6 +206,7 @@ export interface LedgerFilters {
   searchTerm?: string;
   area?: string;
   subarea?: string;
+  por_realizar?: 'realized' | 'por_realizar' | 'all';
 }
 
 export interface LedgerSummary {

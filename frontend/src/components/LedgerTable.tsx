@@ -6,6 +6,7 @@ interface LedgerTableProps {
   onEditEntry?: (entry: LedgerEntry) => void;
   onDeleteEntry?: (entryId: number) => void;
   onViewAttachments?: (entryId: number) => void;
+  onMarkAsRealized?: (entryId: number) => void;
   currentUserId?: number;
   isLoading?: boolean;
 }
@@ -15,6 +16,7 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
   onEditEntry,
   onDeleteEntry,
   onViewAttachments,
+  onMarkAsRealized,
   currentUserId,
   isLoading = false
 }) => {
@@ -61,6 +63,13 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
 
     if (filters.dateTo) {
       filtered = filtered.filter(entry => entry.date <= filters.dateTo!);
+    }
+
+    if (filters.por_realizar && filters.por_realizar !== 'all') {
+      filtered = filtered.filter(entry => {
+        const isPorRealizar = entry.por_realizar === true;
+        return filters.por_realizar === 'por_realizar' ? isPorRealizar : !isPorRealizar;
+      });
     }
 
     // Apply sorting
@@ -186,6 +195,25 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
               <option value="all">All</option>
               <option value="income">Income</option>
               <option value="expense">Expense</option>
+            </select>
+          </div>
+
+          {/* Por Realizar Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
+            <select
+              value={filters.por_realizar || 'all'}
+              onChange={(e) => setFilters(prev => ({ 
+                ...prev, 
+                por_realizar: e.target.value === 'all' ? undefined : e.target.value 
+              }))}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All</option>
+              <option value="realized">Realized</option>
+              <option value="por_realizar">Por Realizar</option>
             </select>
           </div>
 
@@ -342,18 +370,30 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
               </tr>
             ) : (
               filteredAndSortedEntries.map((entry) => (
-                <tr key={entry.id} className="hover:bg-gray-50">
+                <tr key={entry.id} className={`hover:bg-gray-50 ${
+                  entry.por_realizar ? 'bg-yellow-50 border-l-4 border-yellow-400 opacity-80' : ''
+                }`}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {formatDate(entry.date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      entry.entryType === 'income' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {entry.entryType === 'income' ? 'Income' : 'Expense'}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        entry.entryType === 'income' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {entry.entryType === 'income' ? 'Income' : 'Expense'}
+                      </span>
+                      {entry.por_realizar && (
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Por Realizar
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -450,6 +490,17 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                          )}
+                          {onMarkAsRealized && entry.por_realizar && (
+                            <button
+                              onClick={() => onMarkAsRealized(entry.id)}
+                              className="text-green-600 hover:text-green-900"
+                              title="Mark as realized"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                             </button>
                           )}

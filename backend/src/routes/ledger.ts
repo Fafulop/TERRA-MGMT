@@ -6,7 +6,8 @@ import {
   createLedgerEntry,
   updateLedgerEntry,
   deleteLedgerEntry,
-  getLedgerSummary
+  getLedgerSummary,
+  markAsRealized
 } from '../controllers/ledgerController';
 
 const router = express.Router();
@@ -31,5 +32,8 @@ router.put('/:id', updateLedgerEntry);
 
 // DELETE /api/ledger/:id - Delete a ledger entry
 router.delete('/:id', deleteLedgerEntry);
+
+// PUT /api/ledger/:id/realize - Mark a por_realizar entry as realized
+router.put('/:id/realize', markAsRealized);
 
 export default router;

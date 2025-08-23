@@ -749,4 +749,108 @@ router.post('/create-personal-tasks-table', async (req: Request, res: Response) 
   }
 });
 
+// Add por_realizar column to ledger tables
+router.post('/add-por-realizar-to-ledgers', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting por_realizar column migration for ledger tables...');
+
+    // Add por_realizar column to ledger_entries (USD)
+    await pool.query(`
+      ALTER TABLE ledger_entries 
+      ADD COLUMN IF NOT EXISTS por_realizar BOOLEAN DEFAULT FALSE
+    `);
+    console.log('✓ Added por_realizar column to ledger_entries (USD)');
+
+    // Add por_realizar column to ledger_entries_mxn  
+    await pool.query(`
+      ALTER TABLE ledger_entries_mxn 
+      ADD COLUMN IF NOT EXISTS por_realizar BOOLEAN DEFAULT FALSE
+    `);
+    console.log('✓ Added por_realizar column to ledger_entries_mxn (MXN)');
+
+    // Create indexes for better performance on por_realizar queries
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ledger_entries_por_realizar ON ledger_entries(por_realizar)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ledger_entries_mxn_por_realizar ON ledger_entries_mxn(por_realizar)
+    `);
+    console.log('✓ Created performance indexes for por_realizar column');
+
+    // Add column documentation
+    await pool.query(`
+      COMMENT ON COLUMN ledger_entries.por_realizar IS 'Indicates if this is a future transaction not yet realized - affects total calculations'
+    `);
+    await pool.query(`
+      COMMENT ON COLUMN ledger_entries_mxn.por_realizar IS 'Indicates if this is a future transaction not yet realized - affects total calculations'
+    `);
+    console.log('✓ Added column documentation');
+
+    console.log('Por realizar column migration completed successfully!');
+    res.status(200).json({ 
+      message: 'Por realizar feature added to ledger tables successfully!',
+      tables_updated: ['ledger_entries', 'ledger_entries_mxn'],
+      column_added: 'por_realizar BOOLEAN DEFAULT FALSE',
+      indexes_added: ['idx_ledger_entries_por_realizar', 'idx_ledger_entries_mxn_por_realizar'],
+      features: [
+        'Future transaction tracking - separate from current cash flow',
+        'Pending income and expense categorization', 
+        'Mark as realized functionality support',
+        'Enhanced financial forecasting capabilities'
+      ]
+    });
+    
+  } catch (error) {
+    console.error('Por realizar migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to add por_realizar feature to ledger tables', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Check if por_realizar column exists
+router.get('/check-por-realizar-column', async (req: Request, res: Response) => {
+  try {
+    console.log('Checking por_realizar column in ledger tables...');
+
+    // Check USD ledger table
+    const usdResult = await pool.query(`
+      SELECT column_name, data_type, is_nullable, column_default
+      FROM information_schema.columns 
+      WHERE table_name = 'ledger_entries' AND column_name = 'por_realizar'
+    `);
+
+    // Check MXN ledger table  
+    const mxnResult = await pool.query(`
+      SELECT column_name, data_type, is_nullable, column_default
+      FROM information_schema.columns 
+      WHERE table_name = 'ledger_entries_mxn' AND column_name = 'por_realizar'
+    `);
+
+    // Test actual data query
+    const testQuery = await pool.query(`
+      SELECT id, por_realizar FROM ledger_entries LIMIT 1
+    `);
+
+    res.status(200).json({
+      message: 'Por realizar column check completed',
+      usd_table_column: usdResult.rows[0] || 'Column not found',
+      mxn_table_column: mxnResult.rows[0] || 'Column not found', 
+      test_data_query: testQuery.rows[0] || 'No data found',
+      column_exists: {
+        usd: (usdResult.rowCount || 0) > 0,
+        mxn: (mxnResult.rowCount || 0) > 0
+      }
+    });
+
+  } catch (error) {
+    console.error('Column check error:', error);
+    res.status(500).json({
+      error: 'Failed to check por_realizar column',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

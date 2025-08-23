@@ -6,7 +6,8 @@ import {
   createMxnLedgerEntry,
   updateMxnLedgerEntry,
   deleteMxnLedgerEntry,
-  getMxnLedgerSummary
+  getMxnLedgerSummary,
+  markMxnAsRealized
 } from '../controllers/ledgerMxnController';
 
 const router = express.Router();
@@ -31,5 +32,8 @@ router.put('/:id', updateMxnLedgerEntry);
 
 // DELETE /api/ledger-mxn/:id - Delete a MXN ledger entry
 router.delete('/:id', deleteMxnLedgerEntry);
+
+// PUT /api/ledger-mxn/:id/realize - Mark a por_realizar MXN entry as realized
+router.put('/:id/realize', markMxnAsRealized);
 
 export default router;

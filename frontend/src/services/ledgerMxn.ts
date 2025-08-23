@@ -120,5 +120,11 @@ export const ledgerMxnService = {
       responseType: 'blob'
     });
     return response.data;
+  },
+
+  // Mark a por_realizar MXN entry as realized
+  async markAsRealized(entryId: number): Promise<{ message: string; entry: LedgerEntry }> {
+    const response = await ledgerMxnApi.put(`/${entryId}/realize`);
+    return response.data;
   }
 };

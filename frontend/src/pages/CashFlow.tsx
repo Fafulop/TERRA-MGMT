@@ -4,8 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import LedgerEntryForm from '../components/LedgerEntryForm';
 import LedgerTable from '../components/LedgerTable';
 import { LedgerEntryFormData, LedgerFilters } from '../types';
-import { useLedgerEntries, useCreateLedgerEntry, useUpdateLedgerEntry, useDeleteLedgerEntry, useLedgerEntry } from '../hooks/useLedgerQueries';
-import { useLedgerMxnEntries, useCreateLedgerMxnEntry, useUpdateLedgerMxnEntry, useDeleteLedgerMxnEntry, useLedgerMxnEntry } from '../hooks/useLedgerMxnQueries';
+import { useLedgerEntries, useCreateLedgerEntry, useUpdateLedgerEntry, useDeleteLedgerEntry, useLedgerEntry, useMarkLedgerAsRealized } from '../hooks/useLedgerQueries';
+import { useLedgerMxnEntries, useCreateLedgerMxnEntry, useUpdateLedgerMxnEntry, useDeleteLedgerMxnEntry, useLedgerMxnEntry, useMarkLedgerMxnAsRealized } from '../hooks/useLedgerMxnQueries';
 
 type Currency = 'USD' | 'MXN';
 
@@ -21,12 +21,14 @@ const CashFlow = () => {
   const createUsdEntryMutation = useCreateLedgerEntry();
   const updateUsdEntryMutation = useUpdateLedgerEntry();
   const deleteUsdEntryMutation = useDeleteLedgerEntry();
+  const markUsdAsRealizedMutation = useMarkLedgerAsRealized();
 
   // MXN React Query hooks
   const { data: mxnLedgerData, isLoading: mxnIsLoading, error: mxnError, refetch: mxnRefetch } = useLedgerMxnEntries(filters);
   const createMxnEntryMutation = useCreateLedgerMxnEntry();
   const updateMxnEntryMutation = useUpdateLedgerMxnEntry();
   const deleteMxnEntryMutation = useDeleteLedgerMxnEntry();
+  const markMxnAsRealizedMutation = useMarkLedgerMxnAsRealized();
 
   // Current currency data and mutations
   const currentLedgerData = activeCurrency === 'USD' ? usdLedgerData : mxnLedgerData;
@@ -35,6 +37,7 @@ const CashFlow = () => {
   const currentRefetch = activeCurrency === 'USD' ? usdRefetch : mxnRefetch;
   const currentCreateMutation = activeCurrency === 'USD' ? createUsdEntryMutation : createMxnEntryMutation;
   const currentDeleteMutation = activeCurrency === 'USD' ? deleteUsdEntryMutation : deleteMxnEntryMutation;
+  const currentMarkAsRealizedMutation = activeCurrency === 'USD' ? markUsdAsRealizedMutation : markMxnAsRealizedMutation;
 
   if (!user) {
     navigate('/login');
@@ -61,6 +64,15 @@ const CashFlow = () => {
       await currentDeleteMutation.mutateAsync(entryId);
     } catch (error) {
       console.error(`Error deleting ${activeCurrency} ledger entry:`, error);
+      // Error handling is done in the mutation hook
+    }
+  };
+
+  const handleMarkAsRealized = async (entryId: number) => {
+    try {
+      await currentMarkAsRealizedMutation.mutateAsync(entryId);
+    } catch (error) {
+      console.error(`Error marking ${activeCurrency} ledger entry as realized:`, error);
       // Error handling is done in the mutation hook
     }
   };
@@ -226,6 +238,7 @@ const CashFlow = () => {
             onEditEntry={handleEditEntry}
             onDeleteEntry={handleDeleteEntry}
             onViewAttachments={handleViewAttachments}
+            onMarkAsRealized={handleMarkAsRealized}
             currentUserId={user?.id}
             isLoading={currentIsLoading}
           />

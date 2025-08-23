@@ -120,5 +120,11 @@ export const ledgerService = {
       responseType: 'blob'
     });
     return response.data;
+  },
+
+  // Mark a por_realizar entry as realized
+  async markAsRealized(entryId: number): Promise<{ message: string; entry: LedgerEntry }> {
+    const response = await ledgerApi.put(`/${entryId}/realize`);
+    return response.data;
   }
 };

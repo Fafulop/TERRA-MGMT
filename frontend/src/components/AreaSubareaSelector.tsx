@@ -57,7 +57,7 @@ const AreaSubareaSelector: React.FC<AreaSubareaSelectorProps> = ({
       setAvailableSubareas([]);
       onSubareaChange('');
     }
-  }, [selectedArea, areas, selectedSubarea, onSubareaChange]);
+  }, [selectedArea, areas, selectedSubarea]);
 
   const loadAreas = async () => {
     if (!user || !token) return;

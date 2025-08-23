@@ -31,6 +31,8 @@ export const getLedgerEntries = async (req: AuthRequest, res: Response) => {
     let query = `
       SELECT 
         le.*,
+        le.transaction_date as date,
+        le.por_realizar,
         u.username,
         u.first_name,
         u.last_name,
@@ -103,6 +105,7 @@ export const getLedgerEntries = async (req: AuthRequest, res: Response) => {
       date: row.transaction_date,
       area: row.area,
       subarea: row.subarea,
+      por_realizar: row.por_realizar,
       userId: row.user_id,
       username: row.username,
       firstName: row.first_name,
@@ -154,6 +157,8 @@ export const getLedgerEntry = async (req: AuthRequest, res: Response) => {
     const entryQuery = `
       SELECT 
         le.*,
+        le.transaction_date as date,
+        le.por_realizar,
         u.username,
         u.first_name,
         u.last_name
@@ -193,6 +198,7 @@ export const getLedgerEntry = async (req: AuthRequest, res: Response) => {
       date: entry.transaction_date,
       area: entry.area,
       subarea: entry.subarea,
+      por_realizar: entry.por_realizar,
       userId: entry.user_id,
       username: entry.username,
       firstName: entry.first_name,
@@ -240,6 +246,7 @@ export const createLedgerEntry = async (req: AuthRequest, res: Response) => {
       date,
       area,
       subarea,
+      por_realizar = false,
       fileAttachments = []
     } = req.body;
 
@@ -272,9 +279,9 @@ export const createLedgerEntry = async (req: AuthRequest, res: Response) => {
     const entryQuery = `
       INSERT INTO ledger_entries (
         user_id, amount, concept, bank_account, internal_id, 
-        bank_movement_id, entry_type, transaction_date, area, subarea
+        bank_movement_id, entry_type, transaction_date, area, subarea, por_realizar
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `;
     
@@ -288,7 +295,8 @@ export const createLedgerEntry = async (req: AuthRequest, res: Response) => {
       entryType,
       date,
       area.trim(),
-      subarea.trim()
+      subarea.trim(),
+      por_realizar
     ];
 
     const entryResult = await client.query(entryQuery, entryValues);
@@ -360,6 +368,7 @@ export const createLedgerEntry = async (req: AuthRequest, res: Response) => {
       date: entry.transaction_date,
       area: entry.area,
       subarea: entry.subarea,
+      por_realizar: entry.por_realizar,
       userId: entry.user_id,
       createdAt: entry.created_at,
       updatedAt: entry.updated_at,
@@ -389,7 +398,8 @@ export const updateLedgerEntry = async (req: AuthRequest, res: Response) => {
       entryType,
       date,
       area,
-      subarea
+      subarea,
+      por_realizar = false
     } = req.body;
 
     // Check if entry exists and belongs to user
@@ -423,8 +433,9 @@ export const updateLedgerEntry = async (req: AuthRequest, res: Response) => {
         transaction_date = $6,
         area = $7,
         subarea = $8,
+        por_realizar = $9,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $9 AND user_id = $10
+      WHERE id = $10 AND user_id = $11
       RETURNING *
     `;
     
@@ -437,6 +448,7 @@ export const updateLedgerEntry = async (req: AuthRequest, res: Response) => {
       date,
       area?.trim() || null,
       subarea?.trim() || null,
+      por_realizar,
       id,
       userId
     ];
@@ -456,6 +468,7 @@ export const updateLedgerEntry = async (req: AuthRequest, res: Response) => {
       date: entry.transaction_date,
       area: entry.area,
       subarea: entry.subarea,
+      por_realizar: entry.por_realizar,
       userId: entry.user_id,
       createdAt: entry.created_at,
       updatedAt: entry.updated_at
@@ -514,12 +527,26 @@ export const getLedgerSummary = async (req: AuthRequest, res: Response) => {
 
     const summaryQuery = `
       SELECT 
-        COALESCE(SUM(CASE WHEN entry_type = 'income' THEN amount ELSE 0 END), 0) as total_income,
-        COALESCE(SUM(CASE WHEN entry_type = 'expense' THEN ABS(amount) ELSE 0 END), 0) as total_expenses,
-        COALESCE(SUM(amount), 0) as net_cash_flow,
+        -- Current (realized) totals
+        COALESCE(SUM(CASE WHEN entry_type = 'income' AND (por_realizar IS FALSE OR por_realizar IS NULL) THEN amount ELSE 0 END), 0) as total_income,
+        COALESCE(SUM(CASE WHEN entry_type = 'expense' AND (por_realizar IS FALSE OR por_realizar IS NULL) THEN ABS(amount) ELSE 0 END), 0) as total_expenses,
+        COALESCE(SUM(CASE WHEN (por_realizar IS FALSE OR por_realizar IS NULL) THEN amount ELSE 0 END), 0) as net_cash_flow,
+        
+        -- Future (por realizar) totals
+        COALESCE(SUM(CASE WHEN entry_type = 'income' AND por_realizar IS TRUE THEN amount ELSE 0 END), 0) as pending_income,
+        COALESCE(SUM(CASE WHEN entry_type = 'expense' AND por_realizar IS TRUE THEN ABS(amount) ELSE 0 END), 0) as pending_expenses,
+        COALESCE(SUM(CASE WHEN por_realizar IS TRUE THEN amount ELSE 0 END), 0) as pending_cash_flow,
+        
+        -- Projected totals (current + future)
+        COALESCE(SUM(CASE WHEN entry_type = 'income' THEN amount ELSE 0 END), 0) as projected_income,
+        COALESCE(SUM(CASE WHEN entry_type = 'expense' THEN ABS(amount) ELSE 0 END), 0) as projected_expenses,
+        COALESCE(SUM(amount), 0) as projected_cash_flow,
+        
+        -- Entry counts
         COUNT(*) as total_entries,
         COUNT(CASE WHEN entry_type = 'income' THEN 1 END) as income_entries,
-        COUNT(CASE WHEN entry_type = 'expense' THEN 1 END) as expense_entries
+        COUNT(CASE WHEN entry_type = 'expense' THEN 1 END) as expense_entries,
+        COUNT(CASE WHEN por_realizar IS TRUE THEN 1 END) as por_realizar_entries
       FROM ledger_entries 
       WHERE 1=1 ${dateFilter}
     `;
@@ -529,5 +556,47 @@ export const getLedgerSummary = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Error fetching ledger summary:', error);
     res.status(500).json({ error: 'Failed to fetch ledger summary' });
+  }
+};
+
+// Mark a por_realizar entry as realized
+export const markAsRealized = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId;
+    const { id } = req.params;
+
+    // Check if entry exists and belongs to user
+    const checkQuery = 'SELECT id, por_realizar FROM ledger_entries WHERE id = $1 AND user_id = $2';
+    const checkResult = await db.query(checkQuery, [id, userId]);
+    
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Entry not found' });
+    }
+
+    const entry = checkResult.rows[0];
+    if (!entry.por_realizar) {
+      return res.status(400).json({ error: 'Entry is already realized' });
+    }
+
+    // Update entry to mark as realized
+    const updateQuery = `
+      UPDATE ledger_entries 
+      SET 
+        por_realizar = FALSE,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1 AND user_id = $2
+      RETURNING *
+    `;
+
+    const result = await db.query(updateQuery, [id, userId]);
+    const updatedEntry = result.rows[0];
+
+    res.json({
+      message: 'Entry marked as realized successfully',
+      entry: updatedEntry
+    });
+  } catch (error) {
+    console.error('Error marking entry as realized:', error);
+    res.status(500).json({ error: 'Failed to mark entry as realized' });
   }
 };

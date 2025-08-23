@@ -45,16 +45,16 @@ const Dashboard: React.FC = () => {
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-semibold text-gray-700">
-                  Your Tasks
+                  General Tasks
                 </h2>
                 <button
                   onClick={() => navigate('/tasks')}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
-                  View My Tasks
+                  View General Tasks
                 </button>
               </div>
-              <p className="text-gray-500">Click "View My Tasks" to see all your tasks and create new ones!</p>
+              <p className="text-gray-500">Click "View General Tasks" to see all shared tasks and create new ones!</p>
             </div>
 
             {/* Personal Tasks Section */}

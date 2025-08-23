@@ -128,6 +128,26 @@ export const useDeleteLedgerMxnEntry = () => {
   });
 };
 
+// Hook to mark a MXN ledger entry as realized
+export const useMarkLedgerMxnAsRealized = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => ledgerMxnService.markAsRealized(id),
+    onSuccess: (updatedEntry, id) => {
+      // Update the specific entry in cache
+      queryClient.setQueryData(ledgerMxnKeys.entry(id), updatedEntry);
+      
+      // Invalidate entries list to refetch and update totals
+      queryClient.invalidateQueries({ queryKey: ledgerMxnKeys.entries() });
+      queryClient.invalidateQueries({ queryKey: ledgerMxnKeys.summary() });
+    },
+    onError: (error) => {
+      console.error('Error marking MXN ledger entry as realized:', error);
+    },
+  });
+};
+
 // Hook for prefetching MXN ledger data
 export const useLedgerMxnPrefetching = () => {
   const queryClient = useQueryClient();

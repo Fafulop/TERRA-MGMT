@@ -24,6 +24,7 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
     date: new Date().toISOString().split('T')[0], // Today's date
     area: '',
     subarea: '',
+    por_realizar: false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -48,10 +49,10 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target as HTMLInputElement;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : value
+      [name]: type === 'checkbox' ? checked : (name === 'amount' ? parseFloat(value) || 0 : value)
     }));
     
     // Clear error when user starts typing
@@ -292,6 +293,30 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
           {errors.date && (
             <p className="mt-1 text-sm text-red-600">{errors.date}</p>
           )}
+        </div>
+
+        {/* Por Realizar */}
+        <div>
+          <div className="flex items-start">
+            <div className="flex items-center h-5">
+              <input
+                id="por_realizar"
+                name="por_realizar"
+                type="checkbox"
+                checked={formData.por_realizar}
+                onChange={handleInputChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+            </div>
+            <div className="ml-3">
+              <label htmlFor="por_realizar" className="text-sm font-medium text-gray-700">
+                Por Realizar (Future Transaction)
+              </label>
+              <p className="text-xs text-gray-500 mt-1">
+                Check this box if this is a future transaction that hasn't happened yet. It will be tracked separately from your current cash flow.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Bank Movement ID */}

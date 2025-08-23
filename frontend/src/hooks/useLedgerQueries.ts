@@ -128,6 +128,26 @@ export const useDeleteLedgerEntry = () => {
   });
 };
 
+// Hook to mark a ledger entry as realized
+export const useMarkLedgerAsRealized = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => ledgerService.markAsRealized(id),
+    onSuccess: (updatedEntry, id) => {
+      // Update the specific entry in cache
+      queryClient.setQueryData(ledgerKeys.entry(id), updatedEntry);
+      
+      // Invalidate entries list to refetch and update totals
+      queryClient.invalidateQueries({ queryKey: ledgerKeys.entries() });
+      queryClient.invalidateQueries({ queryKey: ledgerKeys.summary() });
+    },
+    onError: (error) => {
+      console.error('Error marking ledger entry as realized:', error);
+    },
+  });
+};
+
 // Hook for prefetching ledger data
 export const useLedgerPrefetching = () => {
   const queryClient = useQueryClient();
