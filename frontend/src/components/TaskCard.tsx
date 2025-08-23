@@ -14,7 +14,7 @@ const TaskCard = ({ task }: TaskCardProps) => {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [, setIsUpdating] = useState(false);
+  const [,] = useState(false);
   const { prefetchTaskDetail } = useTaskPrefetching();
 
   // Memoize color calculations to prevent unnecessary recalculations
