@@ -57,6 +57,22 @@ const Dashboard: React.FC = () => {
               <p className="text-gray-500">Click "View My Tasks" to see all your tasks and create new ones!</p>
             </div>
 
+            {/* Personal Tasks Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Personal Tasks
+                </h2>
+                <button
+                  onClick={() => navigate('/personal')}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                >
+                  View Personal Tasks
+                </button>
+              </div>
+              <p className="text-gray-500">Manage your private tasks - visible only to you!</p>
+            </div>
+
             {/* Cash Flow Section */}
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">

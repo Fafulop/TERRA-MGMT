@@ -1,7 +1,15 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import pool from '../config/database';
 import fs from 'fs';
 import path from 'path';
+import { authenticateToken } from '../middleware/auth';
+
+interface AuthRequest extends Request {
+  user?: {
+    id: number;
+    username: string;
+  };
+}
 
 const router = express.Router();
 
@@ -611,6 +619,131 @@ router.post('/create-areas-tables', async (req, res) => {
     console.error('Areas tables migration error:', error);
     res.status(500).json({ 
       error: 'Failed to create areas and subareas tables', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Create personal tasks table migration
+router.post('/create-personal-tasks-table', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting personal tasks table migration...');
+
+    // Create personal_tasks table (identical to tasks but conceptually separated)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS personal_tasks (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed')),
+        priority VARCHAR(10) DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+        due_date TIMESTAMP WITH TIME ZONE,
+        area VARCHAR(255) NOT NULL,
+        subarea VARCHAR(255) NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Created personal_tasks table');
+
+    // Create indexes for better performance
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_personal_tasks_user_id ON personal_tasks(user_id)
+    `);
+    console.log('✓ Created index on user_id');
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_personal_tasks_status ON personal_tasks(status)
+    `);
+    console.log('✓ Created index on status');
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_personal_tasks_due_date ON personal_tasks(due_date)
+    `);
+    console.log('✓ Created index on due_date');
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_personal_tasks_area ON personal_tasks(area)
+    `);
+    console.log('✓ Created index on area');
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_personal_tasks_subarea ON personal_tasks(subarea)
+    `);
+    console.log('✓ Created index on subarea');
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_personal_tasks_created_at ON personal_tasks(created_at)
+    `);
+    console.log('✓ Created index on created_at');
+
+    // Create update trigger function if it doesn't exist
+    await pool.query(`
+      CREATE OR REPLACE FUNCTION update_personal_tasks_updated_at()
+      RETURNS TRIGGER AS $$
+      BEGIN
+        NEW.updated_at = CURRENT_TIMESTAMP;
+        RETURN NEW;
+      END;
+      $$ language 'plpgsql'
+    `);
+    console.log('✓ Created update trigger function');
+
+    // Create trigger for automatic timestamp updates
+    await pool.query(`
+      DROP TRIGGER IF EXISTS trigger_personal_tasks_updated_at ON personal_tasks
+    `);
+    
+    await pool.query(`
+      CREATE TRIGGER trigger_personal_tasks_updated_at
+        BEFORE UPDATE ON personal_tasks
+        FOR EACH ROW
+        EXECUTE FUNCTION update_personal_tasks_updated_at()
+    `);
+    console.log('✓ Created update trigger');
+
+    // Add table comments for documentation
+    await pool.query(`
+      COMMENT ON TABLE personal_tasks IS 'Personal tasks - private to each user, only visible to the task owner'
+    `);
+    await pool.query(`
+      COMMENT ON COLUMN personal_tasks.user_id IS 'Owner of the personal task - strict privacy isolation'
+    `);
+    await pool.query(`
+      COMMENT ON COLUMN personal_tasks.area IS 'Area classification using centralized taxonomy'
+    `);
+    await pool.query(`
+      COMMENT ON COLUMN personal_tasks.subarea IS 'Subarea classification using centralized taxonomy'
+    `);
+    console.log('✓ Added table documentation');
+
+    console.log('Personal tasks table migration completed successfully!');
+    res.status(200).json({ 
+      message: 'Personal tasks table created successfully!',
+      table: 'personal_tasks',
+      indexes_added: [
+        'idx_personal_tasks_user_id', 
+        'idx_personal_tasks_status', 
+        'idx_personal_tasks_due_date',
+        'idx_personal_tasks_area',
+        'idx_personal_tasks_subarea',
+        'idx_personal_tasks_created_at'
+      ],
+      triggers: ['trigger_personal_tasks_updated_at'],
+      features: [
+        'Strict user isolation - users can only see their own tasks',
+        'Same structure as main tasks table',
+        'Integrated with Areas/Subareas taxonomy',
+        'Full CRUD operations support',
+        'Automatic timestamp management'
+      ]
+    });
+    
+  } catch (error) {
+    console.error('Personal tasks table migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create personal tasks table', 
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }

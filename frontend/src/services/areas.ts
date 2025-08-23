@@ -32,6 +32,7 @@ export interface SubareaFormData {
 
 export interface AreaContent {
   tasks: any[];
+  personalTasks: any[];
   cotizaciones: any[];
   contacts: any[];
   ledgerEntries: any[];

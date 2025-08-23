@@ -112,6 +112,7 @@ const AreaContentDisplay: React.FC<AreaContentDisplayProps> = ({
   const navigateToModule = (module: string) => {
     const moduleRoutes: { [key: string]: string } = {
       'tasks': '/tasks',
+      'personal-tasks': '/personal',
       'cotizaciones': '/cotizaciones',
       'contacts': '/contactos',
       'ledger': '/cash-flow',
@@ -124,6 +125,7 @@ const AreaContentDisplay: React.FC<AreaContentDisplayProps> = ({
   const createNewInModule = (module: string) => {
     const createRoutes: { [key: string]: string } = {
       'tasks': '/create-task',
+      'personal-tasks': '/personal',
       'cotizaciones': '/cotizaciones',
       'contacts': '/contactos',
       'ledger': '/cash-flow',
@@ -135,10 +137,14 @@ const AreaContentDisplay: React.FC<AreaContentDisplayProps> = ({
   return (
     <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-indigo-500 space-y-4">
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 pb-4 border-b border-gray-200">
+      <div className="grid grid-cols-2 md:grid-cols-7 gap-4 pb-4 border-b border-gray-200">
         <div className="text-center">
           <div className="text-2xl font-bold text-blue-600">{counts.tasks}</div>
           <div className="text-sm text-gray-600">Tasks</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-slate-600">{counts.personalTasks || 0}</div>
+          <div className="text-sm text-gray-600">Personal Tasks</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-green-600">{counts.cotizaciones}</div>
@@ -200,6 +206,70 @@ const AreaContentDisplay: React.FC<AreaContentDisplayProps> = ({
             </div>
             <div className="grid gap-3">
               {content.content.tasks.map((task) => (
+                <div key={task.id} className="bg-white rounded-lg p-3 border border-gray-200 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h5 className="font-medium text-gray-900">{task.title}</h5>
+                      {task.description && (
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{task.description}</p>
+                      )}
+                      <div className="flex items-center space-x-4 mt-2">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(task.status)}`}>
+                          {task.status.replace('_', ' ')}
+                        </span>
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(task.priority)}`}>
+                          {task.priority}
+                        </span>
+                        {task.due_date && (
+                          <span className="text-xs text-gray-500">Due: {formatDate(task.due_date)}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="ml-4 text-xs text-gray-500">
+                      {formatDate(task.created_at)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Personal Tasks Section */}
+        {content.content.personalTasks && content.content.personalTasks.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-lg font-semibold text-gray-900 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Personal Tasks ({content.content.personalTasks.length})
+              </h4>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => createNewInModule('personal-tasks')}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-slate-700 bg-slate-100 hover:bg-slate-200"
+                  title="Create new personal task"
+                >
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  New
+                </button>
+                <button
+                  onClick={() => navigateToModule('personal-tasks')}
+                  className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200"
+                  title="View all personal tasks"
+                >
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  View All
+                </button>
+              </div>
+            </div>
+            <div className="grid gap-3">
+              {content.content.personalTasks.map((task) => (
                 <div key={task.id} className="bg-white rounded-lg p-3 border border-gray-200 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">

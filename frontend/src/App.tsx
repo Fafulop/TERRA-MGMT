@@ -16,6 +16,7 @@ const TaskList = React.lazy(() => import('./pages/TaskList'))
 const CashFlow = React.lazy(() => import('./pages/CashFlow'))
 const Cotizaciones = React.lazy(() => import('./pages/Cotizaciones'))
 const Areas = React.lazy(() => import('./pages/Areas'))
+const Personal = React.lazy(() => import('./pages/Personal'))
 const Contactos = React.lazy(() => import('./pages/Contactos'))
 const Documentos = React.lazy(() => import('./pages/Documentos'))
 
@@ -51,6 +52,7 @@ function App() {
                 <Route path="/cash-flow" element={<CashFlow />} />
                 <Route path="/cotizaciones" element={<Cotizaciones />} />
                 <Route path="/areas" element={<Areas />} />
+                <Route path="/personal" element={<Personal />} />
                 <Route path="/contactos" element={<Contactos />} />
                 <Route path="/documentos" element={<Documentos />} />
                 <Route path="/" element={<Dashboard />} />

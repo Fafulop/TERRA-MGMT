@@ -45,6 +45,7 @@ import cotizacionesRoutes from './routes/cotizaciones';
 import contactsRoutes from './routes/contacts';
 import documentsRoutes from './routes/documents';
 import areasRoutes from './routes/areas';
+import personalTasksRoutes from './routes/personalTasks';
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from './routes/uploadthing';
 
@@ -70,6 +71,7 @@ app.use('/api/cotizaciones', cotizacionesRoutes);
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/areas', areasRoutes);
+app.use('/api/personal-tasks', personalTasksRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {

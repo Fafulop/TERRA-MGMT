@@ -39,6 +39,7 @@ export interface SubareaFormData {
 
 export interface AreaContent {
   tasks: any[];
+  personalTasks: any[];
   cotizaciones: any[];
   contacts: any[];
   ledgerEntries: any[];
@@ -52,6 +53,7 @@ export interface AreaContentSummary {
   content: AreaContent;
   counts: {
     tasks: number;
+    personalTasks: number;
     cotizaciones: number;
     contacts: number;
     ledgerEntries: number;
@@ -468,6 +470,7 @@ class AreasController {
       // Query all tables for content with this area
       const [
         tasksResult,
+        personalTasksResult,
         cotizacionesResult,
         contactsResult,
         ledgerEntriesResult,
@@ -477,6 +480,13 @@ class AreasController {
         pool.query(`
           SELECT id, title, description, status, priority, due_date, area, subarea, created_at, updated_at
           FROM tasks 
+          WHERE user_id = $1 AND area = $2
+          ORDER BY created_at DESC
+        `, [userId, areaName]),
+        
+        pool.query(`
+          SELECT id, title, description, status, priority, due_date, area, subarea, created_at, updated_at
+          FROM personal_tasks 
           WHERE user_id = $1 AND area = $2
           ORDER BY created_at DESC
         `, [userId, areaName]),
@@ -539,6 +549,7 @@ class AreasController {
 
       const content: AreaContent = {
         tasks: tasksResult.rows,
+        personalTasks: personalTasksResult.rows,
         cotizaciones: cotizacionesResult.rows,
         contacts: contactsResult.rows,
         ledgerEntries: ledgerEntriesResult.rows,
@@ -548,12 +559,13 @@ class AreasController {
 
       const counts = {
         tasks: content.tasks.length,
+        personalTasks: content.personalTasks.length,
         cotizaciones: content.cotizaciones.length,
         contacts: content.contacts.length,
         ledgerEntries: content.ledgerEntries.length,
         ledgerEntriesMxn: content.ledgerEntriesMxn.length,
         documents: content.documents.length,
-        total: content.tasks.length + content.cotizaciones.length + content.contacts.length + 
+        total: content.tasks.length + content.personalTasks.length + content.cotizaciones.length + content.contacts.length + 
                content.ledgerEntries.length + content.ledgerEntriesMxn.length + content.documents.length
       };
 
@@ -586,6 +598,7 @@ class AreasController {
       // Query all tables for content with this area and subarea
       const [
         tasksResult,
+        personalTasksResult,
         cotizacionesResult,
         contactsResult,
         ledgerEntriesResult,
@@ -595,6 +608,13 @@ class AreasController {
         pool.query(`
           SELECT id, title, description, status, priority, due_date, area, subarea, created_at, updated_at
           FROM tasks 
+          WHERE user_id = $1 AND area = $2 AND subarea = $3
+          ORDER BY created_at DESC
+        `, [userId, areaName, subareaName]),
+        
+        pool.query(`
+          SELECT id, title, description, status, priority, due_date, area, subarea, created_at, updated_at
+          FROM personal_tasks 
           WHERE user_id = $1 AND area = $2 AND subarea = $3
           ORDER BY created_at DESC
         `, [userId, areaName, subareaName]),
@@ -657,6 +677,7 @@ class AreasController {
 
       const content: AreaContent = {
         tasks: tasksResult.rows,
+        personalTasks: personalTasksResult.rows,
         cotizaciones: cotizacionesResult.rows,
         contacts: contactsResult.rows,
         ledgerEntries: ledgerEntriesResult.rows,
@@ -666,12 +687,13 @@ class AreasController {
 
       const counts = {
         tasks: content.tasks.length,
+        personalTasks: content.personalTasks.length,
         cotizaciones: content.cotizaciones.length,
         contacts: content.contacts.length,
         ledgerEntries: content.ledgerEntries.length,
         ledgerEntriesMxn: content.ledgerEntriesMxn.length,
         documents: content.documents.length,
-        total: content.tasks.length + content.cotizaciones.length + content.contacts.length + 
+        total: content.tasks.length + content.personalTasks.length + content.cotizaciones.length + content.contacts.length + 
                content.ledgerEntries.length + content.ledgerEntriesMxn.length + content.documents.length
       };
 
