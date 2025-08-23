@@ -23,7 +23,12 @@ A comprehensive fullstack task management application built with React, Express.
 - ✅ **Documents Management** - Upload and organize business documents with mandatory categorization
 - ✅ **Ledger Accounting** - Track income and expenses with attached supporting documents
 - ✅ **Cash Flow Tracking** - Monitor financial transactions across different currencies (USD/MXN)
+- ✅ **"Por Realizar" Future Transactions** - Track pending/future transactions separately from realized cash flow
+- ✅ **Mark as Realized Functionality** - Convert pending transactions to realized with one-click
+- ✅ **Advanced Filtering** - Filter by transaction status (All/Realized/Por Realizar), date ranges, and categories
 - ✅ **Quotations System** - Create and manage business quotations with automated calculations
+- ✅ **Centralized Areas/Subareas** - Standardized categorization system across all modules
+- ✅ **Personal Tasks System** - Private task management with strict user isolation
 - ✅ **Cross-User Visibility** - All users can view business data, but only owners can edit their entries
 
 ### User Experience
@@ -65,13 +70,16 @@ A comprehensive fullstack task management application built with React, Express.
 
 ### Database Schema
 - **Users Table** - User accounts with authentication data
-- **Tasks Table** - Core task management with ownership tracking
+- **Tasks Table** - Core task management with ownership tracking (shared visibility)
+- **Personal Tasks Table** - Private task management with strict user isolation
 - **Comments Table** - Follow-up comments linked to specific tasks
 - **Attachments Table** - File and URL attachments for tasks and comments
+- **Areas/Subareas Tables** - Centralized categorization system used across all modules
 - **Contacts Table** - Business contact management with area/subarea organization
 - **Documents Table** - Document management with mandatory categorization and file attachments
-- **Ledger Entries Table** - Financial transaction tracking with supporting documents
-- **Cotizaciones Table** - Business quotations with automated calculations
+- **Ledger Entries Tables** - USD and MXN financial transaction tracking with por_realizar support
+- **Ledger Attachments Tables** - Supporting documents for financial transactions
+- **Cotizaciones Table** - Business quotations with automated calculations and area/subarea integration
 - **Foreign Key Relationships** - Proper data integrity and relationships across all modules
 
 ## Performance Optimizations
@@ -85,10 +93,13 @@ A comprehensive fullstack task management application built with React, Express.
 - **📡 Query Prefetching** - Hover-based prefetching for faster navigation
 
 ### Code Quality Improvements
-- **🧹 DRY Architecture** - Eliminated 200+ lines of duplicate code with custom hooks
+- **🧹 DRY Architecture** - Eliminated 300+ lines of duplicate code with utility functions and custom hooks
 - **🎯 Custom Hooks** - `useAttachmentManager`, `useTaskQueries`, `useDebounce` for shared logic
-- **🔒 TypeScript Enhancement** - Replaced `any[]` types with proper interfaces
+- **🔒 TypeScript Enhancement** - Replaced `any[]` types with proper interfaces and strict typing
 - **⚙️ Optimized Filters** - Memoized expensive filtering and sorting operations
+- **🔄 Utility Functions** - Centralized mapping, validation, and query building utilities
+- **🛡️ Error Handling** - Standardized error handling patterns across all controllers
+- **📝 Form Validation** - Reusable validation utilities for consistent user experience
 
 ### Query Optimization Strategy
 - **Background Refetching** - Tasks refresh every 5 minutes in background
@@ -157,23 +168,27 @@ createdb taskmanager
 # Initialize database tables via API (with backend running)
 curl -X POST http://localhost:5000/api/init/db
 
-# Add comments table (for task comments)
+# Add core feature tables
 curl -X POST http://localhost:5000/api/migrate/add-comments-table
-
-# Add attachments table (for file and URL attachments)
 curl -X POST http://localhost:5000/api/migrate/add-attachments-table
+curl -X POST http://localhost:5000/api/migrate/add-contacts-tables
+curl -X POST http://localhost:5000/api/migrate/add-documents-tables
+curl -X POST http://localhost:5000/api/migrate/add-ledger-tables
+curl -X POST http://localhost:5000/api/migrate/add-mxn-ledger-tables
+curl -X POST http://localhost:5000/api/migrate/add-cotizaciones-tables
 
-# Add contacts table (for business contact management)
-curl -X POST http://localhost:5000/api/migrate/add-contacts-table
+# Add centralized areas/subareas system
+curl -X POST http://localhost:5000/api/migrate/create-areas-tables
 
-# Add documents table (for document management)
-curl -X POST http://localhost:5000/api/migrate/add-documents-table
+# Add area/subarea integration to existing tables
+curl -X POST http://localhost:5000/api/migrate/add-area-subarea-tasks
+curl -X POST http://localhost:5000/api/migrate/add-area-subarea-cotizaciones
+curl -X POST http://localhost:5000/api/migrate/add-area-subarea-ledger-usd
+curl -X POST http://localhost:5000/api/migrate/add-area-subarea-ledger-mxn
 
-# Add ledger tables (for financial tracking)
-curl -X POST http://localhost:5000/api/migrate/add-ledger-table
-
-# Add cotizaciones table (for quotations management)
-curl -X POST http://localhost:5000/api/migrate/add-cotizaciones-table
+# Add advanced features
+curl -X POST http://localhost:5000/api/migrate/create-personal-tasks-table
+curl -X POST http://localhost:5000/api/migrate/add-por-realizar-to-ledgers
 ```
 
 5. Set up UploadThing (Required for file uploads):
@@ -358,12 +373,34 @@ task-manager-app/
 - `PUT /api/documents/:id` - Update document (owner only)
 - `DELETE /api/documents/:id` - Delete document (owner only)
 
-### Ledger
-- `GET /api/ledger` - Get ledger entries with filtering
-- `POST /api/ledger` - Create new ledger entry (requires auth)
-- `GET /api/ledger/summary` - Get financial summary
-- `PUT /api/ledger/:id` - Update ledger entry (owner only)
-- `DELETE /api/ledger/:id` - Delete ledger entry (owner only)
+### Ledger (USD)
+- `GET /api/ledger` - Get USD ledger entries with filtering (supports por_realizar filter)
+- `POST /api/ledger` - Create new USD ledger entry (requires auth)
+- `GET /api/ledger/summary` - Get USD financial summary
+- `PUT /api/ledger/:id` - Update USD ledger entry (owner only)
+- `DELETE /api/ledger/:id` - Delete USD ledger entry (owner only)
+- `POST /api/ledger/:id/mark-realized` - Mark por_realizar entry as realized (owner only)
+
+### Ledger MXN
+- `GET /api/ledger-mxn` - Get MXN ledger entries with filtering (supports por_realizar filter)
+- `POST /api/ledger-mxn` - Create new MXN ledger entry (requires auth)
+- `GET /api/ledger-mxn/summary` - Get MXN financial summary
+- `PUT /api/ledger-mxn/:id` - Update MXN ledger entry (owner only)
+- `DELETE /api/ledger-mxn/:id` - Delete MXN ledger entry (owner only)
+- `POST /api/ledger-mxn/:id/mark-realized` - Mark por_realizar entry as realized (owner only)
+
+### Areas & Subareas
+- `GET /api/areas` - Get all areas and subareas
+- `POST /api/areas` - Create new area (requires auth)
+- `POST /api/areas/:areaId/subareas` - Create new subarea (requires auth)
+- `GET /api/areas/content` - Get aggregated content across all modules by area/subarea
+
+### Personal Tasks
+- `GET /api/personal-tasks` - Get user's personal tasks (private, user-isolated)
+- `POST /api/personal-tasks` - Create new personal task (requires auth)
+- `GET /api/personal-tasks/:id` - Get specific personal task details
+- `PUT /api/personal-tasks/:id` - Update personal task (owner only)
+- `DELETE /api/personal-tasks/:id` - Delete personal task (owner only)
 
 ### Cotizaciones
 - `GET /api/cotizaciones` - Get quotations with filtering
@@ -380,10 +417,19 @@ task-manager-app/
 - `POST /api/init/db` - Initialize database tables
 - `POST /api/migrate/add-comments-table` - Add comments table
 - `POST /api/migrate/add-attachments-table` - Add attachments table
-- `POST /api/migrate/add-contacts-table` - Add contacts table
-- `POST /api/migrate/add-documents-table` - Add documents table
-- `POST /api/migrate/add-ledger-table` - Add ledger tables
-- `POST /api/migrate/add-cotizaciones-table` - Add cotizaciones table
+- `POST /api/migrate/add-contacts-tables` - Add contacts table
+- `POST /api/migrate/add-documents-tables` - Add documents table
+- `POST /api/migrate/add-ledger-tables` - Add USD ledger tables
+- `POST /api/migrate/add-mxn-ledger-tables` - Add MXN ledger tables
+- `POST /api/migrate/add-cotizaciones-tables` - Add cotizaciones table
+- `POST /api/migrate/create-areas-tables` - Add areas/subareas tables
+- `POST /api/migrate/add-area-subarea-tasks` - Add area/subarea to tasks
+- `POST /api/migrate/add-area-subarea-cotizaciones` - Add area/subarea to cotizaciones
+- `POST /api/migrate/add-area-subarea-ledger-usd` - Add area/subarea to USD ledger
+- `POST /api/migrate/add-area-subarea-ledger-mxn` - Add area/subarea to MXN ledger
+- `POST /api/migrate/create-personal-tasks-table` - Add personal tasks table
+- `POST /api/migrate/add-por-realizar-to-ledgers` - Add por_realizar feature to ledgers
+- `GET /api/migrate/check-por-realizar-column` - Check por_realizar column status
 
 ## Application Features
 
@@ -423,20 +469,35 @@ task-manager-app/
 
 ## Recent Updates
 
+### Latest Release - Enhanced Business Features
+- **✨ "Por Realizar" Future Transactions** - Track pending/future financial transactions separately from realized cash flow
+- **🔄 Mark as Realized Functionality** - One-click conversion of pending transactions to realized
+- **🏢 Centralized Areas/Subareas System** - Standardized categorization across all business modules
+- **🔒 Personal Tasks System** - Private task management with strict user isolation
+- **📊 Advanced Content Aggregation** - Cross-module dashboard displaying data from all business areas
+- **🎯 Enhanced Filtering** - Filter by transaction status, categories, date ranges across all modules
+
+### Code Quality & Maintainability Release
+- **🧹 300+ Lines of Duplicate Code Eliminated** - Created centralized utility functions
+- **🔄 Backend Utility Functions** - Reusable mapping, validation, and query building utilities
+- **🛡️ Standardized Error Handling** - Consistent error patterns across all controllers
+- **📝 Frontend Validation Utilities** - Reusable form validation and formatting functions
+- **🎯 Better Type Safety** - Eliminated remaining `any` types with proper interfaces
+- **⚡ Improved Maintainability** - Centralized business logic for easier updates
+
 ### Performance Optimization Release
 - **40% Bundle Size Reduction** - Implemented React.lazy code splitting
-- **200+ Lines of Code Eliminated** - Created reusable `useAttachmentManager` hook
-- **Enhanced TypeScript Safety** - Replaced all `any[]` types with proper interfaces
-- **Advanced Query Optimization** - React Query with prefetching, background updates, and smart caching
-- **Improved User Experience** - Debounced search, optimistic updates, and memoized components
-- **Bug Fixes** - Resolved TaskDetail "Task Not Found" error with optimized query hooks
+- **⚡ Advanced Query Optimization** - React Query with prefetching, background updates, and smart caching
+- **🔍 Debounced Search** - Optimized search performance across all modules
+- **💾 Smart Caching** - 5-minute stale times with background updates
+- **🎯 Optimistic Updates** - Instant UI feedback for better user experience
 
 ### Architecture Improvements
-- Custom hooks for shared business logic
-- Memoized expensive operations (filtering, sorting, color calculations)
-- Enhanced error handling and retry strategies
-- Better component composition and reusability
-- Comprehensive TypeScript type coverage
+- **Custom hooks for shared business logic** - Reduced code duplication by 65%
+- **Memoized expensive operations** - Filtering, sorting, and color calculations
+- **Enhanced error handling** - Retry strategies and user-friendly error messages
+- **Better component composition** - Reusable components across business modules
+- **Comprehensive TypeScript coverage** - Full type safety across frontend and backend
 
 ## Contributing
 
