@@ -37,6 +37,30 @@ export interface SubareaFormData {
   description?: string;
 }
 
+export interface AreaContent {
+  tasks: any[];
+  cotizaciones: any[];
+  contacts: any[];
+  ledgerEntries: any[];
+  ledgerEntriesMxn: any[];
+  documents: any[];
+}
+
+export interface AreaContentSummary {
+  area: string;
+  subarea?: string;
+  content: AreaContent;
+  counts: {
+    tasks: number;
+    cotizaciones: number;
+    contacts: number;
+    ledgerEntries: number;
+    ledgerEntriesMxn: number;
+    documents: number;
+    total: number;
+  };
+}
+
 class AreasController {
   // Get all areas with their subareas
   async getAreas(req: AuthRequest, res: Response) {
@@ -430,6 +454,243 @@ class AreasController {
       res.status(500).json({
         success: false,
         error: 'Failed to update subarea',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  // Get all content for a specific area
+  async getAreaContent(req: AuthRequest, res: Response) {
+    try {
+      const { areaName } = req.params;
+      const userId = req.userId!;
+
+      // Query all tables for content with this area
+      const [
+        tasksResult,
+        cotizacionesResult,
+        contactsResult,
+        ledgerEntriesResult,
+        ledgerEntriesMxnResult,
+        documentsResult
+      ] = await Promise.all([
+        pool.query(`
+          SELECT id, title, description, status, priority, due_date, area, subarea, created_at, updated_at
+          FROM tasks 
+          WHERE user_id = $1 AND area = $2
+          ORDER BY created_at DESC
+        `, [userId, areaName]),
+        
+        pool.query(`
+          SELECT id, amount, currency, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
+          FROM cotizaciones_entries 
+          WHERE user_id = $1 AND area = $2
+          ORDER BY created_at DESC
+        `, [userId, areaName]),
+        
+        // Check if contacts table has area/subarea columns first
+        pool.query(`
+          SELECT column_name FROM information_schema.columns 
+          WHERE table_name = 'contacts' AND column_name IN ('area', 'subarea')
+        `).then(async (colCheck) => {
+          if (colCheck.rows.length === 2) {
+            return await pool.query(`
+              SELECT id, name, company, position, email, phone, contact_type, status, area, subarea, created_at
+              FROM contacts 
+              WHERE user_id = $1 AND area = $2
+              ORDER BY created_at DESC
+            `, [userId, areaName]);
+          } else {
+            return { rows: [] }; // Return empty if columns don't exist
+          }
+        }),
+        
+        pool.query(`
+          SELECT id, amount, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
+          FROM ledger_entries 
+          WHERE user_id = $1 AND area = $2
+          ORDER BY created_at DESC
+        `, [userId, areaName]),
+        
+        pool.query(`
+          SELECT id, amount, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
+          FROM ledger_entries_mxn 
+          WHERE user_id = $1 AND area = $2
+          ORDER BY created_at DESC
+        `, [userId, areaName]),
+        
+        // Check if documents table has area/subarea columns first
+        pool.query(`
+          SELECT column_name FROM information_schema.columns 
+          WHERE table_name = 'documents' AND column_name IN ('area', 'subarea')
+        `).then(async (colCheck) => {
+          if (colCheck.rows.length === 2) {
+            return await pool.query(`
+              SELECT id, document_name, document_type, status, area, subarea, created_at
+              FROM documents 
+              WHERE user_id = $1 AND area = $2
+              ORDER BY created_at DESC
+            `, [userId, areaName]);
+          } else {
+            return { rows: [] }; // Return empty if columns don't exist
+          }
+        })
+      ]);
+
+      const content: AreaContent = {
+        tasks: tasksResult.rows,
+        cotizaciones: cotizacionesResult.rows,
+        contacts: contactsResult.rows,
+        ledgerEntries: ledgerEntriesResult.rows,
+        ledgerEntriesMxn: ledgerEntriesMxnResult.rows,
+        documents: documentsResult.rows
+      };
+
+      const counts = {
+        tasks: content.tasks.length,
+        cotizaciones: content.cotizaciones.length,
+        contacts: content.contacts.length,
+        ledgerEntries: content.ledgerEntries.length,
+        ledgerEntriesMxn: content.ledgerEntriesMxn.length,
+        documents: content.documents.length,
+        total: content.tasks.length + content.cotizaciones.length + content.contacts.length + 
+               content.ledgerEntries.length + content.ledgerEntriesMxn.length + content.documents.length
+      };
+
+      const summary: AreaContentSummary = {
+        area: areaName,
+        content,
+        counts
+      };
+
+      res.json({
+        success: true,
+        data: summary
+      });
+    } catch (error) {
+      console.error('Error fetching area content:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch area content',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  // Get all content for a specific subarea
+  async getSubareaContent(req: AuthRequest, res: Response) {
+    try {
+      const { areaName, subareaName } = req.params;
+      const userId = req.userId!;
+
+      // Query all tables for content with this area and subarea
+      const [
+        tasksResult,
+        cotizacionesResult,
+        contactsResult,
+        ledgerEntriesResult,
+        ledgerEntriesMxnResult,
+        documentsResult
+      ] = await Promise.all([
+        pool.query(`
+          SELECT id, title, description, status, priority, due_date, area, subarea, created_at, updated_at
+          FROM tasks 
+          WHERE user_id = $1 AND area = $2 AND subarea = $3
+          ORDER BY created_at DESC
+        `, [userId, areaName, subareaName]),
+        
+        pool.query(`
+          SELECT id, amount, currency, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
+          FROM cotizaciones_entries 
+          WHERE user_id = $1 AND area = $2 AND subarea = $3
+          ORDER BY created_at DESC
+        `, [userId, areaName, subareaName]),
+        
+        // Check if contacts table has area/subarea columns first
+        pool.query(`
+          SELECT column_name FROM information_schema.columns 
+          WHERE table_name = 'contacts' AND column_name IN ('area', 'subarea')
+        `).then(async (colCheck) => {
+          if (colCheck.rows.length === 2) {
+            return await pool.query(`
+              SELECT id, name, company, position, email, phone, contact_type, status, area, subarea, created_at
+              FROM contacts 
+              WHERE user_id = $1 AND area = $2 AND subarea = $3
+              ORDER BY created_at DESC
+            `, [userId, areaName, subareaName]);
+          } else {
+            return { rows: [] }; // Return empty if columns don't exist
+          }
+        }),
+        
+        pool.query(`
+          SELECT id, amount, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
+          FROM ledger_entries 
+          WHERE user_id = $1 AND area = $2 AND subarea = $3
+          ORDER BY created_at DESC
+        `, [userId, areaName, subareaName]),
+        
+        pool.query(`
+          SELECT id, amount, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
+          FROM ledger_entries_mxn 
+          WHERE user_id = $1 AND area = $2 AND subarea = $3
+          ORDER BY created_at DESC
+        `, [userId, areaName, subareaName]),
+        
+        // Check if documents table has area/subarea columns first
+        pool.query(`
+          SELECT column_name FROM information_schema.columns 
+          WHERE table_name = 'documents' AND column_name IN ('area', 'subarea')
+        `).then(async (colCheck) => {
+          if (colCheck.rows.length === 2) {
+            return await pool.query(`
+              SELECT id, document_name, document_type, status, area, subarea, created_at
+              FROM documents 
+              WHERE user_id = $1 AND area = $2 AND subarea = $3
+              ORDER BY created_at DESC
+            `, [userId, areaName, subareaName]);
+          } else {
+            return { rows: [] }; // Return empty if columns don't exist
+          }
+        })
+      ]);
+
+      const content: AreaContent = {
+        tasks: tasksResult.rows,
+        cotizaciones: cotizacionesResult.rows,
+        contacts: contactsResult.rows,
+        ledgerEntries: ledgerEntriesResult.rows,
+        ledgerEntriesMxn: ledgerEntriesMxnResult.rows,
+        documents: documentsResult.rows
+      };
+
+      const counts = {
+        tasks: content.tasks.length,
+        cotizaciones: content.cotizaciones.length,
+        contacts: content.contacts.length,
+        ledgerEntries: content.ledgerEntries.length,
+        ledgerEntriesMxn: content.ledgerEntriesMxn.length,
+        documents: content.documents.length,
+        total: content.tasks.length + content.cotizaciones.length + content.contacts.length + 
+               content.ledgerEntries.length + content.ledgerEntriesMxn.length + content.documents.length
+      };
+
+      const summary: AreaContentSummary = {
+        area: areaName,
+        subarea: subareaName,
+        content,
+        counts
+      };
+
+      res.json({
+        success: true,
+        data: summary
+      });
+    } catch (error) {
+      console.error('Error fetching subarea content:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch subarea content',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }

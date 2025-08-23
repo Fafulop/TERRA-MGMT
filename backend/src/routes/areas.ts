@@ -19,4 +19,8 @@ router.post('/subareas', areasController.createSubarea);
 router.put('/subareas/:id', areasController.updateSubarea);
 router.delete('/subareas/:id', areasController.deleteSubarea);
 
+// Content aggregation routes
+router.get('/:areaName/content', areasController.getAreaContent);
+router.get('/:areaName/subareas/:subareaName/content', areasController.getSubareaContent);
+
 export default router;

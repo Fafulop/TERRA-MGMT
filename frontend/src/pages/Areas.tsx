@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { areasService, AreaWithSubareas, AreaFormData, SubareaFormData, Subarea } from '../services/areas';
+import AreaContentDisplay from '../components/AreaContentDisplay';
 
 const Areas: React.FC = () => {
   const navigate = useNavigate();
@@ -23,6 +24,10 @@ const Areas: React.FC = () => {
   const [areaForm, setAreaForm] = useState<AreaFormData>({ name: '', description: '' });
   const [subareaForm, setSubareaForm] = useState<SubareaFormData>({ area_id: 0, name: '', description: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Expansion states
+  const [expandedAreas, setExpandedAreas] = useState<Set<number>>(new Set());
+  const [expandedSubareas, setExpandedSubareas] = useState<Set<string>>(new Set());
 
   // Auth check
   if (!user || !token) {
@@ -138,6 +143,28 @@ const Areas: React.FC = () => {
     }
   };
 
+  // Toggle expansion functions
+  const toggleAreaExpansion = (areaId: number) => {
+    const newExpanded = new Set(expandedAreas);
+    if (newExpanded.has(areaId)) {
+      newExpanded.delete(areaId);
+    } else {
+      newExpanded.add(areaId);
+    }
+    setExpandedAreas(newExpanded);
+  };
+
+  const toggleSubareaExpansion = (areaName: string, subareaName: string) => {
+    const key = `${areaName}:${subareaName}`;
+    const newExpanded = new Set(expandedSubareas);
+    if (newExpanded.has(key)) {
+      newExpanded.delete(key);
+    } else {
+      newExpanded.add(key);
+    }
+    setExpandedSubareas(newExpanded);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
@@ -195,8 +222,14 @@ const Areas: React.FC = () => {
           {/* Action Bar */}
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Areas & Subareas</h2>
-              <p className="text-gray-600">Manage organizational areas and their subareas</p>
+              <h2 className="text-2xl font-bold text-gray-900">Areas & Subareas Dashboard</h2>
+              <p className="text-gray-600">Manage organizational taxonomy and view all related content across modules</p>
+              <p className="text-sm text-indigo-600 mt-1">
+                <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Click the arrow icons to expand and view all tasks, cotizaciones, contacts, ledger entries, and documents
+              </p>
             </div>
             <button
               onClick={handleCreateArea}
@@ -250,7 +283,23 @@ const Areas: React.FC = () => {
                       {/* Area Header */}
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900">{area.name}</h3>
+                          <div className="flex items-center space-x-3">
+                            <h3 className="text-lg font-semibold text-gray-900">{area.name}</h3>
+                            <button
+                              onClick={() => toggleAreaExpansion(area.id)}
+                              className="text-indigo-600 hover:text-indigo-700 p-1 transition-transform duration-200"
+                              title={expandedAreas.has(area.id) ? "Hide content" : "Show all content"}
+                            >
+                              <svg 
+                                className={`w-5 h-5 transform ${expandedAreas.has(area.id) ? 'rotate-90' : ''}`} 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          </div>
                           {area.description && (
                             <p className="text-gray-600 mt-1">{area.description}</p>
                           )}
@@ -289,41 +338,77 @@ const Areas: React.FC = () => {
                         </div>
                       </div>
 
+                      {/* Area Content Display */}
+                      <AreaContentDisplay 
+                        areaName={area.name}
+                        isExpanded={expandedAreas.has(area.id)}
+                      />
+
                       {/* Subareas */}
                       {area.subareas.length > 0 && (
                         <div className="border-t pt-4">
                           <h4 className="text-sm font-medium text-gray-700 mb-3">Subareas</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {area.subareas.map((subarea) => (
-                              <div key={subarea.id} className="bg-gray-50 rounded-lg p-3 flex justify-between items-start">
-                                <div className="flex-1">
-                                  <p className="font-medium text-gray-900">{subarea.name}</p>
-                                  {subarea.description && (
-                                    <p className="text-sm text-gray-600 mt-1">{subarea.description}</p>
-                                  )}
+                          <div className="space-y-3">
+                            {area.subareas.map((subarea) => {
+                              const subareaKey = `${area.name}:${subarea.name}`;
+                              const isSubareaExpanded = expandedSubareas.has(subareaKey);
+                              
+                              return (
+                                <div key={subarea.id} className="bg-gray-50 rounded-lg">
+                                  <div className="p-3 flex justify-between items-start">
+                                    <div className="flex-1">
+                                      <div className="flex items-center space-x-2">
+                                        <p className="font-medium text-gray-900">{subarea.name}</p>
+                                        <button
+                                          onClick={() => toggleSubareaExpansion(area.name, subarea.name)}
+                                          className="text-indigo-600 hover:text-indigo-700 p-1 transition-transform duration-200"
+                                          title={isSubareaExpanded ? "Hide subarea content" : "Show subarea content"}
+                                        >
+                                          <svg 
+                                            className={`w-4 h-4 transform ${isSubareaExpanded ? 'rotate-90' : ''}`} 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                          </svg>
+                                        </button>
+                                      </div>
+                                      {subarea.description && (
+                                        <p className="text-sm text-gray-600 mt-1">{subarea.description}</p>
+                                      )}
+                                    </div>
+                                    <div className="flex space-x-1 ml-2">
+                                      <button
+                                        onClick={() => handleEditSubarea(subarea)}
+                                        className="text-indigo-600 hover:text-indigo-700 p-1"
+                                        title="Edit subarea"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteSubarea(subarea.id)}
+                                        className="text-red-600 hover:text-red-700 p-1"
+                                        title="Delete subarea"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Subarea Content Display */}
+                                  <AreaContentDisplay 
+                                    areaName={area.name}
+                                    subareaName={subarea.name}
+                                    isExpanded={isSubareaExpanded}
+                                  />
                                 </div>
-                                <div className="flex space-x-1 ml-2">
-                                  <button
-                                    onClick={() => handleEditSubarea(subarea)}
-                                    className="text-indigo-600 hover:text-indigo-700 p-1"
-                                    title="Edit subarea"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteSubarea(subarea.id)}
-                                    className="text-red-600 hover:text-red-700 p-1"
-                                    title="Delete subarea"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}

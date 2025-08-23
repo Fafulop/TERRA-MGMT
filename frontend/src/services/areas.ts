@@ -30,6 +30,30 @@ export interface SubareaFormData {
   description?: string;
 }
 
+export interface AreaContent {
+  tasks: any[];
+  cotizaciones: any[];
+  contacts: any[];
+  ledgerEntries: any[];
+  ledgerEntriesMxn: any[];
+  documents: any[];
+}
+
+export interface AreaContentSummary {
+  area: string;
+  subarea?: string;
+  content: AreaContent;
+  counts: {
+    tasks: number;
+    cotizaciones: number;
+    contacts: number;
+    ledgerEntries: number;
+    ledgerEntriesMxn: number;
+    documents: number;
+    total: number;
+  };
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export const areasService = {
@@ -177,5 +201,41 @@ export const areasService = {
       const error = await response.json();
       throw new Error(error.error || 'Failed to delete subarea');
     }
+  },
+
+  // Get all content for a specific area
+  getAreaContent: async (areaName: string, token: string): Promise<AreaContentSummary> => {
+    const response = await fetch(`${API_BASE_URL}/areas/${encodeURIComponent(areaName)}/content`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch area content');
+    }
+
+    const result = await response.json();
+    return result.data;
+  },
+
+  // Get all content for a specific subarea
+  getSubareaContent: async (areaName: string, subareaName: string, token: string): Promise<AreaContentSummary> => {
+    const response = await fetch(`${API_BASE_URL}/areas/${encodeURIComponent(areaName)}/subareas/${encodeURIComponent(subareaName)}/content`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch subarea content');
+    }
+
+    const result = await response.json();
+    return result.data;
   }
 };
