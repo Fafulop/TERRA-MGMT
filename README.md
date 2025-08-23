@@ -246,88 +246,142 @@ railway up
 task-manager-app/
 ├── backend/                 # Express.js API server
 │   ├── src/
-│   │   ├── config/         # Database configuration
+│   │   ├── config/         # Database configuration and migration files
 │   │   │   ├── database.ts
 │   │   │   ├── init-db.sql
-│   │   │   └── add-*.sql   # Migration files
-│   │   ├── controllers/    # Route handlers
+│   │   │   ├── add-attachments-table.sql
+│   │   │   ├── add-comments-table.sql
+│   │   │   ├── add-contacts-tables.sql
+│   │   │   ├── add-cotizaciones-tables.sql
+│   │   │   ├── add-documents-tables.sql
+│   │   │   ├── add-ledger-tables.sql
+│   │   │   ├── add-mxn-ledger-tables.sql
+│   │   │   └── alter-cotizaciones-add-area-subarea.sql
+│   │   ├── controllers/    # Route handlers (refactored with utilities)
+│   │   │   ├── BaseFinancialController.ts    # Abstract base controller
+│   │   │   ├── areasController.ts           # Areas/subareas management
 │   │   │   ├── authController.ts
 │   │   │   ├── taskController.ts
+│   │   │   ├── personalTasksController.ts   # Private user tasks
 │   │   │   ├── commentController.ts
 │   │   │   ├── attachmentController.ts
 │   │   │   ├── contactsController.ts
 │   │   │   ├── documentsController.ts
-│   │   │   ├── ledgerController.ts
+│   │   │   ├── ledgerController.ts          # USD ledger (refactored)
+│   │   │   ├── ledgerMxnController.ts       # MXN ledger (refactored)
 │   │   │   └── cotizacionesController.ts
 │   │   ├── middleware/     # Custom middleware
 │   │   │   └── auth.ts
-│   │   ├── routes/         # API routes
+│   │   ├── routes/         # API routes (expanded)
 │   │   │   ├── auth.ts
 │   │   │   ├── tasks.ts
+│   │   │   ├── personalTasks.ts             # Private tasks routes
+│   │   │   ├── areas.ts                     # Areas/subareas routes
 │   │   │   ├── comments.ts
 │   │   │   ├── attachments.ts
 │   │   │   ├── contacts.ts
 │   │   │   ├── documents.ts
-│   │   │   ├── ledger.ts
+│   │   │   ├── ledger.ts                    # USD ledger routes
+│   │   │   ├── ledgerMxn.ts                 # MXN ledger routes
 │   │   │   ├── cotizaciones.ts
 │   │   │   ├── uploadthing.ts
-│   │   │   └── migrate.ts
+│   │   │   ├── migrate.ts                   # All database migrations
+│   │   │   ├── migration.ts
+│   │   │   └── init.ts
+│   │   ├── scripts/        # Utility scripts
+│   │   │   └── run-migration.ts
+│   │   ├── utils/          # NEW: Centralized utility functions
+│   │   │   ├── errorHandlers.ts             # Standardized error handling
+│   │   │   ├── ledgerMappers.ts             # Database mapping utilities
+│   │   │   ├── queryBuilders.ts             # Query building utilities
+│   │   │   ├── validators.ts                # Validation utilities
+│   │   │   └── idGenerator.ts
 │   │   └── index.ts        # Server entry point
 │   ├── package.json
 │   └── tsconfig.json
 ├── frontend/               # React application
 │   ├── src/
-│   │   ├── components/     # Reusable components
-│   │   │   ├── AttachmentSection.tsx    # Reusable attachment UI
+│   │   ├── components/     # Reusable components (enhanced)
+│   │   │   ├── AreaContentDisplay.tsx      # Cross-module content aggregation
+│   │   │   ├── AreaSubareaSelector.tsx     # Centralized area/subarea picker
+│   │   │   ├── AttachmentSection.tsx       # Reusable attachment UI
+│   │   │   ├── AttachmentList.tsx
+│   │   │   ├── AttachmentUpload.tsx
+│   │   │   ├── FileAttachmentSection.tsx   # Enhanced file handling
 │   │   │   ├── FileUpload.tsx
 │   │   │   ├── CommentForm.tsx
 │   │   │   ├── CommentList.tsx
-│   │   │   ├── TaskCard.tsx            # Memoized with optimistic updates
-│   │   │   ├── AttachmentList.tsx
+│   │   │   ├── TaskCard.tsx                # Memoized with optimistic updates
 │   │   │   ├── ContactForm.tsx
 │   │   │   ├── ContactsTable.tsx
 │   │   │   ├── DocumentForm.tsx
 │   │   │   ├── DocumentsTable.tsx
 │   │   │   ├── DocumentFilesModal.tsx
-│   │   │   ├── LedgerForm.tsx
-│   │   │   └── CotizacionForm.tsx
+│   │   │   ├── LedgerEntryForm.tsx         # Enhanced with por_realizar
+│   │   │   ├── LedgerTable.tsx             # Enhanced filtering & visual indicators
+│   │   │   ├── CotizacionesEntryForm.tsx
+│   │   │   └── CotizacionesTable.tsx
 │   │   ├── contexts/       # React contexts
 │   │   │   └── AuthContext.tsx
-│   │   ├── hooks/          # Custom hooks for performance
-│   │   │   ├── useAttachmentManager.ts # Shared attachment logic
-│   │   │   ├── useTaskQueries.ts       # Optimized React Query hooks
-│   │   │   ├── useContactsQueries.ts   # Contact management queries
-│   │   │   ├── useDocumentsQueries.ts  # Document management queries
-│   │   │   ├── useLedgerQueries.ts     # Ledger management queries
-│   │   │   ├── useCotizacionesQueries.ts # Quotations management queries
-│   │   │   └── useDebounce.ts          # Debounced search functionality
+│   │   ├── hooks/          # Custom hooks for performance (expanded)
+│   │   │   ├── useAttachmentManager.ts     # Shared attachment logic
+│   │   │   ├── useBaseFinancialQueries.ts  # Base financial operations
+│   │   │   ├── useTaskQueries.ts           # Optimized React Query hooks
+│   │   │   ├── useContactsQueries.ts       # Contact management queries
+│   │   │   ├── useDocumentsQueries.ts      # Document management queries
+│   │   │   ├── useLedgerQueries.ts         # USD ledger management queries
+│   │   │   ├── useLedgerMxnQueries.ts      # MXN ledger management queries
+│   │   │   ├── useCotizacionesQueries.ts   # Quotations management queries
+│   │   │   ├── useCurrencyConversion.ts    # Currency conversion utilities
+│   │   │   └── useDebounce.ts              # Debounced search functionality
 │   │   ├── pages/          # Page components (code-split with React.lazy)
-│   │   │   ├── Dashboard.tsx
-│   │   │   ├── TaskCreator.tsx         # Optimized with shared hooks
-│   │   │   ├── TaskDetail.tsx          # Enhanced caching
+│   │   │   ├── Dashboard.tsx               # Cross-module dashboard
+│   │   │   ├── Areas.tsx                   # Areas/subareas management
+│   │   │   ├── Personal.tsx                # Private tasks page
+│   │   │   ├── TaskCreator.tsx             # Optimized with shared hooks
+│   │   │   ├── TaskDetail.tsx              # Enhanced caching
 │   │   │   ├── TaskEditor.tsx
-│   │   │   ├── TaskList.tsx            # Memoized filtering & search
-│   │   │   ├── Contactos.tsx           # Contact management page
-│   │   │   ├── Documentos.tsx          # Document management page
-│   │   │   ├── Ledger.tsx              # Financial ledger page
-│   │   │   ├── LedgerMxn.tsx           # MXN currency ledger page
-│   │   │   └── Cotizaciones.tsx        # Quotations management page
-│   │   ├── services/       # API services
+│   │   │   ├── TaskList.tsx                # Memoized filtering & search
+│   │   │   ├── Contactos.tsx               # Contact management page
+│   │   │   ├── Documentos.tsx              # Document management page
+│   │   │   ├── CashFlow.tsx                # Dual currency financial ledger
+│   │   │   ├── Cotizaciones.tsx            # Quotations management page
+│   │   │   ├── Login.tsx
+│   │   │   └── Register.tsx
+│   │   ├── services/       # API services (expanded)
+│   │   │   ├── BaseFinancialService.ts     # Base financial service class
 │   │   │   ├── auth.ts
+│   │   │   ├── areas.ts                    # Areas/subareas API
 │   │   │   ├── tasks.ts
+│   │   │   ├── personalTasks.ts            # Private tasks API
 │   │   │   ├── contacts.ts
 │   │   │   ├── documents.ts
-│   │   │   ├── ledger.ts
+│   │   │   ├── ledger.ts                   # USD ledger API
+│   │   │   ├── ledgerMxn.ts                # MXN ledger API
 │   │   │   └── cotizaciones.ts
+│   │   ├── utils/          # NEW: Frontend utility functions
+│   │   │   ├── currencyConverter.ts        # Currency conversion utilities
+│   │   │   ├── formValidators.ts           # Reusable form validation
+│   │   │   ├── formatters.ts               # Consistent formatting utilities
+│   │   │   └── uploadthing.ts
 │   │   ├── types/          # TypeScript types
-│   │   │   └── index.ts                # Enhanced with comprehensive business types
+│   │   │   └── index.ts                    # Enhanced with comprehensive business types
 │   │   └── main.tsx        # React entry point
+│   ├── index.html
 │   ├── package.json
+│   ├── tailwind.config.js
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
 │   └── vite.config.ts
-├── railway.json            # Railway configuration
-├── Procfile               # Process definition
-├── setup.md               # Detailed setup guide
-└── package.json           # Root workspace configuration
+├── docs/                   # Documentation
+│   └── database-table-editing-guide.md
+├── nixpacks.toml          # Nixpacks backend configuration
+├── nixpacks.frontend.toml # Nixpacks frontend configuration
+├── railway.json           # Railway deployment configuration
+├── Procfile              # Process definition
+├── setup.md              # Detailed setup guide
+├── TODO.md               # Development todos
+└── package.json          # Root workspace configuration
 ```
 
 ## API Endpoints
