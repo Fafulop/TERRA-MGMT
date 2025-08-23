@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAttachmentManager } from '../hooks/useAttachmentManager';
 import FileAttachmentSection from './FileAttachmentSection';
 import { LedgerEntryFormData } from '../types';
+import AreaSubareaSelector from './AreaSubareaSelector';
 
 interface LedgerEntryFormProps {
   onSubmit: (data: LedgerEntryFormData) => void;
@@ -56,6 +57,20 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleAreaChange = (areaName: string) => {
+    setFormData(prev => ({ ...prev, area: areaName }));
+    if (errors.area) {
+      setErrors(prev => ({ ...prev, area: '' }));
+    }
+  };
+
+  const handleSubareaChange = (subareaName: string) => {
+    setFormData(prev => ({ ...prev, subarea: subareaName }));
+    if (errors.subarea) {
+      setErrors(prev => ({ ...prev, subarea: '' }));
     }
   };
 
@@ -213,46 +228,24 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
         </div>
 
         {/* Area and Subarea */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="area" className="block text-sm font-medium text-gray-700 mb-2">
-              Area *
-            </label>
-            <input
-              type="text"
-              id="area"
-              name="area"
-              value={formData.area}
-              onChange={handleInputChange}
-              className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.area ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="Enter area classification..."
-            />
-            {errors.area && (
-              <p className="mt-1 text-sm text-red-600">{errors.area}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="subarea" className="block text-sm font-medium text-gray-700 mb-2">
-              Subarea *
-            </label>
-            <input
-              type="text"
-              id="subarea"
-              name="subarea"
-              value={formData.subarea}
-              onChange={handleInputChange}
-              className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                errors.subarea ? 'border-red-300' : 'border-gray-300'
-              }`}
-              placeholder="Enter subarea classification..."
-            />
-            {errors.subarea && (
-              <p className="mt-1 text-sm text-red-600">{errors.subarea}</p>
-            )}
-          </div>
+        <div>
+          <AreaSubareaSelector
+            selectedArea={formData.area}
+            selectedSubarea={formData.subarea}
+            onAreaChange={handleAreaChange}
+            onSubareaChange={handleSubareaChange}
+            required={true}
+            showLabels={true}
+            disabled={isLoading}
+            areaPlaceholder="Select area..."
+            subareaPlaceholder="Select subarea..."
+          />
+          {errors.area && (
+            <p className="mt-1 text-sm text-red-600">{errors.area}</p>
+          )}
+          {errors.subarea && (
+            <p className="mt-1 text-sm text-red-600">{errors.subarea}</p>
+          )}
         </div>
 
         {/* Bank Account */}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CotizacionesEntryFormData } from '../services/cotizaciones';
 import { useAttachmentManager } from '../hooks/useAttachmentManager';
 import FileAttachmentSection from './FileAttachmentSection';
+import AreaSubareaSelector from './AreaSubareaSelector';
 
 interface CotizacionesEntryFormProps {
   onSubmit: (data: CotizacionesEntryFormData) => void;
@@ -96,6 +97,14 @@ const CotizacionesEntryForm: React.FC<CotizacionesEntryFormProps> = ({
         [field]: ''
       }));
     }
+  };
+
+  const handleAreaChange = (areaName: string) => {
+    handleChange('area', areaName);
+  };
+
+  const handleSubareaChange = (subareaName: string) => {
+    handleChange('subarea', subareaName);
   };
 
   return (
@@ -201,42 +210,20 @@ const CotizacionesEntryForm: React.FC<CotizacionesEntryFormProps> = ({
         </div>
 
         {/* Area and Subarea */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="area" className="block text-sm font-medium text-gray-700 mb-1">
-              Area *
-            </label>
-            <input
-              type="text"
-              id="area"
-              value={formData.area}
-              onChange={(e) => handleChange('area', e.target.value)}
-              className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.area ? 'border-red-500' : ''
-              }`}
-              placeholder="Enter area classification"
-              disabled={isLoading}
-            />
-            {errors.area && <p className="text-red-500 text-xs mt-1">{errors.area}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="subarea" className="block text-sm font-medium text-gray-700 mb-1">
-              Subarea *
-            </label>
-            <input
-              type="text"
-              id="subarea"
-              value={formData.subarea}
-              onChange={(e) => handleChange('subarea', e.target.value)}
-              className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.subarea ? 'border-red-500' : ''
-              }`}
-              placeholder="Enter subarea classification"
-              disabled={isLoading}
-            />
-            {errors.subarea && <p className="text-red-500 text-xs mt-1">{errors.subarea}</p>}
-          </div>
+        <div>
+          <AreaSubareaSelector
+            selectedArea={formData.area}
+            selectedSubarea={formData.subarea}
+            onAreaChange={handleAreaChange}
+            onSubareaChange={handleSubareaChange}
+            required={true}
+            showLabels={true}
+            disabled={isLoading}
+            areaPlaceholder="Select area..."
+            subareaPlaceholder="Select subarea..."
+          />
+          {errors.area && <p className="text-red-500 text-xs mt-1">{errors.area}</p>}
+          {errors.subarea && <p className="text-red-500 text-xs mt-1">{errors.subarea}</p>}
         </div>
 
         {/* Bank Account */}

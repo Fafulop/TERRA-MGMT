@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ContactFormData, Contact } from '../types';
+import AreaSubareaSelector from './AreaSubareaSelector';
 
 interface ContactFormProps {
   onSubmit: (data: ContactFormData) => void;
@@ -45,6 +46,14 @@ const ContactForm: React.FC<ContactFormProps> = ({
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleAreaChange = (areaName: string) => {
+    setFormData(prev => ({ ...prev, area: areaName }));
+  };
+
+  const handleSubareaChange = (subareaName: string) => {
+    setFormData(prev => ({ ...prev, subarea: subareaName }));
   };
 
   const handleAddTag = () => {
@@ -95,37 +104,17 @@ const ContactForm: React.FC<ContactFormProps> = ({
         {/* Priority Fields */}
         <div>
           <h4 className="text-md font-medium text-gray-900 mb-4">Priority Information</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Area *
-              </label>
-              <input
-                type="text"
-                name="area"
-                value={formData.area}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                placeholder="Contact area (required)"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Subarea *
-              </label>
-              <input
-                type="text"
-                name="subarea"
-                value={formData.subarea}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                placeholder="Contact subarea (required)"
-              />
-            </div>
-          </div>
+          <AreaSubareaSelector
+            selectedArea={formData.area}
+            selectedSubarea={formData.subarea}
+            onAreaChange={handleAreaChange}
+            onSubareaChange={handleSubareaChange}
+            required={true}
+            showLabels={true}
+            disabled={isLoading}
+            areaPlaceholder="Select contact area..."
+            subareaPlaceholder="Select contact subarea..."
+          />
         </div>
 
         {/* Basic Information */}

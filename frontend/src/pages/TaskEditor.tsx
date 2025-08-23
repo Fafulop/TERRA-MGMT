@@ -4,6 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { TaskFormData, Task } from '../types';
 import { taskService } from '../services/tasks';
+import AreaSubareaSelector from '../components/AreaSubareaSelector';
 
 const TaskEditor = () => {
   const navigate = useNavigate();
@@ -68,6 +69,20 @@ const TaskEditor = () => {
     setFormData(prev => ({
       ...prev,
       [name]: value
+    }));
+  };
+
+  const handleAreaChange = (areaName: string) => {
+    setFormData(prev => ({
+      ...prev,
+      area: areaName
+    }));
+  };
+
+  const handleSubareaChange = (subareaName: string) => {
+    setFormData(prev => ({
+      ...prev,
+      subarea: subareaName
     }));
   };
 
@@ -150,39 +165,16 @@ const TaskEditor = () => {
             </div>
 
             {/* Area and Subarea */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="area" className="block text-sm font-medium text-gray-700 mb-2">
-                  Area *
-                </label>
-                <input
-                  type="text"
-                  id="area"
-                  name="area"
-                  required
-                  value={formData.area}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter area classification..."
-                />
-              </div>
-
-              <div>
-                <label htmlFor="subarea" className="block text-sm font-medium text-gray-700 mb-2">
-                  Subarea *
-                </label>
-                <input
-                  type="text"
-                  id="subarea"
-                  name="subarea"
-                  required
-                  value={formData.subarea}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter subarea classification..."
-                />
-              </div>
-            </div>
+            <AreaSubareaSelector
+              selectedArea={formData.area}
+              selectedSubarea={formData.subarea}
+              onAreaChange={handleAreaChange}
+              onSubareaChange={handleSubareaChange}
+              required={true}
+              showLabels={true}
+              areaPlaceholder="Select area..."
+              subareaPlaceholder="Select subarea..."
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
