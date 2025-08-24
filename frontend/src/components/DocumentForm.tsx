@@ -155,7 +155,6 @@ const DocumentForm: React.FC<DocumentFormProps> = ({
           title="Document Files"
           description="Upload document files (PDF, DOC, XLS, images)"
         />
-        </div>
 
         {/* Document Details */}
         <div>
