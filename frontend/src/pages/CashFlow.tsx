@@ -78,8 +78,9 @@ const CashFlow = () => {
   const handleViewAttachments = async (entryId: number) => {
     try {
       // Fetch the full entry with attachments from the appropriate currency endpoint
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const endpoint = activeCurrency === 'USD' ? 'ledger' : 'ledger-mxn';
-      const response = await fetch(`http://localhost:5000/api/${endpoint}/${entryId}`, {
+      const response = await fetch(`${API_BASE_URL}/${endpoint}/${entryId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

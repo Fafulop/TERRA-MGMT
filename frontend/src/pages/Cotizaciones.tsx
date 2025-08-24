@@ -55,7 +55,8 @@ const Cotizaciones = () => {
   const handleViewAttachments = async (entryId: number) => {
     try {
       // Fetch the full entry with attachments
-      const response = await fetch(`http://localhost:5000/api/cotizaciones/${entryId}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/cotizaciones/${entryId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
