@@ -480,9 +480,9 @@ class AreasController {
         pool.query(`
           SELECT id, title, description, status, priority, due_date, area, subarea, created_at, updated_at
           FROM tasks 
-          WHERE user_id = $1 AND area = $2
+          WHERE area = $1
           ORDER BY created_at DESC
-        `, [userId, areaName]),
+        `, [areaName]),
         
         pool.query(`
           SELECT id, title, description, status, priority, due_date, area, subarea, created_at, updated_at
@@ -494,9 +494,9 @@ class AreasController {
         pool.query(`
           SELECT id, amount, currency, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
           FROM cotizaciones_entries 
-          WHERE user_id = $1 AND area = $2
+          WHERE area = $1
           ORDER BY created_at DESC
-        `, [userId, areaName]),
+        `, [areaName]),
         
         // Check if contacts table has area/subarea columns first
         pool.query(`
@@ -507,9 +507,9 @@ class AreasController {
             return await pool.query(`
               SELECT id, name, company, position, email, phone, contact_type, status, area, subarea, created_at
               FROM contacts 
-              WHERE user_id = $1 AND area = $2
+              WHERE area = $1
               ORDER BY created_at DESC
-            `, [userId, areaName]);
+            `, [areaName]);
           } else {
             return { rows: [] }; // Return empty if columns don't exist
           }
@@ -518,16 +518,16 @@ class AreasController {
         pool.query(`
           SELECT id, amount, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
           FROM ledger_entries 
-          WHERE user_id = $1 AND area = $2
+          WHERE area = $1
           ORDER BY created_at DESC
-        `, [userId, areaName]),
+        `, [areaName]),
         
         pool.query(`
           SELECT id, amount, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
           FROM ledger_entries_mxn 
-          WHERE user_id = $1 AND area = $2
+          WHERE area = $1
           ORDER BY created_at DESC
-        `, [userId, areaName]),
+        `, [areaName]),
         
         // Check if documents table has area/subarea columns first
         pool.query(`
@@ -538,9 +538,9 @@ class AreasController {
             return await pool.query(`
               SELECT id, document_name, document_type, status, area, subarea, created_at
               FROM documents 
-              WHERE user_id = $1 AND area = $2
+              WHERE area = $1
               ORDER BY created_at DESC
-            `, [userId, areaName]);
+            `, [areaName]);
           } else {
             return { rows: [] }; // Return empty if columns don't exist
           }
@@ -608,9 +608,9 @@ class AreasController {
         pool.query(`
           SELECT id, title, description, status, priority, due_date, area, subarea, created_at, updated_at
           FROM tasks 
-          WHERE user_id = $1 AND area = $2 AND subarea = $3
+          WHERE area = $1 AND subarea = $2
           ORDER BY created_at DESC
-        `, [userId, areaName, subareaName]),
+        `, [areaName, subareaName]),
         
         pool.query(`
           SELECT id, title, description, status, priority, due_date, area, subarea, created_at, updated_at
@@ -622,9 +622,9 @@ class AreasController {
         pool.query(`
           SELECT id, amount, currency, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
           FROM cotizaciones_entries 
-          WHERE user_id = $1 AND area = $2 AND subarea = $3
+          WHERE area = $1 AND subarea = $2
           ORDER BY created_at DESC
-        `, [userId, areaName, subareaName]),
+        `, [areaName, subareaName]),
         
         // Check if contacts table has area/subarea columns first
         pool.query(`
@@ -635,9 +635,9 @@ class AreasController {
             return await pool.query(`
               SELECT id, name, company, position, email, phone, contact_type, status, area, subarea, created_at
               FROM contacts 
-              WHERE user_id = $1 AND area = $2 AND subarea = $3
+              WHERE area = $1 AND subarea = $2
               ORDER BY created_at DESC
-            `, [userId, areaName, subareaName]);
+            `, [areaName, subareaName]);
           } else {
             return { rows: [] }; // Return empty if columns don't exist
           }
@@ -646,16 +646,16 @@ class AreasController {
         pool.query(`
           SELECT id, amount, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
           FROM ledger_entries 
-          WHERE user_id = $1 AND area = $2 AND subarea = $3
+          WHERE area = $1 AND subarea = $2
           ORDER BY created_at DESC
-        `, [userId, areaName, subareaName]),
+        `, [areaName, subareaName]),
         
         pool.query(`
           SELECT id, amount, concept, bank_account, entry_type, transaction_date, area, subarea, created_at
           FROM ledger_entries_mxn 
-          WHERE user_id = $1 AND area = $2 AND subarea = $3
+          WHERE area = $1 AND subarea = $2
           ORDER BY created_at DESC
-        `, [userId, areaName, subareaName]),
+        `, [areaName, subareaName]),
         
         // Check if documents table has area/subarea columns first
         pool.query(`
@@ -666,9 +666,9 @@ class AreasController {
             return await pool.query(`
               SELECT id, document_name, document_type, status, area, subarea, created_at
               FROM documents 
-              WHERE user_id = $1 AND area = $2 AND subarea = $3
+              WHERE area = $1 AND subarea = $2
               ORDER BY created_at DESC
-            `, [userId, areaName, subareaName]);
+            `, [areaName, subareaName]);
           } else {
             return { rows: [] }; // Return empty if columns don't exist
           }
