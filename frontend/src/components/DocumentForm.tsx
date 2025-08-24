@@ -144,17 +144,25 @@ const DocumentForm: React.FC<DocumentFormProps> = ({
         </div>
 
         {/* File Attachments Section */}
-        <FileAttachmentSection
-          fileAttachments={fileAttachments}
-          uploadedFiles={uploadedFiles}
-          onFileUpload={handleFileUpload}
-          onAddFileAttachment={addFileAttachment}
-          onUpdateFileAttachment={updateFileAttachment}
-          onRemoveFileAttachment={removeFileAttachment}
-          required={true}
-          title="Document Files"
-          description="Upload document files (PDF, DOC, XLS, images)"
-        />
+        <div>
+          <h4 className="text-md font-medium text-gray-900 mb-4">Document Files *</h4>
+          <p className="text-sm text-gray-600 mb-4">Upload document files (PDF, DOC, XLS, images). At least one file is required.</p>
+          <FileAttachmentSection
+            fileAttachments={fileAttachments}
+            uploadedFiles={uploadedFiles}
+            onFileUpload={handleFileUpload}
+            onAddFileAttachment={addFileAttachment}
+            onUpdateFileAttachment={updateFileAttachment}
+            onRemoveFileAttachment={removeFileAttachment}
+            showTitle={false}
+            compact={false}
+          />
+          {fileAttachments.length === 0 && (
+            <div className="mt-2 text-sm text-red-600">
+              At least one file attachment is required to create a document.
+            </div>
+          )}
+        </div>
 
         {/* Document Details */}
         <div>
