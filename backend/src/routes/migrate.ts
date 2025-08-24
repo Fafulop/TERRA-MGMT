@@ -929,4 +929,63 @@ router.post('/add-documents-tables', async (req: Request, res: Response) => {
   }
 });
 
+// Add area and subarea columns to contacts table
+router.post('/add-area-subarea-contacts', async (req, res) => {
+  try {
+    console.log('Starting migration to add area/subarea columns to contacts table...');
+
+    // Add area and subarea columns if they don't exist
+    await pool.query(`
+      DO $$ 
+      BEGIN
+          -- Add area column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'contacts' AND column_name = 'area') THEN
+              ALTER TABLE contacts ADD COLUMN area VARCHAR(255);
+          END IF;
+          
+          -- Add subarea column if it doesn't exist  
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'contacts' AND column_name = 'subarea') THEN
+              ALTER TABLE contacts ADD COLUMN subarea VARCHAR(255);
+          END IF;
+          
+          -- Add area_id column if it doesn't exist (foreign key to areas table)
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'contacts' AND column_name = 'area_id') THEN
+              ALTER TABLE contacts ADD COLUMN area_id INTEGER REFERENCES areas(id);
+          END IF;
+          
+          -- Add subarea_id column if it doesn't exist (foreign key to subareas table)
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'contacts' AND column_name = 'subarea_id') THEN
+              ALTER TABLE contacts ADD COLUMN subarea_id INTEGER REFERENCES subareas(id);
+          END IF;
+      END $$;
+    `);
+
+    // Create indexes for better performance
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_contacts_area ON contacts(area);
+      CREATE INDEX IF NOT EXISTS idx_contacts_subarea ON contacts(subarea);
+      CREATE INDEX IF NOT EXISTS idx_contacts_area_id ON contacts(area_id);
+      CREATE INDEX IF NOT EXISTS idx_contacts_subarea_id ON contacts(subarea_id);
+    `);
+
+    console.log('Contacts table area/subarea columns migration completed successfully!');
+
+    res.status(200).json({ 
+      message: 'Area and subarea columns added to contacts table successfully!',
+      columns_added: ['area', 'subarea', 'area_id', 'subarea_id'],
+      indexes_created: ['idx_contacts_area', 'idx_contacts_subarea', 'idx_contacts_area_id', 'idx_contacts_subarea_id']
+    });
+  } catch (error) {
+    console.error('Contacts area/subarea migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to add area/subarea columns to contacts table', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
