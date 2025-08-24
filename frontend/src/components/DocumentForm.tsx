@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { DocumentFormData, Document } from '../types';
 import AreaSubareaSelector from './AreaSubareaSelector';
+import { useAttachmentManager } from '../hooks/useAttachmentManager';
+import FileAttachmentSection from './FileAttachmentSection';
 
 interface DocumentFormProps {
   onSubmit: (data: DocumentFormData) => void;
@@ -29,40 +31,17 @@ const DocumentForm: React.FC<DocumentFormProps> = ({
 
   const [tagInput, setTagInput] = useState('');
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
+  // Use attachment manager for UploadThing integration
+  const {
+    fileAttachments,
+    uploadedFiles,
+    handleFileUpload,
+    addFileAttachment,
+    updateFileAttachment,
+    removeFileAttachment
+  } = useAttachmentManager();
 
-    // For demo purposes, we'll create mock file URLs
-    // In a real application, you would upload these files to your storage service first
-    const newAttachments = Array.from(files).map((file, index) => ({
-      file: {
-        id: `${Date.now()}-${index}`,
-        name: file.name,
-        url: `https://demo-storage.example.com/files/${Date.now()}-${file.name}`,
-        fileUrl: `https://demo-storage.example.com/files/${Date.now()}-${file.name}`,
-        size: file.size,
-        type: file.type,
-        uploadedBy: undefined
-      },
-      title: file.name
-    }));
-
-    setFormData(prev => ({
-      ...prev,
-      fileAttachments: [...prev.fileAttachments, ...newAttachments]
-    }));
-
-    // Clear the input so the same file can be selected again
-    event.target.value = '';
-  };
-
-  const handleRemoveFile = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      fileAttachments: prev.fileAttachments.filter((_, i) => i !== index)
-    }));
-  };
+  // File upload is now handled by useAttachmentManager hook
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -101,14 +80,14 @@ const DocumentForm: React.FC<DocumentFormProps> = ({
     e.preventDefault();
     
     // Validate required file attachments
-    if (formData.fileAttachments.length === 0) {
+    if (fileAttachments.length === 0) {
       alert('Please upload at least one file attachment before submitting.');
       return;
     }
     
     const submitData: DocumentFormData = {
       ...formData,
-      fileAttachments: formData.fileAttachments
+      fileAttachments: fileAttachments
     };
     
     onSubmit(submitData);
@@ -165,74 +144,17 @@ const DocumentForm: React.FC<DocumentFormProps> = ({
         </div>
 
         {/* File Attachments Section */}
-        <div>
-          <h4 className="text-md font-medium text-gray-900 mb-4">File Attachments *</h4>
-          <div className="border-2 border-dashed border-red-300 rounded-lg p-6">
-            <div className="text-center">
-              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <div className="mt-4">
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <span className="mt-2 block text-sm font-medium text-gray-900">
-                    Upload document files
-                  </span>
-                  <span className="mt-1 block text-sm text-gray-500">
-                    At least one file is required. PNG, JPG, PDF, DOC, XLS up to 10MB
-                  </span>
-                  <input
-                    id="file-upload"
-                    name="file-upload"
-                    type="file"
-                    multiple
-                    className="sr-only"
-                    onChange={handleFileUpload}
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt"
-                  />
-                  <span className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
-                    Choose Files
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
-          
-          {/* Display selected files */}
-          {formData.fileAttachments.length > 0 && (
-            <div className="mt-4">
-              <h5 className="text-sm font-medium text-gray-900 mb-2">Selected Files:</h5>
-              <div className="space-y-2">
-                {formData.fileAttachments.map((attachment, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                    <div className="flex items-center">
-                      <svg className="h-5 w-5 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                      </svg>
-                      <span className="text-sm text-gray-900">{attachment.file.name}</span>
-                      <span className="text-xs text-gray-500 ml-2">
-                        ({Math.round(attachment.file.size / 1024)} KB)
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveFile(index)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {formData.fileAttachments.length === 0 && (
-            <div className="mt-2 text-sm text-red-600">
-              At least one file attachment is required to create a document.
-            </div>
-          )}
+        <FileAttachmentSection
+          fileAttachments={fileAttachments}
+          uploadedFiles={uploadedFiles}
+          onFileUpload={handleFileUpload}
+          onAddFileAttachment={addFileAttachment}
+          onUpdateFileAttachment={updateFileAttachment}
+          onRemoveFileAttachment={removeFileAttachment}
+          required={true}
+          title="Document Files"
+          description="Upload document files (PDF, DOC, XLS, images)"
+        />
         </div>
 
         {/* Document Details */}
