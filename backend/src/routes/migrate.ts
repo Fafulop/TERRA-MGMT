@@ -988,4 +988,41 @@ router.post('/add-area-subarea-contacts', async (req, res) => {
   }
 });
 
+// Clean up documents with fake demo-storage URLs
+router.post('/clean-demo-storage-urls', async (req, res) => {
+  try {
+    console.log('Starting cleanup of documents with fake demo-storage URLs...');
+
+    // First, delete document_attachments with demo-storage URLs
+    const deleteAttachmentsResult = await pool.query(`
+      DELETE FROM document_attachments 
+      WHERE file_url LIKE '%demo-storage.example.com%'
+    `);
+
+    // Then delete documents that no longer have any attachments
+    const deleteDocumentsResult = await pool.query(`
+      DELETE FROM documents 
+      WHERE id NOT IN (
+        SELECT DISTINCT document_id 
+        FROM document_attachments 
+        WHERE document_id IS NOT NULL
+      )
+    `);
+
+    console.log('Demo storage URLs cleanup completed successfully!');
+
+    res.status(200).json({ 
+      message: 'Demo storage URLs cleaned up successfully!',
+      attachments_deleted: deleteAttachmentsResult.rowCount,
+      documents_deleted: deleteDocumentsResult.rowCount
+    });
+  } catch (error) {
+    console.error('Demo storage cleanup error:', error);
+    res.status(500).json({ 
+      error: 'Failed to clean up demo storage URLs', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
