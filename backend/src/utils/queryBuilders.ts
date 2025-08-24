@@ -100,7 +100,7 @@ export const buildLedgerEntriesQuery = (
     FROM ${tableName} le
     LEFT JOIN ${attachmentTableName} la ON le.id = la.${foreignKeyColumn}
     LEFT JOIN users u ON le.user_id = u.id
-    WHERE le.user_id = $1 ${whereClause}
+    WHERE 1=1 ${whereClause}
     GROUP BY le.id, u.username, u.first_name, u.last_name
     ORDER BY le.transaction_date DESC, le.created_at DESC
   `;

@@ -42,11 +42,11 @@ export const getLedgerEntries = async (req: AuthRequest, res: Response) => {
       por_realizar: por_realizar as string
     };
 
-    const filterResult = buildLedgerFilters(filters, 2);
+    const filterResult = buildLedgerFilters(filters, 1);
     const query = buildLedgerEntriesQuery('ledger_entries', 'ledger_attachments', filterResult.whereClause) + 
       ` LIMIT $${filterResult.paramIndex} OFFSET $${filterResult.paramIndex + 1}`;
     
-    const queryParams = [userId, ...filterResult.queryParams, limit, offset];
+    const queryParams = [...filterResult.queryParams, limit, offset];
 
     const result = await db.query(query, queryParams);
     
