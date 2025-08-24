@@ -283,7 +283,7 @@ const DocumentForm: React.FC<DocumentFormProps> = ({
           </button>
           <button
             type="submit"
-            disabled={isLoading || formData.fileAttachments.length === 0}
+            disabled={isLoading || fileAttachments.length === 0}
             className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Saving...' : initialData ? 'Update Document' : 'Create Document'}
