@@ -69,8 +69,36 @@ const Documentos: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleViewFiles = (document: Document) => {
-    setViewingDocument(document);
+  const handleViewFiles = async (document: Document) => {
+    try {
+      // Fetch the full document with attachments using the working pattern from cotizaciones
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${API_BASE_URL}/documents/${document.id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const documentWithAttachments = await response.json();
+        if (documentWithAttachments.attachments && documentWithAttachments.attachments.length > 0) {
+          // Open each attachment in a new tab (same as cotizaciones)
+          documentWithAttachments.attachments.forEach((att: any, index: number) => {
+            setTimeout(() => {
+              window.open(att.fileUrl, '_blank');
+            }, index * 100); // Stagger multiple file opens
+          });
+        } else {
+          alert('No attachments found for this document.');
+        }
+      } else {
+        console.error('Failed to fetch document details');
+        alert('Failed to load attachments.');
+      }
+    } catch (error) {
+      console.error('Error fetching attachments:', error);
+      alert('Error loading attachments.');
+    }
   };
 
   const handleCloseFilesModal = () => {
