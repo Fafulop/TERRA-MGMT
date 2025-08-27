@@ -201,6 +201,7 @@ const CashFlow = () => {
               onSubmit={handleSubmitEntry}
               onCancel={() => setShowEntryForm(false)}
               isLoading={currentCreateMutation.isPending}
+              currency={activeCurrency}
             />
           )}
 

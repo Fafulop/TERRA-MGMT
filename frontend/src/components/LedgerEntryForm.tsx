@@ -8,12 +8,14 @@ interface LedgerEntryFormProps {
   onSubmit: (data: LedgerEntryFormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  currency?: 'USD' | 'MXN';
 }
 
 const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({ 
   onSubmit, 
   onCancel, 
-  isLoading = false 
+  isLoading = false,
+  currency = 'USD'
 }) => {
   const [formData, setFormData] = useState<Omit<LedgerEntryFormData, 'fileAttachments' | 'urlAttachments'>>({
     amount: 0,
@@ -38,14 +40,14 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
     removeFileAttachment
   } = useAttachmentManager();
 
-  const bankAccounts = [
-    'Checking Account - Main',
-    'Savings Account - Emergency',
-    'Business Account - Operations',
-    'Credit Card - Business',
-    'Cash',
-    'Other'
-  ];
+  const bankAccounts = currency === 'USD' 
+    ? [
+        'Mercury Cheques',
+        'Mercury Credit Card'
+      ]
+    : [
+        'Santander'
+      ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
