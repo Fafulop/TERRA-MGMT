@@ -272,6 +272,80 @@ class CotizacionesController extends BaseFinancialController {
     return super.createEntry(req, res);
   }
 
+  // Override update method to handle currency-specific logic and filter out non-db fields
+  async updateEntry(req: any, res: any) {
+    const client = await this.pool.connect();
+    
+    try {
+      const userId = req.userId;
+      const entryId = parseInt(req.params.id);
+
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+
+      if (!entryId || isNaN(entryId)) {
+        return res.status(400).json({ error: 'Invalid entry ID' });
+      }
+
+      const { fileAttachments, ...updates } = req.body;
+      
+      // Normalize amount based on entry type before validation
+      if (updates.amount && updates.entry_type) {
+        updates.amount = updates.entry_type === 'income' ? Math.abs(updates.amount) : -Math.abs(updates.amount);
+      }
+      
+      // Validate entry data
+      this.validateEntryData(updates as CotizacionesFormData);
+
+      // Build update query dynamically, excluding non-database fields
+      const dbFields = ['amount', 'currency', 'concept', 'bank_account', 'entry_type', 'transaction_date', 'area', 'subarea', 'description'];
+      const fieldsToUpdate = Object.keys(updates).filter(key => dbFields.includes(key));
+      
+      if (fieldsToUpdate.length === 0) {
+        return res.status(400).json({ error: 'No valid fields to update' });
+      }
+
+      const setClause = fieldsToUpdate
+        .map((key, index) => `${key} = $${index + 3}`)
+        .join(', ');
+      
+      const values = fieldsToUpdate.map(key => updates[key]);
+
+      const updateQuery = `
+        UPDATE ${this.tableName} 
+        SET ${setClause}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1 AND user_id = $2
+        RETURNING *
+      `;
+
+      const result = await client.query(updateQuery, [entryId, userId, ...values]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Entry not found or you do not have permission to edit it' });
+      }
+
+      // Fetch complete entry with attachments using the public method (since cotizaciones are cross-user visible)
+      const completeEntry = await this.getEntryByIdPublic(entryId);
+      
+      res.json(completeEntry);
+
+    } catch (error) {
+      console.error(`Error updating ${this.tableName} entry:`, error);
+      
+      if (error instanceof Error && error.message.startsWith('Validation error:')) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(500).json({ 
+          error: 'Internal server error',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    } finally {
+      client.release();
+    }
+  }
+
   // Get cotizaciones summary with currency grouping (for all users)
   async getSummary(req: any, res: any) {
     const client = await this.pool.connect();

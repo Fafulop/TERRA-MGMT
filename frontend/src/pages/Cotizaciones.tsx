@@ -7,6 +7,7 @@ import { CotizacionesEntryFormData, CotizacionesFilters } from '../services/coti
 import { 
   useCotizacionesEntries, 
   useCreateCotizacionesEntry, 
+  useUpdateCotizacionesEntry,
   useDeleteCotizacionesEntry 
 } from '../hooks/useCotizacionesQueries';
 
@@ -14,11 +15,13 @@ const Cotizaciones = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showEntryForm, setShowEntryForm] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<any>(null);
   const [filters, setFilters] = useState<CotizacionesFilters>({});
 
   // React Query hooks
   const { data: cotizacionesData, isLoading, error, refetch } = useCotizacionesEntries(filters);
   const createEntryMutation = useCreateCotizacionesEntry();
+  const updateEntryMutation = useUpdateCotizacionesEntry();
   const deleteEntryMutation = useDeleteCotizacionesEntry();
 
   if (!user) {
@@ -28,17 +31,22 @@ const Cotizaciones = () => {
 
   const handleSubmitEntry = async (formData: CotizacionesEntryFormData) => {
     try {
-      await createEntryMutation.mutateAsync(formData);
+      if (editingEntry) {
+        await updateEntryMutation.mutateAsync({ id: editingEntry.id, data: formData });
+        setEditingEntry(null);
+      } else {
+        await createEntryMutation.mutateAsync(formData);
+      }
       setShowEntryForm(false);
     } catch (error) {
-      console.error('Error creating cotizaciones entry:', error);
+      console.error(`Error ${editingEntry ? 'updating' : 'creating'} cotizaciones entry:`, error);
       // Error handling is done in the mutation hook
     }
   };
 
   const handleEditEntry = async (entry: any) => {
-    // TODO: Implement edit modal/form
-    console.log('Edit cotizaciones entry:', entry);
+    setEditingEntry(entry);
+    setShowEntryForm(true);
   };
 
   const handleDeleteEntry = async (entryId: number) => {
@@ -207,7 +215,15 @@ const Cotizaciones = () => {
               <p className="text-gray-600">View all quotes and quotations from all users in USD and MXN currencies</p>
             </div>
             <button
-              onClick={() => setShowEntryForm(!showEntryForm)}
+              onClick={() => {
+                if (showEntryForm) {
+                  setShowEntryForm(false);
+                  setEditingEntry(null);
+                } else {
+                  setEditingEntry(null);
+                  setShowEntryForm(true);
+                }
+              }}
               className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                 showEntryForm 
                   ? 'bg-gray-600 hover:bg-gray-700 focus:ring-gray-500' 
@@ -298,8 +314,22 @@ const Cotizaciones = () => {
           {showEntryForm && (
             <CotizacionesEntryForm
               onSubmit={handleSubmitEntry}
-              onCancel={() => setShowEntryForm(false)}
-              isLoading={createEntryMutation.isPending}
+              onCancel={() => {
+                setShowEntryForm(false);
+                setEditingEntry(null);
+              }}
+              isLoading={createEntryMutation.isPending || updateEntryMutation.isPending}
+              initialData={editingEntry ? {
+                amount: Math.abs(editingEntry.amount),
+                currency: editingEntry.currency,
+                concept: editingEntry.concept,
+                bank_account: editingEntry.bank_account,
+                entry_type: editingEntry.entry_type,
+                transaction_date: editingEntry.transaction_date,
+                area: editingEntry.area,
+                subarea: editingEntry.subarea,
+                description: editingEntry.description || ''
+              } : undefined}
             />
           )}
 

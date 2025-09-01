@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CotizacionesEntryFormData } from '../services/cotizaciones';
 import { useAttachmentManager } from '../hooks/useAttachmentManager';
 import FileAttachmentSection from './FileAttachmentSection';
@@ -39,6 +39,38 @@ const CotizacionesEntryForm: React.FC<CotizacionesEntryFormProps> = ({
     updateFileAttachment,
     removeFileAttachment
   } = useAttachmentManager();
+
+  // Update form data when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        amount: initialData.amount || 0,
+        currency: initialData.currency || 'USD',
+        concept: initialData.concept || '',
+        bank_account: initialData.bank_account || '',
+        entry_type: initialData.entry_type || 'income',
+        transaction_date: initialData.transaction_date || new Date().toISOString().split('T')[0],
+        area: initialData.area || '',
+        subarea: initialData.subarea || '',
+        description: initialData.description || ''
+      });
+    } else {
+      // Reset form for create mode
+      setFormData({
+        amount: 0,
+        currency: 'USD',
+        concept: '',
+        bank_account: '',
+        entry_type: 'income',
+        transaction_date: new Date().toISOString().split('T')[0],
+        area: '',
+        subarea: '',
+        description: ''
+      });
+    }
+    // Clear errors when switching modes
+    setErrors({});
+  }, [initialData]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
