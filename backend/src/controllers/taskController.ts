@@ -77,6 +77,7 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
+    // Get tasks specific to the authenticated user
     const query = `
       SELECT 
         t.id, 
@@ -84,6 +85,8 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
         t.description, 
         t.priority, 
         t.due_date,
+        t.start_date,
+        t.end_date,
         t.area,
         t.subarea,
         t.status, 
@@ -95,16 +98,19 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
         u.last_name
       FROM tasks t
       LEFT JOIN users u ON t.user_id = u.id
+      WHERE t.user_id = $1
       ORDER BY t.created_at DESC
     `;
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, [userId]);
     const tasks = result.rows.map((task: any) => ({
       id: task.id,
       title: task.title,
       description: task.description,
       priority: task.priority,
       dueDate: task.due_date,
+      startDate: task.start_date,
+      endDate: task.end_date,
       area: task.area,
       subarea: task.subarea,
       status: task.status,
@@ -139,6 +145,8 @@ export const getTaskById = async (req: AuthRequest, res: Response) => {
         t.description, 
         t.priority, 
         t.due_date,
+        t.start_date,
+        t.end_date,
         t.area,
         t.subarea,
         t.status, 
@@ -167,6 +175,8 @@ export const getTaskById = async (req: AuthRequest, res: Response) => {
         description: task.description,
         priority: task.priority,
         dueDate: task.due_date,
+        startDate: task.start_date,
+        endDate: task.end_date,
         area: task.area,
         subarea: task.subarea,
         status: task.status,
@@ -187,7 +197,7 @@ export const getTaskById = async (req: AuthRequest, res: Response) => {
 export const updateTask = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, description, priority, status, dueDate, area, subarea } = req.body;
+    const { title, description, priority, status, dueDate, startDate, endDate, area, subarea } = req.body;
     const userId = req.userId;
 
     if (!userId) {
@@ -244,6 +254,16 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
       values.push(dueDate || null);
     }
 
+    if (startDate !== undefined) {
+      updates.push(`start_date = $${paramCount++}`);
+      values.push(startDate || null);
+    }
+
+    if (endDate !== undefined) {
+      updates.push(`end_date = $${paramCount++}`);
+      values.push(endDate || null);
+    }
+
     if (area !== undefined) {
       if (!area.trim()) {
         return res.status(400).json({ error: 'Area cannot be empty' });
@@ -271,7 +291,7 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
       UPDATE tasks
       SET ${updates.join(', ')}
       WHERE id = $${paramCount++} AND user_id = $${paramCount++}
-      RETURNING id, title, description, priority, due_date, area, subarea, status, user_id, created_at, updated_at
+      RETURNING id, title, description, priority, due_date, start_date, end_date, area, subarea, status, user_id, created_at, updated_at
     `;
 
     const result = await pool.query(query, values);
@@ -285,6 +305,8 @@ export const updateTask = async (req: AuthRequest, res: Response) => {
         description: task.description,
         priority: task.priority,
         dueDate: task.due_date,
+        startDate: task.start_date,
+        endDate: task.end_date,
         area: task.area,
         subarea: task.subarea,
         status: task.status,
