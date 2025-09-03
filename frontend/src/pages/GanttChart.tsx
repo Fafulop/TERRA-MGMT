@@ -258,32 +258,24 @@ const GanttChart = () => {
   };
 
   // Calendar helper functions
-  const getWeeksInRange = (startDate: string, endDate: string) => {
+  const getDaysInRange = (startDate: string, endDate: string) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const weeks = [];
+    const days = [];
     
-    // Get the Monday of the week containing the start date
-    const startOfWeek = new Date(start);
-    startOfWeek.setDate(start.getDate() - start.getDay() + 1);
+    let current = new Date(start);
     
-    let currentWeek = new Date(startOfWeek);
-    
-    while (currentWeek <= end) {
-      const weekEnd = new Date(currentWeek);
-      weekEnd.setDate(currentWeek.getDate() + 6);
-      
-      weeks.push({
-        start: new Date(currentWeek),
-        end: weekEnd,
-        weekOf: `Week of ${currentWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+    while (current <= end) {
+      days.push({
+        date: new Date(current),
+        label: current.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
       });
       
-      currentWeek = new Date(currentWeek);
-      currentWeek.setDate(currentWeek.getDate() + 7);
+      current = new Date(current);
+      current.setDate(current.getDate() + 1);
     }
     
-    return weeks;
+    return days;
   };
 
   const toggleCalendar = (taskId: number) => {
@@ -673,102 +665,64 @@ const GanttChart = () => {
                                       return <p className="text-gray-500">No date range set for this task.</p>;
                                     }
                                     
-                                    const weeks = getWeeksInRange(task.startDate, task.endDate);
+                                    const days = getDaysInRange(task.startDate, task.endDate);
                                     const taskSubtasks = allSubtasks?.[task.id] || [];
                                     
                                     return (
-                                      <div className="space-y-4">
-                                        {/* Week Headers */}
-                                        <div className="grid grid-cols-1 gap-2">
-                                          <div className="flex space-x-1 mb-2">
-                                            {weeks.map((week, index) => (
-                                              <div
-                                                key={index}
-                                                className="flex-1 text-center text-xs font-medium text-gray-600 py-1 bg-gray-100 rounded"
-                                              >
-                                                {week.weekOf}
+                                      <div className="space-y-3">
+                                        {/* Main Task Timeline */}
+                                        <div className="flex items-center">
+                                          <div className="w-48 text-sm font-medium text-gray-900 pr-4 flex-shrink-0">
+                                            🎯 {task.title}
+                                          </div>
+                                          <div className="flex space-x-1 flex-1">
+                                            {days.map((day, dayIndex) => (
+                                              <div key={dayIndex} className="flex-1 flex flex-col min-w-0">
+                                                <div className="text-xs text-center text-gray-600 mb-1 py-1 w-full overflow-hidden">
+                                                  <div className="truncate">{day.label}</div>
+                                                </div>
+                                                <div className="relative h-8 bg-blue-500 rounded">
+                                                </div>
                                               </div>
                                             ))}
                                           </div>
+                                        </div>
+                                        
+                                        {/* Subtask Timelines */}
+                                        {taskSubtasks.map((subtask) => {
+                                          if (!subtask.startDate || !subtask.endDate) return null;
                                           
-                                          {/* Main Task Timeline */}
-                                          <div className="relative">
-                                            <div className="flex items-center mb-2">
-                                              <div className="w-48 text-sm font-medium text-gray-900 pr-4">
-                                                🎯 {task.title}
+                                          return (
+                                            <div key={subtask.id} className="flex items-center">
+                                              <div className="w-48 text-sm text-gray-700 pr-4 flex-shrink-0 truncate">
+                                                📋 {subtask.name}
                                               </div>
                                               <div className="flex space-x-1 flex-1">
-                                                {weeks.map((week, weekIndex) => (
-                                                  <div key={weekIndex} className="flex-1 relative h-8 bg-gray-200 rounded">
-                                                    {(() => {
-                                                      const position = getTimelinePosition(
-                                                        task.startDate!, 
-                                                        task.endDate!, 
-                                                        week.start, 
-                                                        week.end
-                                                      );
-                                                      
-                                                      if (!position) return null;
-                                                      
-                                                      return (
-                                                        <div
-                                                          className="absolute top-1 h-6 bg-blue-500 rounded"
-                                                          style={{
-                                                            left: position.left,
-                                                            width: position.width
-                                                          }}
-                                                        />
-                                                      );
-                                                    })()}
-                                                  </div>
-                                                ))}
+                                                {days.map((day, dayIndex) => {
+                                                  const subtaskStart = new Date(subtask.startDate!);
+                                                  const subtaskEnd = new Date(subtask.endDate!);
+                                                  const currentDay = day.date;
+                                                  
+                                                  const isWithinSubtaskRange = currentDay >= subtaskStart && currentDay <= subtaskEnd;
+                                                  
+                                                  return (
+                                                    <div key={dayIndex} className="flex-1 flex flex-col min-w-0">
+                                                      <div className="text-xs text-center text-transparent mb-1 py-1 w-full overflow-hidden">
+                                                        <div className="truncate">{day.label}</div>
+                                                      </div>
+                                                      <div className={`relative h-6 rounded ${
+                                                        isWithinSubtaskRange 
+                                                          ? (subtask.status === 'completed' ? 'bg-green-500' : 'bg-orange-500')
+                                                          : 'bg-gray-200'
+                                                      }`}>
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                })}
                                               </div>
                                             </div>
-                                          </div>
-                                          
-                                          {/* Subtask Timelines */}
-                                          {taskSubtasks.map((subtask) => {
-                                            if (!subtask.startDate || !subtask.endDate) return null;
-                                            
-                                            return (
-                                              <div key={subtask.id} className="relative">
-                                                <div className="flex items-center mb-1">
-                                                  <div className="w-48 text-sm text-gray-700 pr-4 truncate">
-                                                    📋 {subtask.name}
-                                                  </div>
-                                                  <div className="flex space-x-1 flex-1">
-                                                    {weeks.map((week, weekIndex) => (
-                                                      <div key={weekIndex} className="flex-1 relative h-6 bg-gray-200 rounded">
-                                                        {(() => {
-                                                          const position = getTimelinePosition(
-                                                            subtask.startDate!, 
-                                                            subtask.endDate!, 
-                                                            week.start, 
-                                                            week.end
-                                                          );
-                                                          
-                                                          if (!position) return null;
-                                                          
-                                                          return (
-                                                            <div
-                                                              className={`absolute top-1 h-4 rounded ${
-                                                                subtask.status === 'completed' ? 'bg-green-500' : 'bg-orange-500'
-                                                              }`}
-                                                              style={{
-                                                                left: position.left,
-                                                                width: position.width
-                                                              }}
-                                                            />
-                                                          );
-                                                        })()}
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
+                                          );
+                                        })}
                                       </div>
                                     );
                                   })()}
