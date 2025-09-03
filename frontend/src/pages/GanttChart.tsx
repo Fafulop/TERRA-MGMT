@@ -236,6 +236,26 @@ const GanttChart = () => {
     return words.slice(0, maxWords).join(' ') + '...';
   };
 
+  // Helper function to get dependency status
+  const getDependencyStatus = (subtask: Subtask): string | null => {
+    if (!subtask.referenceType || !subtask.referenceId) {
+      return null; // No dependency
+    }
+    
+    if (subtask.referenceType === 'task') {
+      // Find the referenced task
+      const referencedTask = taskList.find(task => task.id === subtask.referenceId);
+      return referencedTask?.status || null;
+    } else if (subtask.referenceType === 'subtask') {
+      // Find the referenced subtask from all subtasks
+      const allSubtasks = Object.values(subtasksData).flat();
+      const referencedSubtask = allSubtasks.find(sub => sub.id === subtask.referenceId);
+      return referencedSubtask?.status || null;
+    }
+    
+    return null;
+  };
+
   // Assignee options
   const assigneeOptions = ['', 'Jen', 'Montse', 'Jez', 'Nick', 'Gerardo'];
 
@@ -483,6 +503,9 @@ const GanttChart = () => {
                         Depends On
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Dependency Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -541,6 +564,9 @@ const GanttChart = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               -
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              -
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                 task.status === 'completed' ? 'bg-green-100 text-green-800' :
@@ -580,7 +606,7 @@ const GanttChart = () => {
                               {/* Add Subtask Form Row */}
                               {showAddSubtaskForm === task.id && (
                                 <tr className="bg-blue-50">
-                                  <td colSpan={9} className="px-6 py-4">
+                                  <td colSpan={10} className="px-6 py-4">
                                     <div className="ml-6 bg-white rounded p-3 border">
                                       <h5 className="font-medium text-gray-900 mb-3">Add New Subtask</h5>
                                       <div className="grid grid-cols-1 md:grid-cols-7 gap-3 mb-3">
@@ -678,7 +704,7 @@ const GanttChart = () => {
                               {/* Add Subtask Button Row */}
                               {showAddSubtaskForm !== task.id && (
                                 <tr className="bg-gray-50">
-                                  <td colSpan={9} className="px-6 py-2">
+                                  <td colSpan={10} className="px-6 py-2">
                                     <div className="ml-6">
                                       <button
                                         onClick={() => setShowAddSubtaskForm(task.id)}
@@ -740,6 +766,27 @@ const GanttChart = () => {
                                       }`}>
                                         {subtask.referenceName || 'No dependency'}
                                       </span>
+                                    </td>
+                                    <td className="px-6 py-3 text-sm text-gray-600">
+                                      {(() => {
+                                        const depStatus = getDependencyStatus(subtask);
+                                        if (!depStatus) {
+                                          return (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200">
+                                              -
+                                            </span>
+                                          );
+                                        }
+                                        return (
+                                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                            depStatus === 'completed' ? 'bg-green-100 text-green-800 border border-green-200' :
+                                            depStatus === 'in_progress' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
+                                            'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                          }`}>
+                                            {depStatus.replace('_', ' ').toUpperCase()}
+                                          </span>
+                                        );
+                                      })()}
                                     </td>
                                     <td className="px-6 py-3">
                                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
