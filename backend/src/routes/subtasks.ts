@@ -1,6 +1,7 @@
 import express from 'express';
 import { 
   getSubtasksByTaskId, 
+  getBatchSubtasks,
   createSubtask, 
   updateSubtask, 
   deleteSubtask,
@@ -20,6 +21,9 @@ router.use(authenticateToken);
 
 // GET /api/subtasks/task/:taskId - Get all subtasks for a specific task
 router.get('/task/:taskId', getSubtasksByTaskId);
+
+// POST /api/subtasks/batch - Get subtasks for multiple tasks (batch operation for performance)
+router.post('/batch', getBatchSubtasks);
 
 // POST /api/subtasks - Create a new subtask
 router.post('/', createSubtask);

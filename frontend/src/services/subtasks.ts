@@ -7,6 +7,25 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
  * Handles API calls for subtask management within Gantt chart tasks
  */
 export const subtaskService = {
+  // Get subtasks for multiple tasks in one request (batch operation to fix N+1 problem)
+  async getBatchSubtasks(taskIds: number[], token: string): Promise<Record<number, Subtask[]>> {
+    const response = await fetch(`${API_BASE_URL}/subtasks/batch`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ taskIds }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch batch subtasks: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.subtasksByTask;
+  },
+
   // Get all subtasks for a specific task
   async getSubtasksByTaskId(taskId: number, token: string): Promise<Subtask[]> {
     const response = await fetch(`${API_BASE_URL}/subtasks/task/${taskId}`, {

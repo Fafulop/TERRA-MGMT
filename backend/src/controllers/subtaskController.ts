@@ -1,5 +1,15 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import { checkSubtaskColumnsExist, handleDatabaseError, AppError, setDatabasePool } from '../utils/dbUtils';
+import { 
+  buildSubtaskSelectQuery, 
+  buildSubtaskInsertQuery, 
+  buildSubtaskUpdateQuery,
+  SubtaskColumnStatus 
+} from '../utils/subtaskQueryBuilder';
+
+// Set the database pool for the utilities
+setDatabasePool(pool);
 
 interface AuthRequest extends Request {
   user?: {
@@ -25,50 +35,14 @@ export const getSubtasksByTaskId = async (req: AuthRequest, res: Response) => {
   try {
     const { taskId } = req.params;
     
-    // Check if status column exists
-    const columnCheck = await pool.query(`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = 'subtasks' AND column_name = 'status'
-    `);
+    // Check if required columns exist using centralized utility
+    const columnStatus = await checkSubtaskColumnsExist();
     
-    const hasStatusColumn = columnCheck.rows.length > 0;
+    // Build query using standardized query builder
+    const query = `${buildSubtaskSelectQuery(columnStatus)} 
+                   WHERE task_id = $1 
+                   ORDER BY created_at ASC`;
     
-    const query = hasStatusColumn ? 
-      `SELECT 
-        id,
-        task_id,
-        name,
-        description,
-        status,
-        assignee,
-        reference_type,
-        reference_id,
-        reference_name,
-        start_date,
-        end_date,
-        created_at,
-        updated_at
-      FROM subtasks 
-      WHERE task_id = $1 
-      ORDER BY created_at ASC` :
-      `SELECT 
-        id,
-        task_id,
-        name,
-        description,
-        assignee,
-        reference_type,
-        reference_id,
-        reference_name,
-        start_date,
-        end_date,
-        created_at,
-        updated_at
-      FROM subtasks 
-      WHERE task_id = $1 
-      ORDER BY created_at ASC`;
-
     const result = await pool.query(query, [taskId]);
 
     const subtasks = result.rows.map(row => ({
@@ -76,7 +50,7 @@ export const getSubtasksByTaskId = async (req: AuthRequest, res: Response) => {
       taskId: row.task_id,
       name: row.name,
       description: row.description,
-      status: hasStatusColumn ? (row.status || 'pending') : 'pending',
+      status: columnStatus.status ? (row.status || 'pending') : 'pending',
       assignee: row.assignee,
       referenceType: row.reference_type,
       referenceId: row.reference_id,
@@ -89,8 +63,68 @@ export const getSubtasksByTaskId = async (req: AuthRequest, res: Response) => {
 
     res.json({ subtasks });
   } catch (error) {
-    console.error('Error fetching subtasks:', error);
+    handleDatabaseError(error, 'fetch subtasks');
     res.status(500).json({ error: 'Failed to fetch subtasks' });
+  }
+};
+
+// Get subtasks for multiple tasks in batch (optimizes N+1 query problem)
+export const getBatchSubtasks = async (req: AuthRequest, res: Response) => {
+  try {
+    const { taskIds } = req.body;
+
+    if (!taskIds || !Array.isArray(taskIds) || taskIds.length === 0) {
+      return res.status(400).json({ error: 'taskIds array is required and must contain at least one task ID' });
+    }
+
+    if (taskIds.length > 100) {
+      return res.status(400).json({ error: 'Cannot fetch subtasks for more than 100 tasks at once' });
+    }
+
+    // Check if required columns exist using centralized utility
+    const columnStatus = await checkSubtaskColumnsExist();
+
+    // Build query with IN clause for efficient batch fetching
+    const placeholders = taskIds.map((_, index) => `$${index + 1}`).join(', ');
+    const query = `${buildSubtaskSelectQuery(columnStatus)} 
+                   WHERE task_id IN (${placeholders})
+                   ORDER BY task_id, created_at ASC`;
+
+    const result = await pool.query(query, taskIds);
+
+    // Group subtasks by task ID
+    const subtasksByTask: Record<number, any[]> = {};
+    
+    // Initialize empty arrays for all requested task IDs
+    taskIds.forEach(taskId => {
+      subtasksByTask[taskId] = [];
+    });
+
+    // Group the results by task ID
+    result.rows.forEach(row => {
+      const subtask = {
+        id: row.id,
+        taskId: row.task_id,
+        name: row.name,
+        description: row.description,
+        status: columnStatus.status ? (row.status || 'pending') : 'pending',
+        assignee: row.assignee,
+        referenceType: row.reference_type,
+        referenceId: row.reference_id,
+        referenceName: row.reference_name,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      };
+
+      subtasksByTask[row.task_id].push(subtask);
+    });
+
+    res.json({ subtasksByTask });
+  } catch (error) {
+    handleDatabaseError(error, 'batch fetch subtasks');
+    res.status(500).json({ error: 'Failed to fetch batch subtasks' });
   }
 };
 
