@@ -1025,4 +1025,173 @@ router.post('/clean-demo-storage-urls', async (req, res) => {
   }
 });
 
+// Add Gantt subtasks table migration
+router.post('/add-gantt-subtasks', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting Gantt subtasks table migration...');
+
+    // Create subtasks table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS subtasks (
+        id SERIAL PRIMARY KEY,
+        task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'completed')),
+        start_date TIMESTAMP WITH TIME ZONE,
+        end_date TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('✓ Created subtasks table');
+
+    // Create indexes for better performance
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_subtasks_task_id ON subtasks(task_id);
+      CREATE INDEX IF NOT EXISTS idx_subtasks_dates ON subtasks(start_date, end_date);
+      CREATE INDEX IF NOT EXISTS idx_subtasks_created_at ON subtasks(created_at);
+    `);
+    console.log('✓ Created performance indexes');
+
+    // Create update trigger
+    await pool.query(`
+      DROP TRIGGER IF EXISTS update_subtasks_updated_at ON subtasks;
+      CREATE TRIGGER update_subtasks_updated_at
+          BEFORE UPDATE ON subtasks
+          FOR EACH ROW
+          EXECUTE FUNCTION update_updated_at_column();
+    `);
+    console.log('✓ Created update trigger');
+
+    // Add table documentation
+    await pool.query(`
+      COMMENT ON TABLE subtasks IS 'Subtasks for Gantt chart entries - allows breaking down main tasks into smaller components';
+      COMMENT ON COLUMN subtasks.task_id IS 'References the parent task in the tasks table';
+      COMMENT ON COLUMN subtasks.name IS 'Short name/title for the subtask';
+      COMMENT ON COLUMN subtasks.description IS 'Detailed description of the subtask';
+      COMMENT ON COLUMN subtasks.start_date IS 'When this subtask should start';
+      COMMENT ON COLUMN subtasks.end_date IS 'When this subtask should be completed';
+    `);
+    console.log('✓ Added table documentation');
+
+    console.log('Gantt subtasks table migration completed successfully!');
+    res.status(200).json({ 
+      message: 'Gantt subtasks table created successfully!',
+      table: 'subtasks',
+      indexes_added: ['idx_subtasks_task_id', 'idx_subtasks_dates', 'idx_subtasks_created_at'],
+      triggers: ['update_subtasks_updated_at'],
+      features: [
+        'References parent tasks via foreign key',
+        'Supports timeline management with start/end dates',
+        'Automatic timestamp management',
+        'Cascade deletion when parent task is deleted'
+      ]
+    });
+    
+  } catch (error) {
+    console.error('Subtasks migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create subtasks table', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Add status column to existing subtasks table
+router.post('/add-subtask-status', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting subtask status column migration...');
+
+    // Add status column if it doesn't exist
+    await pool.query(`
+      DO $$ 
+      BEGIN
+          -- Add status column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'subtasks' AND column_name = 'status') THEN
+              ALTER TABLE subtasks ADD COLUMN status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'completed'));
+          END IF;
+      END $$;
+    `);
+    console.log('✓ Added status column to subtasks table');
+
+    // Create index for status column
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_subtasks_status ON subtasks(status);
+    `);
+    console.log('✓ Created index on status column');
+
+    // Add column documentation
+    await pool.query(`
+      COMMENT ON COLUMN subtasks.status IS 'Status of the subtask - pending or completed';
+    `);
+    console.log('✓ Added column documentation');
+
+    console.log('Subtask status migration completed successfully!');
+    res.status(200).json({ 
+      message: 'Subtask status column added successfully!',
+      table: 'subtasks',
+      column_added: 'status VARCHAR(20) DEFAULT pending',
+      indexes_added: ['idx_subtasks_status'],
+      constraints: ['CHECK (status IN (pending, completed))']
+    });
+    
+  } catch (error) {
+    console.error('Subtask status migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to add status column to subtasks table', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Add assignee column to subtasks table
+router.post('/add-subtask-assignee', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting subtask assignee column migration...');
+
+    // Add assignee column if it doesn't exist
+    await pool.query(`
+      DO $$ 
+      BEGIN
+          -- Add assignee column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'subtasks' AND column_name = 'assignee') THEN
+              ALTER TABLE subtasks ADD COLUMN assignee VARCHAR(255);
+          END IF;
+      END $$;
+    `);
+    console.log('✓ Added assignee column to subtasks table');
+
+    // Create index for assignee column
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_subtasks_assignee ON subtasks(assignee);
+    `);
+    console.log('✓ Created index on assignee column');
+
+    // Add column documentation
+    await pool.query(`
+      COMMENT ON COLUMN subtasks.assignee IS 'Name of the person assigned to complete this subtask';
+    `);
+    console.log('✓ Added column documentation');
+
+    console.log('Subtask assignee migration completed successfully!');
+    res.status(200).json({ 
+      message: 'Subtask assignee column added successfully!',
+      table: 'subtasks',
+      column_added: 'assignee VARCHAR(255)',
+      indexes_added: ['idx_subtasks_assignee'],
+      description: 'Stores the name of the person responsible for completing each subtask'
+    });
+    
+  } catch (error) {
+    console.error('Subtask assignee migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to add assignee column to subtasks table', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

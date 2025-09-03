@@ -418,3 +418,26 @@ export interface DocumentsSummary {
   total_areas: number;
   total_subareas: number;
 }
+
+// Subtask Types
+export interface Subtask {
+  id: number;
+  taskId: number;
+  name: string;
+  description?: string;
+  status: 'pending' | 'completed';
+  assignee?: string;
+  startDate?: string;
+  endDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubtaskFormData {
+  name: string;
+  description?: string;
+  status?: 'pending' | 'completed';
+  assignee?: string;
+  startDate?: string;
+  endDate?: string;
+}

@@ -40,7 +40,7 @@ export const ganttService = {
   },
 
   // Update task timeline (start/end dates) - any user can update any task
-  async updateTaskTimeline(taskId: number, startDate?: string, endDate?: string, token?: string): Promise<any> {
+  async updateTaskTimeline(taskId: number, startDate?: string | null, endDate?: string | null, token?: string): Promise<any> {
     if (!token) {
       throw new Error('No authentication token provided');
     }

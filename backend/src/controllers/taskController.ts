@@ -77,7 +77,7 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Get tasks specific to the authenticated user
+    // Get ALL tasks from ALL users for global task view (same as Gantt chart)
     const query = `
       SELECT 
         t.id, 
@@ -98,11 +98,10 @@ export const getTasks = async (req: AuthRequest, res: Response) => {
         u.last_name
       FROM tasks t
       LEFT JOIN users u ON t.user_id = u.id
-      WHERE t.user_id = $1
       ORDER BY t.created_at DESC
     `;
 
-    const result = await pool.query(query, [userId]);
+    const result = await pool.query(query);
     const tasks = result.rows.map((task: any) => ({
       id: task.id,
       title: task.title,

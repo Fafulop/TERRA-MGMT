@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Task } from '../types';
+import { Task, Subtask } from '../types';
 import { ganttService } from '../services/gantt';
+import { subtaskService } from '../services/subtasks';
 
 interface GanttEntry {
   taskId: number;
@@ -21,6 +22,16 @@ const GanttChart = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [editingEntry, setEditingEntry] = useState<GanttEntry | null>(null);
+  const [expandedTasks, setExpandedTasks] = useState<Set<number>>(new Set());
+  const [showAddSubtaskForm, setShowAddSubtaskForm] = useState<number | null>(null);
+  const [subtaskFormData, setSubtaskFormData] = useState({
+    name: '',
+    description: '',
+    status: 'pending' as 'pending' | 'completed',
+    assignee: '',
+    startDate: '',
+    endDate: ''
+  });
 
   useEffect(() => {
     if (!user) {
@@ -37,9 +48,29 @@ const GanttChart = () => {
 
   const taskList = tasks || [];
 
+  // Get subtasks for all expanded tasks
+  const expandedTasksArray = Array.from(expandedTasks);
+  const { data: allSubtasks } = useQuery({
+    queryKey: ['subtasks', expandedTasksArray],
+    queryFn: async () => {
+      const subtaskPromises = expandedTasksArray.map(taskId => 
+        subtaskService.getSubtasksByTaskId(taskId, token!)
+      );
+      const results = await Promise.all(subtaskPromises);
+      
+      // Create a map of taskId -> subtasks
+      const subtaskMap: Record<number, Subtask[]> = {};
+      expandedTasksArray.forEach((taskId, index) => {
+        subtaskMap[taskId] = results[index];
+      });
+      return subtaskMap;
+    },
+    enabled: !!token && expandedTasksArray.length > 0,
+  });
+
   // Update task timeline mutation (Gantt-specific)
   const updateTaskDatesMutation = useMutation({
-    mutationFn: ({ taskId, startDate, endDate }: { taskId: number; startDate: string; endDate: string }) =>
+    mutationFn: ({ taskId, startDate, endDate }: { taskId: number; startDate: string | null; endDate: string | null }) =>
       ganttService.updateTaskTimeline(taskId, startDate, endDate, token!),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gantt-tasks'] });
@@ -49,11 +80,158 @@ const GanttChart = () => {
     },
   });
 
+  // Create subtask mutation
+  const createSubtaskMutation = useMutation({
+    mutationFn: ({ taskId, subtaskData }: { taskId: number; subtaskData: any }) =>
+      subtaskService.createSubtask(taskId, subtaskData, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subtasks'] });
+      setShowAddSubtaskForm(null);
+      setSubtaskFormData({ name: '', description: '', status: 'pending', assignee: '', startDate: '', endDate: '' });
+    },
+  });
+
+  // Update subtask status mutation
+  const updateSubtaskStatusMutation = useMutation({
+    mutationFn: ({ subtaskId, subtaskData }: { subtaskId: number; subtaskData: any }) => {
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+      return subtaskService.updateSubtask(subtaskId, subtaskData, token);
+    },
+    onSuccess: () => {
+      // Force refetch all subtask-related queries immediately
+      queryClient.refetchQueries({ 
+        queryKey: ['subtasks'],
+        exact: false 
+      });
+      queryClient.refetchQueries({ queryKey: ['gantt-tasks'] });
+    },
+    onError: (error: any) => {
+      console.error('Failed to update subtask status:', error);
+      if (error?.message?.includes('401') || error?.message?.includes('Unauthorized')) {
+        alert('Session expired. Please log in again.');
+        logout();
+      } else {
+        alert(`Failed to update subtask status: ${error?.message || 'Unknown error'}`);
+      }
+    },
+  });
+
+  // Delete subtask mutation
+  const deleteSubtaskMutation = useMutation({
+    mutationFn: (subtaskId: number) => subtaskService.deleteSubtask(subtaskId, token!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subtasks'] });
+    },
+  });
+
   const resetForm = () => {
     setSelectedTaskId(null);
     setStartDate('');
     setEndDate('');
   };
+
+  const toggleTaskExpansion = (taskId: number) => {
+    const newExpanded = new Set(expandedTasks);
+    if (newExpanded.has(taskId)) {
+      newExpanded.delete(taskId);
+    } else {
+      newExpanded.add(taskId);
+    }
+    setExpandedTasks(newExpanded);
+  };
+
+  const handleAddSubtask = (taskId: number) => {
+    if (!subtaskFormData.name.trim()) return;
+    
+    // Find the parent task to get its date boundaries
+    const parentTask = ganttTasks.find(task => task.id === taskId);
+    if (!parentTask) return;
+
+    console.log('Adding subtask:', subtaskFormData);
+    console.log('Parent task:', parentTask);
+
+    const parentStartDate = parentTask.startDate ? new Date(parentTask.startDate) : null;
+    const parentEndDate = parentTask.endDate ? new Date(parentTask.endDate) : null;
+    
+    // Basic validation: subtask dates against each other
+    if (subtaskFormData.startDate && subtaskFormData.endDate && 
+        new Date(subtaskFormData.startDate) > new Date(subtaskFormData.endDate)) {
+      alert('Subtask start date cannot be after end date');
+      return;
+    }
+
+    // Only validate against parent boundaries if parent has dates
+    if (parentStartDate && parentEndDate) {
+      // Validate against parent task boundaries
+      if (subtaskFormData.startDate && new Date(subtaskFormData.startDate) < parentStartDate) {
+        alert(`Subtask start date cannot be earlier than parent task start date (${parentStartDate.toLocaleDateString()})`);
+        return;
+      }
+
+      if (subtaskFormData.endDate && new Date(subtaskFormData.endDate) > parentEndDate) {
+        alert(`Subtask end date cannot be later than parent task end date (${parentEndDate.toLocaleDateString()})`);
+        return;
+      }
+
+      if (subtaskFormData.startDate && new Date(subtaskFormData.startDate) > parentEndDate) {
+        alert(`Subtask start date cannot be later than parent task end date (${parentEndDate.toLocaleDateString()})`);
+        return;
+      }
+
+      if (subtaskFormData.endDate && new Date(subtaskFormData.endDate) < parentStartDate) {
+        alert(`Subtask end date cannot be earlier than parent task start date (${parentStartDate.toLocaleDateString()})`);
+        return;
+      }
+    }
+
+    createSubtaskMutation.mutate({
+      taskId,
+      subtaskData: subtaskFormData
+    });
+  };
+
+  const handleToggleSubtaskStatus = (subtask: any) => {
+    const newStatus = subtask.status === 'pending' ? 'completed' : 'pending';
+    
+    const updateData = {
+      name: subtask.name,
+      description: subtask.description,
+      status: newStatus,
+      assignee: subtask.assignee,
+      startDate: subtask.startDate?.split('T')[0] || undefined,
+      endDate: subtask.endDate?.split('T')[0] || undefined
+    };
+    
+    updateSubtaskStatusMutation.mutate({
+      subtaskId: subtask.id,
+      subtaskData: updateData
+    });
+  };
+
+  const handleDeleteSubtask = (subtaskId: number) => {
+    if (window.confirm('Are you sure you want to delete this subtask?')) {
+      deleteSubtaskMutation.mutate(subtaskId);
+    }
+  };
+
+  const calculateDuration = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const truncateDescription = (description: string, maxWords: number = 8) => {
+    const words = description.split(' ');
+    if (words.length <= maxWords) return description;
+    return words.slice(0, maxWords).join(' ') + '...';
+  };
+
+  // Assignee options
+  const assigneeOptions = ['', 'Jen', 'Montse', 'Jez', 'Nick', 'Gerardo'];
 
   const handleAddEntry = () => {
     if (!selectedTaskId || !startDate || !endDate) return;
@@ -85,6 +263,17 @@ const GanttChart = () => {
       startDate,
       endDate,
     });
+  };
+
+  const handleDeleteEntry = (taskId: number) => {
+    if (window.confirm('Are you sure you want to remove this task from the Gantt chart? This will clear its timeline dates but won\'t delete the task itself.')) {
+      // Clear the timeline by setting dates to null
+      updateTaskDatesMutation.mutate({
+        taskId,
+        startDate: null,
+        endDate: null,
+      });
+    }
   };
 
   // Get tasks that have Gantt dates (start_date and end_date)
@@ -254,8 +443,8 @@ const GanttChart = () => {
                 </div>
               </div>
             ) : (
-              <div className="overflow-hidden">
-                <table className="w-full">
+              <div className="overflow-x-auto">
+                <table className="min-w-full w-full">
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -274,6 +463,9 @@ const GanttChart = () => {
                         Duration
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Assignee
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -286,51 +478,253 @@ const GanttChart = () => {
                       const startDate = new Date(task.startDate!);
                       const endDate = new Date(task.endDate!);
                       const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                      const isExpanded = expandedTasks.has(task.id);
+                      const taskSubtasks = allSubtasks?.[task.id] || [];
                       
                       return (
-                        <tr key={task.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{task.title}</div>
-                            {task.description && (
-                              <div className="text-sm text-gray-500">{task.description}</div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {task.area}/{task.subarea}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {startDate.toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {endDate.toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {duration} day{duration !== 1 ? 's' : ''}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {task.status.replace('_', ' ').toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => handleEditEntry(task)}
-                              className="text-blue-600 hover:text-blue-900 mr-4"
-                            >
-                              Edit Dates
-                            </button>
-                            <button
-                              onClick={() => navigate(`/task/${task.id}`)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                            >
-                              View Task
-                            </button>
-                          </td>
-                        </tr>
+                        <Fragment key={`task-group-${task.id}`}>
+                          {/* Main Task Row */}
+                          <tr key={task.id} className="hover:bg-gray-50 border-b border-gray-200">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <button
+                                  onClick={() => toggleTaskExpansion(task.id)}
+                                  className="mr-2 text-gray-400 hover:text-gray-600"
+                                >
+                                  {isExpanded ? '▼' : '▶'}
+                                </button>
+                                <div style={{ maxWidth: '200px' }}>
+                                  <div className="text-sm font-medium text-gray-900 overflow-hidden whitespace-nowrap text-ellipsis">{task.title}</div>
+                                  {task.description && (
+                                    <div 
+                                      className="text-sm text-gray-500 cursor-help overflow-hidden whitespace-nowrap text-ellipsis" 
+                                      title={task.description}
+                                    >
+                                      {task.description}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {task.area}/{task.subarea}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {startDate.toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {endDate.toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {duration} day{duration !== 1 ? 's' : ''}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              -
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                task.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {task.status.replace('_', ' ').toUpperCase()}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleEditEntry(task)}
+                                  className="text-blue-600 hover:text-blue-900"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => navigate(`/task/${task.id}`)}
+                                  className="text-indigo-600 hover:text-indigo-900"
+                                >
+                                  View
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteEntry(task.id)}
+                                  className="text-red-600 hover:text-red-900"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Subtasks Rows */}
+                          {isExpanded && (
+                            <>
+                              {/* Add Subtask Form Row */}
+                              {showAddSubtaskForm === task.id && (
+                                <tr className="bg-blue-50">
+                                  <td colSpan={8} className="px-6 py-4">
+                                    <div className="ml-6 bg-white rounded p-3 border">
+                                      <h5 className="font-medium text-gray-900 mb-3">Add New Subtask</h5>
+                                      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-3">
+                                        <input
+                                          type="text"
+                                          placeholder="Subtask name *"
+                                          value={subtaskFormData.name}
+                                          onChange={(e) => setSubtaskFormData({...subtaskFormData, name: e.target.value})}
+                                          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <input
+                                          type="text"
+                                          placeholder="Description"
+                                          value={subtaskFormData.description}
+                                          onChange={(e) => setSubtaskFormData({...subtaskFormData, description: e.target.value})}
+                                          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <select
+                                          value={subtaskFormData.status}
+                                          onChange={(e) => setSubtaskFormData({...subtaskFormData, status: e.target.value as 'pending' | 'completed'})}
+                                          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                          <option value="pending">Pending</option>
+                                          <option value="completed">Completed</option>
+                                        </select>
+                                        <select
+                                          value={subtaskFormData.assignee}
+                                          onChange={(e) => setSubtaskFormData({...subtaskFormData, assignee: e.target.value})}
+                                          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                          <option value="">Select Assignee</option>
+                                          {assigneeOptions.slice(1).map(name => (
+                                            <option key={name} value={name}>{name}</option>
+                                          ))}
+                                        </select>
+                                        <input
+                                          type="date"
+                                          value={subtaskFormData.startDate}
+                                          onChange={(e) => setSubtaskFormData({...subtaskFormData, startDate: e.target.value})}
+                                          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <input
+                                          type="date"
+                                          value={subtaskFormData.endDate}
+                                          onChange={(e) => setSubtaskFormData({...subtaskFormData, endDate: e.target.value})}
+                                          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                      </div>
+                                      <div className="flex space-x-2">
+                                        <button
+                                          onClick={() => handleAddSubtask(task.id)}
+                                          disabled={createSubtaskMutation.isPending}
+                                          className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+                                        >
+                                          {createSubtaskMutation.isPending ? 'Adding...' : 'Add'}
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setShowAddSubtaskForm(null);
+                                            setSubtaskFormData({ name: '', description: '', status: 'pending', assignee: '', startDate: '', endDate: '' });
+                                          }}
+                                          className="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-400"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+
+                              {/* Add Subtask Button Row */}
+                              {showAddSubtaskForm !== task.id && (
+                                <tr className="bg-gray-50">
+                                  <td colSpan={8} className="px-6 py-2">
+                                    <div className="ml-6">
+                                      <button
+                                        onClick={() => setShowAddSubtaskForm(task.id)}
+                                        className="text-green-600 hover:text-green-800 text-sm font-medium"
+                                      >
+                                        + Add Subtask
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+
+                              {/* Existing Subtasks */}
+                              {taskSubtasks.map((subtask) => {
+                                const subtaskDuration = subtask.startDate && subtask.endDate ? 
+                                  calculateDuration(subtask.startDate, subtask.endDate) : null;
+
+                                return (
+                                  <tr key={`subtask-${subtask.id}`} className="bg-gray-50 hover:bg-gray-100">
+                                    <td className="px-6 py-3">
+                                      <div className="ml-6 pl-4 border-l-2 border-gray-300" style={{ maxWidth: '180px' }}>
+                                        <div className="text-sm font-medium text-gray-800 overflow-hidden whitespace-nowrap text-ellipsis">📋 {subtask.name}</div>
+                                        {subtask.description && (
+                                          <div 
+                                            className="text-sm text-gray-600 cursor-help overflow-hidden whitespace-nowrap text-ellipsis"
+                                            title={subtask.description}
+                                          >
+                                            {subtask.description}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-3 text-sm text-gray-600">
+                                      <span className="italic">Subtask</span>
+                                    </td>
+                                    <td className="px-6 py-3 text-sm text-gray-600">
+                                      {subtask.startDate ? new Date(subtask.startDate).toLocaleDateString() : '-'}
+                                    </td>
+                                    <td className="px-6 py-3 text-sm text-gray-600">
+                                      {subtask.endDate ? new Date(subtask.endDate).toLocaleDateString() : '-'}
+                                    </td>
+                                    <td className="px-6 py-3 text-sm text-gray-600">
+                                      {subtaskDuration ? `${subtaskDuration} day${subtaskDuration !== 1 ? 's' : ''}` : '-'}
+                                    </td>
+                                    <td className="px-6 py-3 text-sm text-gray-600">
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                        subtask.assignee 
+                                          ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                                          : 'bg-gray-50 text-gray-500 border border-gray-200'
+                                      }`}>
+                                        {subtask.assignee || 'Unassigned'}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-3">
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                        subtask.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                      }`}>
+                                        {subtask.status.toUpperCase()}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-3 text-sm font-medium">
+                                      <div className="flex space-x-2">
+                                        <button
+                                          onClick={() => handleToggleSubtaskStatus(subtask)}
+                                          disabled={updateSubtaskStatusMutation.isPending}
+                                          className={`${
+                                            subtask.status === 'pending' 
+                                              ? 'text-green-600 hover:text-green-800' 
+                                              : 'text-yellow-600 hover:text-yellow-800'
+                                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                        >
+                                          {updateSubtaskStatusMutation.isPending ? 'Updating...' : 
+                                           (subtask.status === 'pending' ? 'Complete' : 'Reopen')}
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteSubtask(subtask.id)}
+                                          disabled={deleteSubtaskMutation.isPending}
+                                          className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                                        >
+                                          Delete
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </>
+                          )}
+                        </Fragment>
                       );
                     })}
                   </tbody>
@@ -338,6 +732,7 @@ const GanttChart = () => {
               </div>
             )}
           </div>
+
         </div>
       </main>
     </div>
