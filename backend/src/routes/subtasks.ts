@@ -3,7 +3,8 @@ import {
   getSubtasksByTaskId, 
   createSubtask, 
   updateSubtask, 
-  deleteSubtask 
+  deleteSubtask,
+  getTasksAndSubtasksForReference
 } from '../controllers/subtaskController';
 import { authenticateToken } from '../middleware/auth';
 
@@ -28,5 +29,8 @@ router.put('/:id', updateSubtask);
 
 // DELETE /api/subtasks/:id - Delete a subtask
 router.delete('/:id', deleteSubtask);
+
+// GET /api/subtasks/references - Get all tasks and subtasks for reference dropdown
+router.get('/references', getTasksAndSubtasksForReference);
 
 export default router;

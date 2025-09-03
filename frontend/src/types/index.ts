@@ -427,6 +427,9 @@ export interface Subtask {
   description?: string;
   status: 'pending' | 'completed';
   assignee?: string;
+  referenceType?: 'task' | 'subtask';
+  referenceId?: number;
+  referenceName?: string;
   startDate?: string;
   endDate?: string;
   createdAt: string;
@@ -438,6 +441,18 @@ export interface SubtaskFormData {
   description?: string;
   status?: 'pending' | 'completed';
   assignee?: string;
+  referenceType?: 'task' | 'subtask';
+  referenceId?: number;
+  referenceName?: string;
   startDate?: string;
   endDate?: string;
+}
+
+// Reference Types for dropdown
+export interface TaskReference {
+  id: number;
+  name: string;
+  type: 'task' | 'subtask';
+  displayName: string;
+  parentTaskName?: string;
 }

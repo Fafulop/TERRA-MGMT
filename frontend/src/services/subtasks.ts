@@ -1,4 +1,4 @@
-import { Subtask, SubtaskFormData } from '../types';
+import { Subtask, SubtaskFormData, TaskReference } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -89,5 +89,23 @@ export const subtaskService = {
       const errorData = await response.json();
       throw new Error(errorData.error || `Failed to delete subtask: ${response.statusText}`);
     }
+  },
+
+  // Get all tasks and subtasks for reference dropdown
+  getTasksAndSubtasksForReference: async (token: string): Promise<TaskReference[]> => {
+    const response = await fetch(`${API_BASE_URL}/subtasks/references`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch reference data');
+    }
+
+    const result = await response.json();
+    return result.references;
   }
 };

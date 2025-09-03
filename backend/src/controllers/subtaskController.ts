@@ -42,6 +42,9 @@ export const getSubtasksByTaskId = async (req: AuthRequest, res: Response) => {
         description,
         status,
         assignee,
+        reference_type,
+        reference_id,
+        reference_name,
         start_date,
         end_date,
         created_at,
@@ -55,6 +58,9 @@ export const getSubtasksByTaskId = async (req: AuthRequest, res: Response) => {
         name,
         description,
         assignee,
+        reference_type,
+        reference_id,
+        reference_name,
         start_date,
         end_date,
         created_at,
@@ -72,6 +78,9 @@ export const getSubtasksByTaskId = async (req: AuthRequest, res: Response) => {
       description: row.description,
       status: hasStatusColumn ? (row.status || 'pending') : 'pending',
       assignee: row.assignee,
+      referenceType: row.reference_type,
+      referenceId: row.reference_id,
+      referenceName: row.reference_name,
       startDate: row.start_date,
       endDate: row.end_date,
       createdAt: row.created_at,
@@ -88,7 +97,7 @@ export const getSubtasksByTaskId = async (req: AuthRequest, res: Response) => {
 // Create a new subtask
 export const createSubtask = async (req: AuthRequest, res: Response) => {
   try {
-    const { taskId, name, description, status = 'pending', assignee, startDate, endDate } = req.body;
+    const { taskId, name, description, status = 'pending', assignee, referenceType, referenceId, referenceName, startDate, endDate } = req.body;
 
     if (!taskId || !name) {
       return res.status(400).json({ error: 'Task ID and name are required' });
@@ -150,16 +159,16 @@ export const createSubtask = async (req: AuthRequest, res: Response) => {
     const hasStatusColumn = columnCheck.rows.length > 0;
 
     const insertQuery = hasStatusColumn ?
-      `INSERT INTO subtasks (task_id, name, description, status, assignee, start_date, end_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, task_id, name, description, status, assignee, start_date, end_date, created_at, updated_at` :
-      `INSERT INTO subtasks (task_id, name, description, assignee, start_date, end_date)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, task_id, name, description, assignee, start_date, end_date, created_at, updated_at`;
+      `INSERT INTO subtasks (task_id, name, description, status, assignee, reference_type, reference_id, reference_name, start_date, end_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, task_id, name, description, status, assignee, reference_type, reference_id, reference_name, start_date, end_date, created_at, updated_at` :
+      `INSERT INTO subtasks (task_id, name, description, assignee, reference_type, reference_id, reference_name, start_date, end_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id, task_id, name, description, assignee, reference_type, reference_id, reference_name, start_date, end_date, created_at, updated_at`;
 
     const insertParams = hasStatusColumn ?
-      [taskId, name, description || null, status, assignee || null, startDate || null, endDate || null] :
-      [taskId, name, description || null, assignee || null, startDate || null, endDate || null];
+      [taskId, name, description || null, status, assignee || null, referenceType || null, referenceId || null, referenceName || null, startDate || null, endDate || null] :
+      [taskId, name, description || null, assignee || null, referenceType || null, referenceId || null, referenceName || null, startDate || null, endDate || null];
 
     const result = await pool.query(insertQuery, insertParams);
 
@@ -170,6 +179,9 @@ export const createSubtask = async (req: AuthRequest, res: Response) => {
       description: result.rows[0].description,
       status: hasStatusColumn ? (result.rows[0].status || 'pending') : 'pending',
       assignee: result.rows[0].assignee,
+      referenceType: result.rows[0].reference_type,
+      referenceId: result.rows[0].reference_id,
+      referenceName: result.rows[0].reference_name,
       startDate: result.rows[0].start_date,
       endDate: result.rows[0].end_date,
       createdAt: result.rows[0].created_at,
@@ -187,7 +199,7 @@ export const createSubtask = async (req: AuthRequest, res: Response) => {
 export const updateSubtask = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, description, status, assignee, startDate, endDate } = req.body;
+    const { name, description, status, assignee, referenceType, referenceId, referenceName, startDate, endDate } = req.body;
 
     // Get the subtask and its parent task
     const subtaskCheck = await pool.query(
@@ -256,17 +268,17 @@ export const updateSubtask = async (req: AuthRequest, res: Response) => {
 
     const updateQuery = hasStatusColumn ?
       `UPDATE subtasks 
-       SET name = $1, description = $2, status = $3, assignee = $4, start_date = $5, end_date = $6, updated_at = NOW()
-       WHERE id = $7
-       RETURNING id, task_id, name, description, status, assignee, start_date, end_date, created_at, updated_at` :
+       SET name = $1, description = $2, status = $3, assignee = $4, reference_type = $5, reference_id = $6, reference_name = $7, start_date = $8, end_date = $9, updated_at = NOW()
+       WHERE id = $10
+       RETURNING id, task_id, name, description, status, assignee, reference_type, reference_id, reference_name, start_date, end_date, created_at, updated_at` :
       `UPDATE subtasks 
-       SET name = $1, description = $2, assignee = $3, start_date = $4, end_date = $5, updated_at = NOW()
-       WHERE id = $6
-       RETURNING id, task_id, name, description, assignee, start_date, end_date, created_at, updated_at`;
+       SET name = $1, description = $2, assignee = $3, reference_type = $4, reference_id = $5, reference_name = $6, start_date = $7, end_date = $8, updated_at = NOW()
+       WHERE id = $9
+       RETURNING id, task_id, name, description, assignee, reference_type, reference_id, reference_name, start_date, end_date, created_at, updated_at`;
 
     const updateParams = hasStatusColumn ?
-      [name, description || null, status, assignee || null, startDate || null, endDate || null, id] :
-      [name, description || null, assignee || null, startDate || null, endDate || null, id];
+      [name, description || null, status, assignee || null, referenceType || null, referenceId || null, referenceName || null, startDate || null, endDate || null, id] :
+      [name, description || null, assignee || null, referenceType || null, referenceId || null, referenceName || null, startDate || null, endDate || null, id];
 
     const result = await pool.query(updateQuery, updateParams);
 
@@ -281,6 +293,9 @@ export const updateSubtask = async (req: AuthRequest, res: Response) => {
       description: result.rows[0].description,
       status: hasStatusColumn ? (result.rows[0].status || 'pending') : 'pending',
       assignee: result.rows[0].assignee,
+      referenceType: result.rows[0].reference_type,
+      referenceId: result.rows[0].reference_id,
+      referenceName: result.rows[0].reference_name,
       startDate: result.rows[0].start_date,
       endDate: result.rows[0].end_date,
       createdAt: result.rows[0].created_at,
@@ -312,5 +327,59 @@ export const deleteSubtask = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Error deleting subtask:', error);
     res.status(500).json({ error: 'Failed to delete subtask' });
+  }
+};
+
+// Get all tasks and subtasks for reference dropdown
+export const getTasksAndSubtasksForReference = async (req: AuthRequest, res: Response) => {
+  try {
+    // Get all tasks
+    const tasksQuery = `
+      SELECT 
+        id,
+        title as name,
+        'task' as type
+      FROM tasks 
+      ORDER BY title ASC
+    `;
+    
+    // Get all subtasks
+    const subtasksQuery = `
+      SELECT 
+        s.id,
+        s.name,
+        'subtask' as type,
+        t.title as parent_task_name
+      FROM subtasks s
+      JOIN tasks t ON s.task_id = t.id
+      ORDER BY t.title ASC, s.name ASC
+    `;
+
+    const [tasksResult, subtasksResult] = await Promise.all([
+      pool.query(tasksQuery),
+      pool.query(subtasksQuery)
+    ]);
+
+    // Combine and format the results
+    const references = [
+      ...tasksResult.rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        type: row.type,
+        displayName: `Task: ${row.name}`
+      })),
+      ...subtasksResult.rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        type: row.type,
+        parentTaskName: row.parent_task_name,
+        displayName: `Subtask: ${row.name} (${row.parent_task_name})`
+      }))
+    ];
+
+    res.json({ references });
+  } catch (error) {
+    console.error('Error fetching tasks and subtasks for reference:', error);
+    res.status(500).json({ error: 'Failed to fetch reference data' });
   }
 };

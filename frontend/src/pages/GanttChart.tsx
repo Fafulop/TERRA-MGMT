@@ -2,7 +2,7 @@ import { useState, useEffect, Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Task, Subtask } from '../types';
+import { Task, Subtask, TaskReference } from '../types';
 import { ganttService } from '../services/gantt';
 import { subtaskService } from '../services/subtasks';
 
@@ -29,6 +29,9 @@ const GanttChart = () => {
     description: '',
     status: 'pending' as 'pending' | 'completed',
     assignee: '',
+    referenceType: '' as 'task' | 'subtask' | '',
+    referenceId: undefined as number | undefined,
+    referenceName: '',
     startDate: '',
     endDate: ''
   });
@@ -87,7 +90,7 @@ const GanttChart = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks'] });
       setShowAddSubtaskForm(null);
-      setSubtaskFormData({ name: '', description: '', status: 'pending', assignee: '', startDate: '', endDate: '' });
+      setSubtaskFormData({ name: '', description: '', status: 'pending', assignee: '', referenceType: '', referenceId: undefined, referenceName: '', startDate: '', endDate: '' });
     },
   });
 
@@ -200,6 +203,9 @@ const GanttChart = () => {
       description: subtask.description,
       status: newStatus,
       assignee: subtask.assignee,
+      referenceType: subtask.referenceType,
+      referenceId: subtask.referenceId,
+      referenceName: subtask.referenceName,
       startDate: subtask.startDate?.split('T')[0] || undefined,
       endDate: subtask.endDate?.split('T')[0] || undefined
     };
@@ -232,6 +238,14 @@ const GanttChart = () => {
 
   // Assignee options
   const assigneeOptions = ['', 'Jen', 'Montse', 'Jez', 'Nick', 'Gerardo'];
+
+  // Fetch task and subtask references for dropdown
+  const { data: taskReferences = [] } = useQuery({
+    queryKey: ['task-references'],
+    queryFn: () => subtaskService.getTasksAndSubtasksForReference(token!),
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  });
 
   const handleAddEntry = () => {
     if (!selectedTaskId || !startDate || !endDate) return;
@@ -466,6 +480,9 @@ const GanttChart = () => {
                         Assignee
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Depends On
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -521,6 +538,9 @@ const GanttChart = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               -
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              -
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                 task.status === 'completed' ? 'bg-green-100 text-green-800' :
@@ -560,10 +580,10 @@ const GanttChart = () => {
                               {/* Add Subtask Form Row */}
                               {showAddSubtaskForm === task.id && (
                                 <tr className="bg-blue-50">
-                                  <td colSpan={8} className="px-6 py-4">
+                                  <td colSpan={9} className="px-6 py-4">
                                     <div className="ml-6 bg-white rounded p-3 border">
                                       <h5 className="font-medium text-gray-900 mb-3">Add New Subtask</h5>
-                                      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-3">
+                                      <div className="grid grid-cols-1 md:grid-cols-7 gap-3 mb-3">
                                         <input
                                           type="text"
                                           placeholder="Subtask name *"
@@ -596,6 +616,29 @@ const GanttChart = () => {
                                             <option key={name} value={name}>{name}</option>
                                           ))}
                                         </select>
+                                        <select
+                                          value={`${subtaskFormData.referenceType}-${subtaskFormData.referenceId || ''}`}
+                                          onChange={(e) => {
+                                            const [type, id] = e.target.value.split('-');
+                                            const selectedRef = taskReferences.find(ref => 
+                                              ref.type === type && ref.id.toString() === id
+                                            );
+                                            setSubtaskFormData({
+                                              ...subtaskFormData,
+                                              referenceType: type as 'task' | 'subtask' | '',
+                                              referenceId: selectedRef ? selectedRef.id : undefined,
+                                              referenceName: selectedRef ? selectedRef.name : ''
+                                            });
+                                          }}
+                                          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                          <option value="">Depends On</option>
+                                          {taskReferences.map(ref => (
+                                            <option key={`${ref.type}-${ref.id}`} value={`${ref.type}-${ref.id}`}>
+                                              {ref.displayName}
+                                            </option>
+                                          ))}
+                                        </select>
                                         <input
                                           type="date"
                                           value={subtaskFormData.startDate}
@@ -620,7 +663,7 @@ const GanttChart = () => {
                                         <button
                                           onClick={() => {
                                             setShowAddSubtaskForm(null);
-                                            setSubtaskFormData({ name: '', description: '', status: 'pending', assignee: '', startDate: '', endDate: '' });
+                                            setSubtaskFormData({ name: '', description: '', status: 'pending', assignee: '', referenceType: '', referenceId: undefined, referenceName: '', startDate: '', endDate: '' });
                                           }}
                                           className="bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-400"
                                         >
@@ -635,7 +678,7 @@ const GanttChart = () => {
                               {/* Add Subtask Button Row */}
                               {showAddSubtaskForm !== task.id && (
                                 <tr className="bg-gray-50">
-                                  <td colSpan={8} className="px-6 py-2">
+                                  <td colSpan={9} className="px-6 py-2">
                                     <div className="ml-6">
                                       <button
                                         onClick={() => setShowAddSubtaskForm(task.id)}
@@ -687,6 +730,15 @@ const GanttChart = () => {
                                           : 'bg-gray-50 text-gray-500 border border-gray-200'
                                       }`}>
                                         {subtask.assignee || 'Unassigned'}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-3 text-sm text-gray-600">
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                        subtask.referenceName 
+                                          ? 'bg-purple-50 text-purple-700 border border-purple-200' 
+                                          : 'bg-gray-50 text-gray-500 border border-gray-200'
+                                      }`}>
+                                        {subtask.referenceName || 'No dependency'}
                                       </span>
                                     </td>
                                     <td className="px-6 py-3">

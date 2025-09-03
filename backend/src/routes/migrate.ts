@@ -1194,4 +1194,67 @@ router.post('/add-subtask-assignee', async (req: Request, res: Response) => {
   }
 });
 
+// Add dependency reference fields to subtasks table
+router.post('/add-subtask-references', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting subtask reference fields migration...');
+
+    // Add reference fields if they don't exist
+    await pool.query(`
+      DO $$ 
+      BEGIN
+          -- Add reference_type column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'subtasks' AND column_name = 'reference_type') THEN
+              ALTER TABLE subtasks ADD COLUMN reference_type VARCHAR(10) CHECK (reference_type IN ('task', 'subtask'));
+          END IF;
+          
+          -- Add reference_id column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'subtasks' AND column_name = 'reference_id') THEN
+              ALTER TABLE subtasks ADD COLUMN reference_id INTEGER;
+          END IF;
+          
+          -- Add reference_name column if it doesn't exist
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'subtasks' AND column_name = 'reference_name') THEN
+              ALTER TABLE subtasks ADD COLUMN reference_name VARCHAR(255);
+          END IF;
+      END $$;
+    `);
+    console.log('✓ Added reference columns to subtasks table');
+
+    // Create indexes for better performance
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_subtasks_reference_type ON subtasks(reference_type);
+      CREATE INDEX IF NOT EXISTS idx_subtasks_reference_id ON subtasks(reference_id);
+    `);
+    console.log('✓ Created indexes on reference columns');
+
+    // Add column documentation
+    await pool.query(`
+      COMMENT ON COLUMN subtasks.reference_type IS 'Type of referenced item: task or subtask';
+      COMMENT ON COLUMN subtasks.reference_id IS 'ID of the referenced task or subtask';
+      COMMENT ON COLUMN subtasks.reference_name IS 'Name of referenced item for display purposes';
+    `);
+    console.log('✓ Added column documentation');
+
+    console.log('Subtask reference fields migration completed successfully!');
+    res.status(200).json({ 
+      message: 'Subtask reference fields added successfully!',
+      table: 'subtasks',
+      columns_added: ['reference_type', 'reference_id', 'reference_name'],
+      indexes_added: ['idx_subtasks_reference_type', 'idx_subtasks_reference_id'],
+      description: 'Enables subtasks to reference other tasks or subtasks for dependency tracking'
+    });
+    
+  } catch (error) {
+    console.error('Subtask reference migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to add reference fields to subtasks table', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
