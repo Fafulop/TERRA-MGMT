@@ -24,6 +24,7 @@ const GanttChart = () => {
   const [editingEntry, setEditingEntry] = useState<GanttEntry | null>(null);
   const [expandedTasks, setExpandedTasks] = useState<Set<number>>(new Set());
   const [showAddSubtaskForm, setShowAddSubtaskForm] = useState<number | null>(null);
+  const [showCalendar, setShowCalendar] = useState<Set<number>>(new Set());
   const [subtaskFormData, setSubtaskFormData] = useState({
     name: '',
     description: '',
@@ -256,6 +257,65 @@ const GanttChart = () => {
     return null;
   };
 
+  // Calendar helper functions
+  const getWeeksInRange = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const weeks = [];
+    
+    // Get the Monday of the week containing the start date
+    const startOfWeek = new Date(start);
+    startOfWeek.setDate(start.getDate() - start.getDay() + 1);
+    
+    let currentWeek = new Date(startOfWeek);
+    
+    while (currentWeek <= end) {
+      const weekEnd = new Date(currentWeek);
+      weekEnd.setDate(currentWeek.getDate() + 6);
+      
+      weeks.push({
+        start: new Date(currentWeek),
+        end: weekEnd,
+        weekOf: `Week of ${currentWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+      });
+      
+      currentWeek = new Date(currentWeek);
+      currentWeek.setDate(currentWeek.getDate() + 7);
+    }
+    
+    return weeks;
+  };
+
+  const toggleCalendar = (taskId: number) => {
+    const newShowCalendar = new Set(showCalendar);
+    if (newShowCalendar.has(taskId)) {
+      newShowCalendar.delete(taskId);
+    } else {
+      newShowCalendar.add(taskId);
+    }
+    setShowCalendar(newShowCalendar);
+  };
+
+  const getTimelinePosition = (itemStart: string, itemEnd: string, weekStart: Date, weekEnd: Date) => {
+    const itemStartDate = new Date(itemStart);
+    const itemEndDate = new Date(itemEnd);
+    
+    // Clamp to week boundaries
+    const clampedStart = new Date(Math.max(itemStartDate.getTime(), weekStart.getTime()));
+    const clampedEnd = new Date(Math.min(itemEndDate.getTime(), weekEnd.getTime()));
+    
+    if (clampedStart > clampedEnd) return null;
+    
+    const weekDuration = weekEnd.getTime() - weekStart.getTime();
+    const startOffset = (clampedStart.getTime() - weekStart.getTime()) / weekDuration;
+    const duration = (clampedEnd.getTime() - clampedStart.getTime()) / weekDuration;
+    
+    return {
+      left: `${startOffset * 100}%`,
+      width: `${duration * 100}%`
+    };
+  };
+
   // Assignee options
   const assigneeOptions = ['', 'Jen', 'Montse', 'Jez', 'Nick', 'Gerardo'];
 
@@ -485,19 +545,10 @@ const GanttChart = () => {
                         Task
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Area/Subarea
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Start Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        End Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Duration
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Assignee
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Depends On
@@ -506,7 +557,13 @@ const GanttChart = () => {
                         Dependency Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
+                        Area/Subarea
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Start Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        End Date
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
@@ -546,24 +603,6 @@ const GanttChart = () => {
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {task.area}/{task.subarea}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {startDate.toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {endDate.toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {duration} day{duration !== 1 ? 's' : ''}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              -
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              -
-                            </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               -
                             </td>
@@ -575,6 +614,21 @@ const GanttChart = () => {
                               }`}>
                                 {task.status.replace('_', ' ').toUpperCase()}
                               </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              -
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              -
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {task.area}/{task.subarea}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {startDate.toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {endDate.toLocaleDateString()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <div className="flex space-x-2">
@@ -591,6 +645,12 @@ const GanttChart = () => {
                                   View
                                 </button>
                                 <button
+                                  onClick={() => toggleCalendar(task.id)}
+                                  className="text-green-600 hover:text-green-900"
+                                >
+                                  {showCalendar.has(task.id) ? 'Hide Calendar' : 'Show Calendar'}
+                                </button>
+                                <button
                                   onClick={() => handleDeleteEntry(task.id)}
                                   className="text-red-600 hover:text-red-900"
                                 >
@@ -599,6 +659,123 @@ const GanttChart = () => {
                               </div>
                             </td>
                           </tr>
+
+                          {/* Calendar View */}
+                          {showCalendar.has(task.id) && (
+                            <tr className="bg-green-50">
+                              <td colSpan={10} className="px-6 py-4">
+                                <div className="ml-6 bg-white rounded p-4 border">
+                                  <h5 className="font-medium text-gray-900 mb-4">
+                                    📅 Timeline Calendar - {task.title}
+                                  </h5>
+                                  {(() => {
+                                    if (!task.startDate || !task.endDate) {
+                                      return <p className="text-gray-500">No date range set for this task.</p>;
+                                    }
+                                    
+                                    const weeks = getWeeksInRange(task.startDate, task.endDate);
+                                    const taskSubtasks = allSubtasks?.[task.id] || [];
+                                    
+                                    return (
+                                      <div className="space-y-4">
+                                        {/* Week Headers */}
+                                        <div className="grid grid-cols-1 gap-2">
+                                          <div className="flex space-x-1 mb-2">
+                                            {weeks.map((week, index) => (
+                                              <div
+                                                key={index}
+                                                className="flex-1 text-center text-xs font-medium text-gray-600 py-1 bg-gray-100 rounded"
+                                              >
+                                                {week.weekOf}
+                                              </div>
+                                            ))}
+                                          </div>
+                                          
+                                          {/* Main Task Timeline */}
+                                          <div className="relative">
+                                            <div className="flex items-center mb-2">
+                                              <div className="w-48 text-sm font-medium text-gray-900 pr-4">
+                                                🎯 {task.title}
+                                              </div>
+                                              <div className="flex space-x-1 flex-1">
+                                                {weeks.map((week, weekIndex) => (
+                                                  <div key={weekIndex} className="flex-1 relative h-8 bg-gray-200 rounded">
+                                                    {(() => {
+                                                      const position = getTimelinePosition(
+                                                        task.startDate!, 
+                                                        task.endDate!, 
+                                                        week.start, 
+                                                        week.end
+                                                      );
+                                                      
+                                                      if (!position) return null;
+                                                      
+                                                      return (
+                                                        <div
+                                                          className="absolute top-1 h-6 bg-blue-500 rounded"
+                                                          style={{
+                                                            left: position.left,
+                                                            width: position.width
+                                                          }}
+                                                        />
+                                                      );
+                                                    })()}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          
+                                          {/* Subtask Timelines */}
+                                          {taskSubtasks.map((subtask) => {
+                                            if (!subtask.startDate || !subtask.endDate) return null;
+                                            
+                                            return (
+                                              <div key={subtask.id} className="relative">
+                                                <div className="flex items-center mb-1">
+                                                  <div className="w-48 text-sm text-gray-700 pr-4 truncate">
+                                                    📋 {subtask.name}
+                                                  </div>
+                                                  <div className="flex space-x-1 flex-1">
+                                                    {weeks.map((week, weekIndex) => (
+                                                      <div key={weekIndex} className="flex-1 relative h-6 bg-gray-200 rounded">
+                                                        {(() => {
+                                                          const position = getTimelinePosition(
+                                                            subtask.startDate!, 
+                                                            subtask.endDate!, 
+                                                            week.start, 
+                                                            week.end
+                                                          );
+                                                          
+                                                          if (!position) return null;
+                                                          
+                                                          return (
+                                                            <div
+                                                              className={`absolute top-1 h-4 rounded ${
+                                                                subtask.status === 'completed' ? 'bg-green-500' : 'bg-orange-500'
+                                                              }`}
+                                                              style={{
+                                                                left: position.left,
+                                                                width: position.width
+                                                              }}
+                                                            />
+                                                          );
+                                                        })()}
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
 
                           {/* Subtasks Rows */}
                           {isExpanded && (
@@ -738,24 +915,19 @@ const GanttChart = () => {
                                       </div>
                                     </td>
                                     <td className="px-6 py-3 text-sm text-gray-600">
-                                      <span className="italic">Subtask</span>
-                                    </td>
-                                    <td className="px-6 py-3 text-sm text-gray-600">
-                                      {subtask.startDate ? new Date(subtask.startDate).toLocaleDateString() : '-'}
-                                    </td>
-                                    <td className="px-6 py-3 text-sm text-gray-600">
-                                      {subtask.endDate ? new Date(subtask.endDate).toLocaleDateString() : '-'}
-                                    </td>
-                                    <td className="px-6 py-3 text-sm text-gray-600">
-                                      {subtaskDuration ? `${subtaskDuration} day${subtaskDuration !== 1 ? 's' : ''}` : '-'}
-                                    </td>
-                                    <td className="px-6 py-3 text-sm text-gray-600">
                                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                                         subtask.assignee 
                                           ? 'bg-blue-50 text-blue-700 border border-blue-200' 
                                           : 'bg-gray-50 text-gray-500 border border-gray-200'
                                       }`}>
                                         {subtask.assignee || 'Unassigned'}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-3">
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                        subtask.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                      }`}>
+                                        {subtask.status.toUpperCase()}
                                       </span>
                                     </td>
                                     <td className="px-6 py-3 text-sm text-gray-600">
@@ -788,12 +960,14 @@ const GanttChart = () => {
                                         );
                                       })()}
                                     </td>
-                                    <td className="px-6 py-3">
-                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                        subtask.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                      }`}>
-                                        {subtask.status.toUpperCase()}
-                                      </span>
+                                    <td className="px-6 py-3 text-sm text-gray-600">
+                                      <span className="italic">Subtask</span>
+                                    </td>
+                                    <td className="px-6 py-3 text-sm text-gray-600">
+                                      {subtask.startDate ? new Date(subtask.startDate).toLocaleDateString() : '-'}
+                                    </td>
+                                    <td className="px-6 py-3 text-sm text-gray-600">
+                                      {subtask.endDate ? new Date(subtask.endDate).toLocaleDateString() : '-'}
                                     </td>
                                     <td className="px-6 py-3 text-sm font-medium">
                                       <div className="flex space-x-2">

@@ -47,6 +47,7 @@ import documentsRoutes from './routes/documents';
 import areasRoutes from './routes/areas';
 import personalTasksRoutes from './routes/personalTasks';
 import ganttRoutes from './routes/gantt';
+import subtaskRoutes from './routes/subtasks';
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from './routes/uploadthing';
 
@@ -74,6 +75,7 @@ app.use('/api/documents', documentsRoutes);
 app.use('/api/areas', areasRoutes);
 app.use('/api/personal-tasks', personalTasksRoutes);
 app.use('/api/gantt', ganttRoutes);
+app.use('/api/subtasks', subtaskRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {
