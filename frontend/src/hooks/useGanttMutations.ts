@@ -45,7 +45,7 @@ export const useGanttMutations = (onSuccess?: { resetTaskForm?: () => void; rese
         name: string;
         description: string;
         assignee: string;
-        referenceType: string;
+        referenceType: 'task' | 'subtask';
         referenceId?: number;
         referenceName: string;
         startDate: string;

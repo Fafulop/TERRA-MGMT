@@ -1,6 +1,5 @@
 import React, { memo } from 'react';
 import { Task, TaskReference } from '../types';
-import { formatDateForInput } from '../utils/dateUtils';
 
 interface GanttFormModalProps {
   // Task timeline form

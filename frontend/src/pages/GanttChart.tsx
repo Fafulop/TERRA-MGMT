@@ -14,7 +14,7 @@ import { validateSubtaskDates } from '../utils/dateUtils';
 
 const GanttChart: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   
   // Use our new state management hook
   const { state, actions } = useGanttState();

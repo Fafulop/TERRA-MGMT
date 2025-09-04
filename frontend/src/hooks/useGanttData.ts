@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { ganttService } from '../services/gantt';
 import { subtaskService } from '../services/subtasks';
-import { Task, Subtask } from '../types';
+import { Subtask } from '../types';
 
 export const useGanttData = (expandedTasks: Set<number>) => {
   const { user, token } = useAuth();
