@@ -1257,4 +1257,33 @@ router.post('/add-subtask-references', async (req: Request, res: Response) => {
   }
 });
 
+// Add indexes for Gantt chart performance
+router.post('/add-tasks-indexes', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting tasks table indexes migration...');
+
+    // Add indexes for start_date and end_date columns
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_tasks_start_date ON tasks(start_date);
+      CREATE INDEX IF NOT EXISTS idx_tasks_end_date ON tasks(end_date);
+    `);
+    console.log('✓ Created performance indexes for tasks table');
+
+    console.log('Tasks indexes migration completed successfully!');
+    res.status(200).json({ 
+      message: 'Task date indexes created successfully!',
+      table: 'tasks',
+      indexes_added: ['idx_tasks_start_date', 'idx_tasks_end_date'],
+      description: 'Performance indexes for Gantt chart date queries'
+    });
+    
+  } catch (error) {
+    console.error('Tasks indexes migration error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create task date indexes', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
