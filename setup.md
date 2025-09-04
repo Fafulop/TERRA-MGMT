@@ -493,6 +493,72 @@ railway up
 railway up --detach
 ```
 
+## Gantt Chart Database Setup
+
+After deploying the application with Gantt chart features, run these database migrations to set up the required tables:
+
+### Required Migrations (run in order):
+
+1. **Create Subtasks Table:**
+```bash
+POST /api/migrate/add-gantt-subtasks
+```
+
+2. **Add Status Column:**
+```bash
+POST /api/migrate/add-subtask-status
+```
+
+3. **Add Assignee Column:**
+```bash
+POST /api/migrate/add-subtask-assignee
+```
+
+4. **Add Dependency References:**
+```bash
+POST /api/migrate/add-subtask-references
+```
+
+5. **Add Performance Indexes:**
+```bash
+POST /api/migrate/add-tasks-indexes
+```
+
+### Manual Database Setup (alternative):
+
+If migration endpoints are unavailable, manually add these columns to your `tasks` table:
+
+```sql
+-- Add timeline fields to tasks table
+ALTER TABLE tasks 
+ADD COLUMN start_date DATE,
+ADD COLUMN end_date DATE;
+
+-- Create subtasks table
+CREATE TABLE subtasks (
+  id SERIAL PRIMARY KEY,
+  task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'completed')),
+  assignee VARCHAR(255),
+  reference_type VARCHAR(10) CHECK (reference_type IN ('task', 'subtask')),
+  reference_id INTEGER,
+  reference_name VARCHAR(255),
+  start_date TIMESTAMP WITH TIME ZONE,
+  end_date TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Add performance indexes
+CREATE INDEX IF NOT EXISTS idx_tasks_start_date ON tasks(start_date);
+CREATE INDEX IF NOT EXISTS idx_tasks_end_date ON tasks(end_date);
+CREATE INDEX IF NOT EXISTS idx_subtasks_task_id ON subtasks(task_id);
+CREATE INDEX IF NOT EXISTS idx_subtasks_status ON subtasks(status);
+CREATE INDEX IF NOT EXISTS idx_subtasks_assignee ON subtasks(assignee);
+```
+
 ## Next Steps
 
 After successful deployment, you can:

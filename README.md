@@ -11,6 +11,18 @@ A comprehensive fullstack task management application built with React, Express.
 - ✅ **Due Date Tracking** - Set and track task deadlines
 - ✅ **Ownership-based Permissions** - Users can only edit/delete their own tasks and comments
 
+### Gantt Chart & Project Management
+- ✅ **Interactive Gantt Chart** - Visual timeline view of all tasks with drag-and-drop timeline management
+- ✅ **Task Timeline Management** - Set start and end dates for comprehensive project scheduling
+- ✅ **Subtask System** - Break down main tasks into manageable subtasks with independent tracking
+- ✅ **Dependency Management** - Create dependencies between tasks and subtasks with "Depends On" functionality
+- ✅ **Assignee Management** - Assign team members to specific subtasks for clear responsibility
+- ✅ **Real-time Status Updates** - Mark subtasks as pending or completed with instant visual feedback
+- ✅ **Calendar Integration** - Daily calendar view with uniform task distribution and timeline visualization
+- ✅ **Dependency Status Tracking** - Real-time dependency status column showing completion progress
+- ✅ **Global Project View** - All users can view and manage any task for true collaborative project management
+- ✅ **Clean Architecture** - Separated hooks, services, and components for maintainable Gantt functionality
+
 ### File & URL Attachments
 - ✅ **Integrated File Uploads** - Attach files directly to tasks and comments during creation
 - ✅ **URL Link Attachments** - Add web links with titles and descriptions
@@ -70,7 +82,8 @@ A comprehensive fullstack task management application built with React, Express.
 
 ### Database Schema
 - **Users Table** - User accounts with authentication data
-- **Tasks Table** - Core task management with ownership tracking (shared visibility)
+- **Tasks Table** - Core task management with ownership tracking (shared visibility) + Gantt timeline fields
+- **Subtasks Table** - Gantt chart subtasks with assignee, dependency references, and status tracking
 - **Personal Tasks Table** - Private task management with strict user isolation
 - **Comments Table** - Follow-up comments linked to specific tasks
 - **Attachments Table** - File and URL attachments for tasks and comments
