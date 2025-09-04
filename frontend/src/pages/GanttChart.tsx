@@ -138,7 +138,7 @@ const GanttChart: React.FC = () => {
         name: currentSubtask.name,
         description: currentSubtask.description || '',
         assignee: currentSubtask.assignee || '',
-        referenceType: currentSubtask.referenceType || '',
+        referenceType: (currentSubtask.referenceType as 'task' | 'subtask') || 'task',
         referenceId: currentSubtask.referenceId,
         referenceName: currentSubtask.referenceName || '',
         startDate: currentSubtask.startDate || '',
