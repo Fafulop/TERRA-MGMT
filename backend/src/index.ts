@@ -48,6 +48,7 @@ import areasRoutes from './routes/areas';
 import personalTasksRoutes from './routes/personalTasks';
 import projectRoutes from './routes/projects';
 import notificationRoutes from './routes/notifications';
+import inventarioRoutes from './routes/inventario';
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from './routes/uploadthing';
 import { initializeNotificationJobs } from './jobs/notificationJobs';
@@ -77,6 +78,7 @@ app.use('/api/areas', areasRoutes);
 app.use('/api/personal-tasks', personalTasksRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/inventario', inventarioRoutes);
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {

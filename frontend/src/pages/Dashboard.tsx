@@ -184,6 +184,22 @@ const Dashboard: React.FC = () => {
               </div>
               <p className="text-gray-500">View all tasks in a calendar format with notifications!</p>
             </div>
+
+            {/* Inventario Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Inventario
+                </h2>
+                <button
+                  onClick={() => navigate('/inventario')}
+                  className="bg-cyan-600 text-white px-4 py-2 rounded-md hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
+                >
+                  Manage Inventory
+                </button>
+              </div>
+              <p className="text-gray-500">Track and manage your inventory and stock levels!</p>
+            </div>
           </div>
         </div>
       </main>

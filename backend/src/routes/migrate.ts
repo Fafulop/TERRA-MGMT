@@ -1110,4 +1110,103 @@ router.post('/add-notifications-tables', async (req: Request, res: Response) => 
   }
 });
 
+// Add inventario tables migration (OLD - deprecated)
+router.post('/add-inventario-tables', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting inventario tables migration...');
+
+    // Read and execute the inventario migration SQL file
+    const sqlPath = path.join(__dirname, '..', 'config', 'add-inventario-tables.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    // Execute the SQL migration
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Inventario tables created successfully!',
+      tables: ['inventario_items'],
+      indexes: [
+        'idx_inventario_user_id',
+        'idx_inventario_internal_id',
+        'idx_inventario_name',
+        'idx_inventario_category',
+        'idx_inventario_status',
+        'idx_inventario_location',
+        'idx_inventario_area',
+        'idx_inventario_subarea',
+        'idx_inventario_created_at'
+      ],
+      triggers: ['trigger_inventario_updated_at', 'trigger_inventario_status'],
+      features: [
+        'Inventory tracking with quantity and stock levels',
+        'Auto-calculated status (in-stock, low-stock, out-of-stock)',
+        'Cost per unit tracking in MXN',
+        'Areas/subareas taxonomy integration',
+        'Location management',
+        'Category classification',
+        'Tags for flexible categorization'
+      ]
+    });
+  } catch (error) {
+    console.error('Inventario migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create inventario tables',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Restructure inventario tables migration (NEW)
+router.post('/restructure-inventario-tables', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting inventario restructure migration...');
+    console.log('This will drop the old inventario_items table and create new structure');
+
+    // Read and execute the restructure SQL file
+    const sqlPath = path.join(__dirname, '..', 'config', 'restructure-inventario-tables.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    // Execute the SQL migration
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Inventario tables restructured successfully!',
+      tables: ['inventario_items', 'inventario_counts', 'count_sessions'],
+      views: ['v_current_inventory'],
+      indexes: [
+        'idx_inventario_items_internal_id',
+        'idx_inventario_items_name',
+        'idx_inventario_items_category',
+        'idx_inventario_items_status',
+        'idx_inventario_items_area',
+        'idx_inventario_items_subarea',
+        'idx_inventario_counts_item_id',
+        'idx_inventario_counts_count_date',
+        'idx_inventario_counts_item_date',
+        'idx_count_sessions_count_date'
+      ],
+      triggers: [
+        'trigger_inventario_items_updated_at',
+        'trigger_inventario_counts_updated_at',
+        'trigger_count_sessions_updated_at'
+      ],
+      features: [
+        'Separated item catalog from inventory counts',
+        'Historical inventory tracking by date',
+        'Batch count sessions for efficient counting',
+        'View current inventory (latest counts)',
+        'Cost per unit tracking in MXN',
+        'Areas/subareas taxonomy integration',
+        'Audit trail (who counted what and when)'
+      ]
+    });
+  } catch (error) {
+    console.error('Inventario restructure migration error:', error);
+    res.status(500).json({
+      error: 'Failed to restructure inventario tables',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
