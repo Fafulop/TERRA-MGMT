@@ -152,6 +152,22 @@ const Dashboard: React.FC = () => {
               </div>
               <p className="text-gray-500">Manage and organize your business documents!</p>
             </div>
+
+            {/* Gantt Chart Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Gantt Chart
+                </h2>
+                <button
+                  onClick={() => navigate('/gantt')}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  View Projects
+                </button>
+              </div>
+              <p className="text-gray-500">Visualize project timelines and manage task schedules!</p>
+            </div>
           </div>
         </div>
       </main>

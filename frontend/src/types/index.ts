@@ -416,3 +416,131 @@ export interface DocumentsSummary {
   total_areas: number;
   total_subareas: number;
 }
+
+// Projects (Gantt Chart) Types
+export interface Project {
+  id: number;
+  name: string;
+  description?: string;
+  area: string;
+  subarea?: string;
+  userId: number;
+  user_id: number;
+  visibility: 'shared' | 'private';
+  startDate?: string;
+  start_date?: string;
+  endDate?: string;
+  end_date?: string;
+  status: 'planning' | 'active' | 'completed' | 'on_hold';
+
+  // Computed fields
+  taskCount?: number;
+  task_count?: number;
+  completedTaskCount?: number;
+  completed_task_count?: number;
+  progressPercentage?: number;
+  progress_percentage?: number;
+
+  // User info
+  username?: string;
+  firstName?: string;
+  first_name?: string;
+  lastName?: string;
+  last_name?: string;
+
+  createdAt: string;
+  created_at: string;
+  updatedAt: string;
+  updated_at: string;
+}
+
+export interface ProjectTask {
+  id: number; // project_tasks.id
+  projectId: number;
+  project_id: number;
+  taskId: number;
+  task_id: number;
+  startDate: string;
+  start_date: string;
+  endDate: string;
+  end_date: string;
+  displayOrder: number;
+  display_order: number;
+  addedAt: string;
+  added_at: string;
+  addedBy: number;
+  added_by: number;
+
+  // Task details (joined)
+  title?: string;
+  description?: string;
+  status?: 'pending' | 'in_progress' | 'completed';
+  priority?: 'low' | 'medium' | 'high';
+  area?: string;
+  subarea?: string;
+  task_area?: string;
+  task_subarea?: string;
+  due_date?: string;
+  dueDate?: string;
+
+  // User who owns the task
+  username?: string;
+  firstName?: string;
+  first_name?: string;
+  lastName?: string;
+  last_name?: string;
+  task_username?: string;
+  task_first_name?: string;
+  task_last_name?: string;
+}
+
+export interface ProjectFormData {
+  name: string;
+  description?: string;
+  area: string;
+  subarea?: string;
+  visibility?: 'shared' | 'private';
+  status?: 'planning' | 'active' | 'completed' | 'on_hold';
+}
+
+export interface AddTaskToProjectData {
+  // Option A: Use existing task
+  taskId?: number;
+
+  // Option B: Create new task
+  createTask?: TaskFormData;
+
+  // Required for both
+  start_date: string;
+  end_date: string;
+  display_order?: number;
+}
+
+export interface UpdateProjectTaskData {
+  start_date?: string;
+  end_date?: string;
+  status?: 'pending' | 'in_progress' | 'completed';
+  display_order?: number;
+}
+
+export interface ProjectFilters {
+  area?: string;
+  subarea?: string;
+  status?: string;
+  visibility?: string;
+}
+
+// Personal Tasks Types
+export interface PersonalTask {
+  id: number;
+  title: string;
+  description?: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
+  dueDate?: string;
+  area: string;
+  subarea: string;
+  userId: number;
+  createdAt: string;
+  updatedAt: string;
+}

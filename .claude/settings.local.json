@@ -1,0 +1,13 @@
+{
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "filesystem",
+    "git",
+    "nodejs"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)"
+    ]
+  }
+}

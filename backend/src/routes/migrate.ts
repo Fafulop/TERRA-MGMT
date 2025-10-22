@@ -1025,4 +1025,50 @@ router.post('/clean-demo-storage-urls', async (req, res) => {
   }
 });
 
+// Add projects tables migration
+router.post('/add-projects-tables', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting projects tables migration...');
+
+    // Read and execute the projects migration SQL file
+    const sqlPath = path.join(__dirname, '..', 'config', 'add-projects-tables.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    // Execute the SQL migration
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Projects tables created successfully!',
+      tables: ['projects', 'project_tasks'],
+      columns_added: ['tasks.start_date'],
+      indexes: [
+        'idx_projects_user_id',
+        'idx_projects_area',
+        'idx_projects_status',
+        'idx_projects_visibility',
+        'idx_projects_dates',
+        'idx_project_tasks_project_id',
+        'idx_project_tasks_task_id',
+        'idx_project_tasks_dates',
+        'idx_project_tasks_display_order',
+        'idx_tasks_start_date'
+      ],
+      triggers: ['update_projects_updated_at'],
+      features: [
+        'Gantt chart project management',
+        'Task timeline visualization',
+        'Project visibility control (shared/private)',
+        'Task start and end date tracking',
+        'Project status management'
+      ]
+    });
+  } catch (error) {
+    console.error('Projects migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create projects tables',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
