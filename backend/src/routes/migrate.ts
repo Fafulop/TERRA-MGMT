@@ -1071,4 +1071,43 @@ router.post('/add-projects-tables', async (req: Request, res: Response) => {
   }
 });
 
+// Add notifications tables migration
+router.post('/add-notifications-tables', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting notifications tables migration...');
+
+    // Read and execute the notifications migration SQL file
+    const sqlPath = path.join(__dirname, '..', 'config', 'add-notifications-tables.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    // Execute the SQL migration
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Notifications tables created successfully!',
+      tables: ['notifications', 'notification_preferences'],
+      indexes: [
+        'idx_notifications_user_id',
+        'idx_notifications_task_id',
+        'idx_notifications_created_at',
+        'idx_notifications_is_read'
+      ],
+      triggers: ['notifications_updated_at', 'notification_preferences_updated_at'],
+      features: [
+        'Task deadline notifications',
+        'User notification preferences',
+        'Multiple notification types (deadline_approaching, deadline_today, overdue, new_task, status_change)',
+        'Read/unread tracking',
+        'Configurable days before deadline alert'
+      ]
+    });
+  } catch (error) {
+    console.error('Notifications migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create notifications tables',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

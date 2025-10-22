@@ -544,3 +544,59 @@ export interface PersonalTask {
   createdAt: string;
   updatedAt: string;
 }
+
+// Notification Types
+export interface Notification {
+  id: number;
+  user_id: number;
+  userId: number;
+  task_id?: number;
+  taskId?: number;
+  type: 'deadline_approaching' | 'deadline_today' | 'overdue' | 'new_task' | 'status_change';
+  title: string;
+  message: string;
+  is_read: boolean;
+  isRead: boolean;
+  created_at: string;
+  createdAt: string;
+  updated_at: string;
+  updatedAt: string;
+
+  // Task details (joined)
+  task_title?: string;
+  taskTitle?: string;
+  task_status?: 'pending' | 'in_progress' | 'completed';
+  taskStatus?: 'pending' | 'in_progress' | 'completed';
+  task_due_date?: string;
+  taskDueDate?: string;
+}
+
+export interface NotificationPreferences {
+  id: number;
+  user_id: number;
+  userId: number;
+  deadline_approaching: boolean;
+  deadlineApproaching: boolean;
+  deadline_today: boolean;
+  deadlineToday: boolean;
+  overdue: boolean;
+  new_task: boolean;
+  newTask: boolean;
+  status_change: boolean;
+  statusChange: boolean;
+  days_before_deadline: number;
+  daysBeforeDeadline: number;
+  created_at: string;
+  createdAt: string;
+  updated_at: string;
+  updatedAt: string;
+}
+
+export interface NotificationPreferencesFormData {
+  deadline_approaching?: boolean;
+  deadline_today?: boolean;
+  overdue?: boolean;
+  new_task?: boolean;
+  status_change?: boolean;
+  days_before_deadline?: number;
+}

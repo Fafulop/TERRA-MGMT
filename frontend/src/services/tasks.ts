@@ -2,6 +2,29 @@ import { Task, TaskFormData, Comment, CommentFormData, Attachment, AttachmentFor
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
+// Standalone function for compatibility with React Query
+export const getTasks = async (): Promise<Task[]> => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/tasks`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch tasks');
+  }
+
+  const result = await response.json();
+  return result.tasks;
+};
+
 export const taskService = {
   // Create a new task
   createTask: async (taskData: TaskFormData, token: string): Promise<Task> => {

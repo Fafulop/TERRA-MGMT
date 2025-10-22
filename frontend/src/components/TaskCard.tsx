@@ -99,7 +99,7 @@ const TaskCard = ({ task }: TaskCardProps) => {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-3">
-        <h3 
+        <h3
           className="text-lg font-semibold text-gray-900 flex-1 cursor-pointer hover:text-blue-600 transition-colors"
           onClick={() => navigate(`/task/${task.id}`)}
           onMouseEnter={() => prefetchTaskDetail(task.id)}

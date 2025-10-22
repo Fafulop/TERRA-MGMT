@@ -36,6 +36,30 @@ export interface PersonalTasksStats {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
+// Standalone function for compatibility with React Query
+export const getPersonalTasks = async (): Promise<PersonalTask[]> => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/personal-tasks`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch personal tasks');
+  }
+
+  const result = await response.json();
+  return result.tasks;
+};
+
 export const personalTasksService = {
   // Get all personal tasks for the current user
   getPersonalTasks: async (token: string): Promise<PersonalTask[]> => {

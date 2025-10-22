@@ -1,0 +1,68 @@
+/* Custom styles for enhanced Agenda view */
+
+/* Style the agenda header row */
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  padding: 12px 8px;
+  font-weight: 600;
+  color: #374151;
+  background-color: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* Hide the Time column header */
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th:nth-child(2) {
+  display: none;
+}
+
+/* Add custom column headers for agenda view */
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th:nth-child(1) {
+  width: 120px; /* Date */
+}
+
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th:nth-child(3) {
+  padding: 0 !important; /* Remove padding to fit custom header */
+}
+
+/* Style the agenda event rows */
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+  padding: 8px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* Hover effect for agenda rows */
+.rbc-agenda-view table.rbc-agenda-table tbody > tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Style the date cell */
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td.rbc-agenda-date-cell {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+/* Hide the time cell in agenda rows */
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td.rbc-agenda-time-cell {
+  display: none;
+}
+
+/* Ensure table has proper spacing */
+.rbc-agenda-view table.rbc-agenda-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+/* Add alternating row colors for better readability */
+.rbc-agenda-view table.rbc-agenda-table tbody > tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+/* Ensure the event content cell has proper layout */
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td.rbc-agenda-event-cell {
+  padding: 4px 8px;
+}
