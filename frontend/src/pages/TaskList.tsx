@@ -1,21 +1,33 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import TaskCard from '../components/TaskCard';
+import TaskTableView from '../components/TaskTableView';
 import { useTasksOptimized } from '../hooks/useTaskQueries';
 import { useDebouncedSearch } from '../hooks/useDebounce';
+
+type ViewMode = 'cards' | 'table';
 
 const TaskList = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [filter, setFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('createdAt');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem('taskViewMode');
+    return (saved === 'table' || saved === 'cards') ? saved : 'cards';
+  });
   
   // Use optimized query hook
   const { data: tasks = [], isLoading, error, refetch } = useTasksOptimized();
-  
+
   // Debounced search functionality
   const { searchValue, debouncedSearchValue, setSearchValue } = useDebouncedSearch('', 300);
+
+  // Save view mode preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('taskViewMode', viewMode);
+  }, [viewMode]);
 
   if (!user) {
     navigate('/login');
@@ -210,6 +222,38 @@ const TaskList = () => {
               </div>
 
               <div className="flex gap-2">
+                {/* View Mode Toggle */}
+                <div className="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('cards')}
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1 ${
+                      viewMode === 'cards'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    title="Card view"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    Cards
+                  </button>
+                  <button
+                    onClick={() => setViewMode('table')}
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors flex items-center gap-1 ${
+                      viewMode === 'table'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                    title="Table view"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Table
+                  </button>
+                </div>
+
                 <button
                   onClick={() => refetch()}
                   className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -254,8 +298,8 @@ const TaskList = () => {
                 {filter === 'all' ? 'No tasks yet' : `No ${filter.replace('_', ' ')} tasks`}
               </h3>
               <p className="text-gray-500 mb-4">
-                {filter === 'all' 
-                  ? 'Get started by creating your first task!' 
+                {filter === 'all'
+                  ? 'Get started by creating your first task!'
                   : `You don't have any ${filter.replace('_', ' ')} tasks.`
                 }
               </p>
@@ -269,6 +313,8 @@ const TaskList = () => {
                 Create Your First Task
               </button>
             </div>
+          ) : viewMode === 'table' ? (
+            <TaskTableView tasks={filteredTasks} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTasks.map((task) => (
