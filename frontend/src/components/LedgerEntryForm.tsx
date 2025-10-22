@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAttachmentManager } from '../hooks/useAttachmentManager';
+import { useFacturaManager } from '../hooks/useFacturaManager';
 import FileAttachmentSection from './FileAttachmentSection';
+import FacturaAttachmentSection from './FacturaAttachmentSection';
 import { LedgerEntryFormData } from '../types';
 import AreaSubareaSelector from './AreaSubareaSelector';
 
@@ -30,7 +32,7 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const {
     fileAttachments,
     uploadedFiles,
@@ -39,6 +41,15 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
     updateFileAttachment,
     removeFileAttachment
   } = useAttachmentManager();
+
+  const {
+    facturaAttachments,
+    uploadedFacturas,
+    handleFacturaUpload,
+    addFacturaAttachment,
+    updateFacturaAttachment,
+    removeFacturaAttachment
+  } = useFacturaManager();
 
   const bankAccounts = currency === 'USD' 
     ? [
@@ -109,14 +120,15 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     const submissionData: LedgerEntryFormData = {
       ...formData,
-      fileAttachments
+      fileAttachments,
+      facturaAttachments
     };
 
     onSubmit(submissionData);
@@ -347,6 +359,20 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
             onUpdateFileAttachment={updateFileAttachment}
             onRemoveFileAttachment={removeFileAttachment}
             showTitle={false}
+            compact={false}
+          />
+        </div>
+
+        {/* Factura Attachments */}
+        <div>
+          <FacturaAttachmentSection
+            facturaAttachments={facturaAttachments}
+            uploadedFacturas={uploadedFacturas}
+            onFacturaUpload={handleFacturaUpload}
+            onAddFactura={addFacturaAttachment}
+            onUpdateFactura={updateFacturaAttachment}
+            onRemoveFactura={removeFacturaAttachment}
+            showTitle={true}
             compact={false}
           />
         </div>

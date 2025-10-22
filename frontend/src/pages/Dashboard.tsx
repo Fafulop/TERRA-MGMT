@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import NotificationBell from '../components/NotificationBell';
+import NotificationCenter from '../components/NotificationCenter';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [showNotifications, setShowNotifications] = useState(false);
 
   if (!user) {
     return (
@@ -26,6 +29,7 @@ const Dashboard: React.FC = () => {
           <div className="flex justify-between items-center py-6">
             <h1 className="text-3xl font-bold text-gray-900">Task Manager</h1>
             <div className="flex items-center space-x-4">
+              <NotificationBell onClick={() => setShowNotifications(true)} />
               <span className="text-gray-700">Welcome, {user.username}!</span>
               <button
                 onClick={logout}
@@ -41,7 +45,7 @@ const Dashboard: React.FC = () => {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
-            {/* Task Management Section */}
+            {/* 1. General Tasks Section */}
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-semibold text-gray-700">
@@ -57,119 +61,7 @@ const Dashboard: React.FC = () => {
               <p className="text-gray-500">Click "View General Tasks" to see all shared tasks and create new ones!</p>
             </div>
 
-            {/* Personal Tasks Section */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-700">
-                  Personal Tasks
-                </h2>
-                <button
-                  onClick={() => navigate('/personal')}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                >
-                  View Personal Tasks
-                </button>
-              </div>
-              <p className="text-gray-500">Manage your private tasks - visible only to you!</p>
-            </div>
-
-            {/* Cash Flow Section */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-700">
-                  Cash Flow
-                </h2>
-                <button
-                  onClick={() => navigate('/cash-flow')}
-                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                >
-                  Manage Cash Flow
-                </button>
-              </div>
-              <p className="text-gray-500">Track your income and expenses with dual currency support (USD/MXN)!</p>
-            </div>
-
-            {/* Cotizaciones Section */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-700">
-                  Cotizaciones
-                </h2>
-                <button
-                  onClick={() => navigate('/cotizaciones')}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                >
-                  Manage Quotes
-                </button>
-              </div>
-              <p className="text-gray-500">Manage your quotes and quotations in multiple currencies!</p>
-            </div>
-
-            {/* Areas Section */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-700">
-                  Areas
-                </h2>
-                <button
-                  onClick={() => navigate('/areas')}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  Manage Areas
-                </button>
-              </div>
-              <p className="text-gray-500">Manage organizational areas and departments!</p>
-            </div>
-
-            {/* Contactos Section */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-700">
-                  Contactos
-                </h2>
-                <button
-                  onClick={() => navigate('/contactos')}
-                  className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-                >
-                  Manage Contacts
-                </button>
-              </div>
-              <p className="text-gray-500">Manage your business contacts and relationships!</p>
-            </div>
-
-            {/* Documentos Section */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-700">
-                  Documentos
-                </h2>
-                <button
-                  onClick={() => navigate('/documentos')}
-                  className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
-                >
-                  Manage Documents
-                </button>
-              </div>
-              <p className="text-gray-500">Manage and organize your business documents!</p>
-            </div>
-
-            {/* Gantt Chart Section */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-700">
-                  Gantt Chart
-                </h2>
-                <button
-                  onClick={() => navigate('/gantt')}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  View Projects
-                </button>
-              </div>
-              <p className="text-gray-500">Visualize project timelines and manage task schedules!</p>
-            </div>
-
-            {/* Calendar Section */}
+            {/* 2. Calendar Section */}
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-semibold text-gray-700">
@@ -185,7 +77,55 @@ const Dashboard: React.FC = () => {
               <p className="text-gray-500">View all tasks in a calendar format with notifications!</p>
             </div>
 
-            {/* Inventario Section */}
+            {/* 3. Personal Tasks Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Personal Tasks
+                </h2>
+                <button
+                  onClick={() => navigate('/personal')}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                >
+                  View Personal Tasks
+                </button>
+              </div>
+              <p className="text-gray-500">Manage your private tasks - visible only to you!</p>
+            </div>
+
+            {/* 4. Gantt Chart Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Gantt Chart
+                </h2>
+                <button
+                  onClick={() => navigate('/gantt')}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  View Projects
+                </button>
+              </div>
+              <p className="text-gray-500">Visualize project timelines and manage task schedules!</p>
+            </div>
+
+            {/* 5. Cash Flow Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Cash Flow
+                </h2>
+                <button
+                  onClick={() => navigate('/cash-flow')}
+                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                >
+                  Manage Cash Flow
+                </button>
+              </div>
+              <p className="text-gray-500">Track your income and expenses with dual currency support (USD/MXN)!</p>
+            </div>
+
+            {/* 6. Inventario Section */}
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-semibold text-gray-700">
@@ -200,9 +140,79 @@ const Dashboard: React.FC = () => {
               </div>
               <p className="text-gray-500">Track and manage your inventory and stock levels!</p>
             </div>
+
+            {/* 7. Cotizaciones Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Cotizaciones
+                </h2>
+                <button
+                  onClick={() => navigate('/cotizaciones')}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                >
+                  Manage Quotes
+                </button>
+              </div>
+              <p className="text-gray-500">Manage your quotes and quotations in multiple currencies!</p>
+            </div>
+
+            {/* 8. Areas Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Areas
+                </h2>
+                <button
+                  onClick={() => navigate('/areas')}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                >
+                  Manage Areas
+                </button>
+              </div>
+              <p className="text-gray-500">Manage organizational areas and departments!</p>
+            </div>
+
+            {/* 9. Contactos Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Contactos
+                </h2>
+                <button
+                  onClick={() => navigate('/contactos')}
+                  className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
+                >
+                  Manage Contacts
+                </button>
+              </div>
+              <p className="text-gray-500">Manage your business contacts and relationships!</p>
+            </div>
+
+            {/* 10. Documentos Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Documentos
+                </h2>
+                <button
+                  onClick={() => navigate('/documentos')}
+                  className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                >
+                  Manage Documents
+                </button>
+              </div>
+              <p className="text-gray-500">Manage and organize your business documents!</p>
+            </div>
           </div>
         </div>
       </main>
+
+      {/* Notification Center Modal */}
+      <NotificationCenter
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+      />
     </div>
   );
 };

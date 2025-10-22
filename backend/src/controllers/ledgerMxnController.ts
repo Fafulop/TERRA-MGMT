@@ -31,16 +31,18 @@ export const getMxnLedgerEntries = async (req: AuthRequest, res: Response) => {
     } = req.query;
 
     let query = `
-      SELECT 
+      SELECT
         le.*,
         le.transaction_date as date,
         le.por_realizar,
         u.username,
         u.first_name,
         u.last_name,
-        COUNT(la.id) as attachment_count
+        COUNT(DISTINCT la.id) as attachment_count,
+        COUNT(DISTINCT lf.id) as factura_count
       FROM ledger_entries_mxn le
       LEFT JOIN ledger_attachments_mxn la ON le.id = la.ledger_entry_id
+      LEFT JOIN ledger_facturas_mxn lf ON le.id = lf.ledger_entry_id
       LEFT JOIN users u ON le.user_id = u.id
       WHERE 1=1
     `;
@@ -115,6 +117,7 @@ export const getMxnLedgerEntries = async (req: AuthRequest, res: Response) => {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       attachmentCount: parseInt(row.attachment_count) || 0,
+      facturaCount: parseInt(row.factura_count) || 0,
       currency: 'MXN' // Add currency identifier
     }));
     
@@ -251,7 +254,8 @@ export const createMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
       area,
       subarea,
       por_realizar = false,
-      fileAttachments = []
+      fileAttachments = [],
+      facturaAttachments = []
     } = req.body;
 
     // Validate required fields
@@ -327,6 +331,38 @@ export const createMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
           attachment.file.size,
           attachment.file.type,
           'file',
+          userId
+        ]);
+      }
+    }
+
+    // Create facturas
+    console.log('MXN FacturaAttachments received:', facturaAttachments);
+    if (facturaAttachments && facturaAttachments.length > 0) {
+      console.log('Creating', facturaAttachments.length, 'MXN facturas');
+      for (const factura of facturaAttachments) {
+        console.log('Processing MXN factura:', factura);
+        const facturaQuery = `
+          INSERT INTO ledger_facturas_mxn (
+            ledger_entry_id, file_name, file_url, file_size,
+            file_type, folio, uuid, rfc_emisor, rfc_receptor,
+            total, notes, uploaded_by
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        `;
+
+        await client.query(facturaQuery, [
+          ledgerEntry.id,
+          factura.file.name,
+          factura.file.url,
+          factura.file.size,
+          factura.file.type,
+          factura.folio || null,
+          factura.uuid || null,
+          factura.rfcEmisor || null,
+          factura.rfcReceptor || null,
+          factura.total || null,
+          factura.notes || null,
           userId
         ]);
       }

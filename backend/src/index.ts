@@ -39,8 +39,9 @@ import migrateRoutes from './routes/migrate';
 import taskRoutes from './routes/tasks';
 import commentRoutes from './routes/comments';
 import attachmentRoutes from './routes/attachments';
-import ledgerRoutes from './routes/ledger';
 import ledgerMxnRoutes from './routes/ledgerMxn';
+import ledgerFacturasRoutes from './routes/ledgerFacturas';
+import ledgerAttachmentsRoutes from './routes/ledgerAttachments';
 import cotizacionesRoutes from './routes/cotizaciones';
 import contactsRoutes from './routes/contacts';
 import documentsRoutes from './routes/documents';
@@ -69,8 +70,9 @@ app.use('/api/migrate', migrateRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/tasks', commentRoutes);
 app.use('/api', attachmentRoutes);
-app.use('/api/ledger', ledgerRoutes);
 app.use('/api/ledger-mxn', ledgerMxnRoutes);
+app.use('/api/ledger-mxn', ledgerFacturasRoutes); // Facturas routes (nested under ledger-mxn)
+app.use('/api/ledger-mxn', ledgerAttachmentsRoutes); // Attachments routes (nested under ledger-mxn)
 app.use('/api/cotizaciones', cotizacionesRoutes);
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/documents', documentsRoutes);

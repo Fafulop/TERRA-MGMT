@@ -166,6 +166,7 @@ export interface LedgerEntry {
   updatedAt: string;
   attachments?: LedgerAttachment[];
   attachmentCount?: number; // For list view optimization
+  facturaCount?: number; // For factura count in list view
 }
 
 export interface LedgerAttachment {
@@ -196,6 +197,7 @@ export interface LedgerEntryFormData {
   subarea: string;
   por_realizar?: boolean; // Future transaction not yet realized
   fileAttachments: FileAttachment[];
+  facturaAttachments?: FacturaAttachment[]; // Mexican fiscal invoices
 }
 
 export interface LedgerFilters {
@@ -599,4 +601,56 @@ export interface NotificationPreferencesFormData {
   new_task?: boolean;
   status_change?: boolean;
   days_before_deadline?: number;
+}
+
+// Factura (Mexican Fiscal Invoice) Types
+export interface Factura {
+  id: number;
+  ledgerEntryId: number;
+  fileName: string;
+  fileUrl: string;
+  fileSize?: number;
+  fileType?: string;
+
+  // Fiscal metadata (optional - SAT Mexico)
+  folio?: string;           // Invoice number
+  uuid?: string;            // Fiscal UUID (unique identifier)
+  rfcEmisor?: string;       // RFC of issuer (emisor)
+  rfcReceptor?: string;     // RFC of receptor (cliente)
+  total?: number;           // Invoice total amount
+  subtotal?: number;        // Subtotal before taxes
+  iva?: number;             // IVA (Value Added Tax - 16% typically)
+  fechaTimbrado?: string;   // Certification date from SAT
+
+  notes?: string;           // Additional notes
+  uploadedBy: {
+    username: string;
+    firstName?: string;
+    lastName?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FacturaFormData {
+  file: UploadedFile;
+  folio?: string;
+  uuid?: string;
+  rfcEmisor?: string;
+  rfcReceptor?: string;
+  total?: number;
+  subtotal?: number;
+  iva?: number;
+  fechaTimbrado?: string;
+  notes?: string;
+}
+
+export interface FacturaAttachment {
+  file: UploadedFile;
+  folio?: string;
+  uuid?: string;
+  rfcEmisor?: string;
+  rfcReceptor?: string;
+  total?: number;
+  notes?: string;
 }

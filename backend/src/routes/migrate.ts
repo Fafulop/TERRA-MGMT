@@ -1209,4 +1209,63 @@ router.post('/restructure-inventario-tables', async (req: Request, res: Response
   }
 });
 
+// Add ledger facturas table for MXN fiscal invoices
+router.post('/add-ledger-facturas-mxn', async (req, res) => {
+  try {
+    const sqlPath = path.join(__dirname, '../config/add-ledger-facturas-mxn.sql');
+    const sql = fs.readFileSync(sqlPath, 'utf-8');
+
+    await pool.query(sql);
+
+    res.json({
+      message: 'Ledger facturas MXN table created successfully',
+      table: 'ledger_facturas_mxn',
+      description: 'Table for storing Mexican fiscal invoices (facturas) with SAT metadata',
+      columns: [
+        'id',
+        'ledger_entry_id',
+        'file_name',
+        'file_url',
+        'file_size',
+        'file_type',
+        'folio',
+        'uuid',
+        'rfc_emisor',
+        'rfc_receptor',
+        'total',
+        'subtotal',
+        'iva',
+        'fecha_timbrado',
+        'uploaded_by',
+        'notes',
+        'created_at',
+        'updated_at'
+      ],
+      indexes: [
+        'idx_ledger_facturas_mxn_ledger_entry_id',
+        'idx_ledger_facturas_mxn_uuid',
+        'idx_ledger_facturas_mxn_folio',
+        'idx_ledger_facturas_mxn_rfc_emisor',
+        'idx_ledger_facturas_mxn_uploaded_by'
+      ],
+      triggers: ['update_ledger_facturas_mxn_updated_at'],
+      features: [
+        'Store Mexican fiscal invoices (facturas SAT)',
+        'Track UUID and folio numbers',
+        'Store RFC for emisor and receptor',
+        'Track invoice totals, subtotals, and IVA',
+        'Timestamp certification date (fecha_timbrado)',
+        'Support for PDF and XML facturas',
+        'Separate from general attachments for clarity'
+      ]
+    });
+  } catch (error) {
+    console.error('Ledger facturas MXN migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create ledger facturas MXN table',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

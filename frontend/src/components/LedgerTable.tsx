@@ -451,31 +451,44 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
                     {entry.internalId}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {(entry.attachments && entry.attachments.length > 0) || (entry.attachmentCount && entry.attachmentCount > 0) ? (
+                    {onViewAttachments ? (
                       <button
-                        onClick={() => {
-                          if (entry.attachments && entry.attachments.length > 0) {
-                            // If we have full attachment data, show them directly
-                            entry.attachments.forEach((att, index) => {
-                              setTimeout(() => {
-                                window.open(att.fileUrl, '_blank');
-                              }, index * 100); // Stagger multiple file opens
-                            });
-                          } else if (onViewAttachments) {
-                            // If we only have count, fetch the full entry
-                            onViewAttachments(entry.id);
-                          }
-                        }}
-                        className="flex items-center text-blue-600 hover:text-blue-800"
-                        title="View attachments"
+                        onClick={() => onViewAttachments(entry.id)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                        title="Manage attachments and facturas"
                       >
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 mr-1.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 00-2.828-2.828z" />
                         </svg>
-                        <span>{entry.attachments?.length || entry.attachmentCount || 0}</span>
+                        <div className="flex items-center gap-2">
+                          {(entry.attachmentCount && entry.attachmentCount > 0) || (entry.facturaCount && entry.facturaCount > 0) ? (
+                            <>
+                              {entry.attachmentCount && entry.attachmentCount > 0 && (
+                                <span className="text-blue-600 font-medium">{entry.attachmentCount}</span>
+                              )}
+                              {entry.facturaCount && entry.facturaCount > 0 && (
+                                <span className="text-green-600 font-medium">
+                                  {entry.facturaCount}F
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-gray-400">Add Files</span>
+                          )}
+                        </div>
                       </button>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <div className="flex flex-col gap-1">
+                        {entry.attachmentCount && entry.attachmentCount > 0 && (
+                          <span className="text-blue-600">{entry.attachmentCount} files</span>
+                        )}
+                        {entry.facturaCount && entry.facturaCount > 0 && (
+                          <span className="text-green-600">{entry.facturaCount} facturas</span>
+                        )}
+                        {!entry.attachmentCount && !entry.facturaCount && (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

@@ -3,39 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LedgerEntryForm from '../components/LedgerEntryForm';
 import LedgerTable from '../components/LedgerTable';
+import AttachmentManagerModal from '../components/AttachmentManagerModal';
 import { LedgerEntryFormData, LedgerFilters } from '../types';
-import { useLedgerEntries, useCreateLedgerEntry, useDeleteLedgerEntry, useMarkLedgerAsRealized } from '../hooks/useLedgerQueries';
-import { useLedgerMxnEntries, useCreateLedgerMxnEntry, useDeleteLedgerMxnEntry, useMarkLedgerMxnAsRealized as useMarkLedgerMxnAsRealized } from '../hooks/useLedgerMxnQueries';
-
-type Currency = 'USD' | 'MXN';
+import { useLedgerMxnEntries, useCreateLedgerMxnEntry, useDeleteLedgerMxnEntry, useMarkLedgerMxnAsRealized } from '../hooks/useLedgerMxnQueries';
 
 const CashFlow = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [filters] = useState<LedgerFilters>({});
-  const [activeCurrency, setActiveCurrency] = useState<Currency>('USD');
-
-  // USD React Query hooks
-  const { data: usdLedgerData, isLoading: usdIsLoading, error: usdError, refetch: usdRefetch } = useLedgerEntries(filters);
-  const createUsdEntryMutation = useCreateLedgerEntry();
-  const deleteUsdEntryMutation = useDeleteLedgerEntry();
-  const markUsdAsRealizedMutation = useMarkLedgerAsRealized();
+  const [attachmentModalOpen, setAttachmentModalOpen] = useState(false);
+  const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
+  const [selectedEntryInternalId, setSelectedEntryInternalId] = useState<string>('');
 
   // MXN React Query hooks
-  const { data: mxnLedgerData, isLoading: mxnIsLoading, error: mxnError, refetch: mxnRefetch } = useLedgerMxnEntries(filters);
-  const createMxnEntryMutation = useCreateLedgerMxnEntry();
-  const deleteMxnEntryMutation = useDeleteLedgerMxnEntry();
-  const markMxnAsRealizedMutation = useMarkLedgerMxnAsRealized();
-
-  // Current currency data and mutations
-  const currentLedgerData = activeCurrency === 'USD' ? usdLedgerData : mxnLedgerData;
-  const currentIsLoading = activeCurrency === 'USD' ? usdIsLoading : mxnIsLoading;
-  const currentError = activeCurrency === 'USD' ? usdError : mxnError;
-  const currentRefetch = activeCurrency === 'USD' ? usdRefetch : mxnRefetch;
-  const currentCreateMutation = activeCurrency === 'USD' ? createUsdEntryMutation : createMxnEntryMutation;
-  const currentDeleteMutation = activeCurrency === 'USD' ? deleteUsdEntryMutation : deleteMxnEntryMutation;
-  const currentMarkAsRealizedMutation = activeCurrency === 'USD' ? markUsdAsRealizedMutation : markMxnAsRealizedMutation;
+  const { data: ledgerData, isLoading, error, refetch } = useLedgerMxnEntries(filters);
+  const createEntryMutation = useCreateLedgerMxnEntry();
+  const deleteEntryMutation = useDeleteLedgerMxnEntry();
+  const markAsRealizedMutation = useMarkLedgerMxnAsRealized();
 
   if (!user) {
     navigate('/login');
@@ -44,10 +29,10 @@ const CashFlow = () => {
 
   const handleSubmitEntry = async (formData: LedgerEntryFormData) => {
     try {
-      await currentCreateMutation.mutateAsync(formData);
+      await createEntryMutation.mutateAsync(formData);
       setShowEntryForm(false);
     } catch (error) {
-      console.error(`Error creating ${activeCurrency} ledger entry:`, error);
+      console.error('Error creating MXN ledger entry:', error);
       // Error handling is done in the mutation hook
     }
   };
@@ -59,52 +44,34 @@ const CashFlow = () => {
 
   const handleDeleteEntry = async (entryId: number) => {
     try {
-      await currentDeleteMutation.mutateAsync(entryId);
+      await deleteEntryMutation.mutateAsync(entryId);
     } catch (error) {
-      console.error(`Error deleting ${activeCurrency} ledger entry:`, error);
+      console.error('Error deleting MXN ledger entry:', error);
       // Error handling is done in the mutation hook
     }
   };
 
   const handleMarkAsRealized = async (entryId: number) => {
     try {
-      await currentMarkAsRealizedMutation.mutateAsync(entryId);
+      await markAsRealizedMutation.mutateAsync(entryId);
     } catch (error) {
-      console.error(`Error marking ${activeCurrency} ledger entry as realized:`, error);
+      console.error('Error marking MXN ledger entry as realized:', error);
       // Error handling is done in the mutation hook
     }
   };
 
   const handleViewAttachments = async (entryId: number) => {
     try {
-      // Fetch the full entry with attachments from the appropriate currency endpoint
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      const endpoint = activeCurrency === 'USD' ? 'ledger' : 'ledger-mxn';
-      const response = await fetch(`${API_BASE_URL}/${endpoint}/${entryId}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const entry = await response.json();
-        if (entry.attachments && entry.attachments.length > 0) {
-          // Open each attachment in a new tab
-          entry.attachments.forEach((att: any, index: number) => {
-            setTimeout(() => {
-              window.open(att.fileUrl, '_blank');
-            }, index * 100); // Stagger multiple file opens
-          });
-        } else {
-          alert('No attachments found for this entry.');
-        }
-      } else {
-        console.error('Failed to fetch entry details');
-        alert('Failed to load attachments.');
+      // Find the entry to get the internal ID
+      const entry = ledgerData?.entries.find(e => e.id === entryId);
+      if (entry) {
+        setSelectedEntryId(entryId);
+        setSelectedEntryInternalId(entry.internalId);
+        setAttachmentModalOpen(true);
       }
     } catch (error) {
-      console.error('Error fetching attachments:', error);
-      alert('Error loading attachments.');
+      console.error('Error opening attachment manager:', error);
+      alert('Error opening attachment manager.');
     }
   };
 
@@ -139,34 +106,15 @@ const CashFlow = () => {
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0 space-y-6">
-          
-          {/* Currency Tabs */}
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              {(['USD', 'MXN'] as Currency[]).map((currency) => (
-                <button
-                  key={currency}
-                  onClick={() => setActiveCurrency(currency)}
-                  className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${
-                    activeCurrency === currency
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  {currency === 'USD' ? '🇺🇸 US Dollar (USD)' : '🇲🇽 Mexican Peso (MXN)'}
-                </button>
-              ))}
-            </nav>
-          </div>
 
           {/* Action Bar */}
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">
-                {activeCurrency} Accounting Ledger
+                MXN Accounting Ledger
               </h2>
               <p className="text-gray-600">
-                View all users' income and expenses in {activeCurrency === 'USD' ? 'US Dollars' : 'Mexican Pesos'}
+                View all users' income and expenses in Mexican Pesos
               </p>
             </div>
             <button
@@ -200,13 +148,13 @@ const CashFlow = () => {
             <LedgerEntryForm
               onSubmit={handleSubmitEntry}
               onCancel={() => setShowEntryForm(false)}
-              isLoading={currentCreateMutation.isPending}
-              currency={activeCurrency}
+              isLoading={createEntryMutation.isPending}
+              currency="MXN"
             />
           )}
 
           {/* Error Display */}
-          {currentError && (
+          {error && (
             <div className="bg-red-50 border border-red-200 rounded-md p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
@@ -219,10 +167,10 @@ const CashFlow = () => {
                     Error loading ledger data
                   </h3>
                   <p className="mt-2 text-sm text-red-700">
-                    {currentError?.message || 'An unexpected error occurred'}
+                    {error?.message || 'An unexpected error occurred'}
                   </p>
                   <button
-                    onClick={() => currentRefetch()}
+                    onClick={() => refetch()}
                     className="mt-2 text-sm text-red-600 hover:text-red-800 font-medium"
                   >
                     Try Again
@@ -234,17 +182,27 @@ const CashFlow = () => {
 
           {/* Ledger Table */}
           <LedgerTable
-            entries={currentLedgerData?.entries || []}
+            entries={ledgerData?.entries || []}
             onEditEntry={handleEditEntry}
             onDeleteEntry={handleDeleteEntry}
             onViewAttachments={handleViewAttachments}
             onMarkAsRealized={handleMarkAsRealized}
             currentUserId={user?.id}
-            isLoading={currentIsLoading}
+            isLoading={isLoading}
           />
 
         </div>
       </main>
+
+      {/* Attachment Manager Modal */}
+      {attachmentModalOpen && selectedEntryId && (
+        <AttachmentManagerModal
+          entryId={selectedEntryId}
+          entryInternalId={selectedEntryInternalId}
+          isOpen={attachmentModalOpen}
+          onClose={() => setAttachmentModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
