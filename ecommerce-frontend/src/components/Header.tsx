@@ -11,18 +11,7 @@ export const Header: React.FC = () => {
           </div>
 
           <nav className="flex items-center space-x-6">
-            <a
-              href="/"
-              className="text-terracotta-100 hover:text-white transition-colors font-medium"
-            >
-              Inicio
-            </a>
-            <a
-              href="/productos"
-              className="text-terracotta-100 hover:text-white transition-colors font-medium"
-            >
-              Productos
-            </a>
+            {/* Navigation can be added here in the future */}
           </nav>
         </div>
       </div>
