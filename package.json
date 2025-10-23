@@ -5,15 +5,20 @@
   "private": true,
   "workspaces": [
     "frontend",
-    "backend"
+    "backend",
+    "ecommerce-frontend"
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev",
+    "dev:ecommerce": "cd ecommerce-frontend && npm run dev",
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:ecommerce\"",
     "build": "npm run build:frontend && npm run build:backend",
     "build:frontend": "cd frontend && npm run build",
     "build:backend": "cd backend && npm run build",
+    "build:ecommerce": "cd ecommerce-frontend && npm run build",
+    "build:all": "npm run build:frontend && npm run build:backend && npm run build:ecommerce",
     "start": "cd backend && npm start"
   },
   "devDependencies": {
