@@ -18,6 +18,11 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   className = ''
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
 
   const goToNext = () => {
     setCurrentIndex((prev) => (prev + 1) % images.length);
@@ -31,6 +36,29 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
     setCurrentIndex(index);
   };
 
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      goToNext();
+    } else if (isRightSwipe) {
+      goToPrevious();
+    }
+  };
+
   if (!images || images.length === 0) {
     return (
       <div className={`relative w-full bg-gray-200 flex items-center justify-center ${className}`}>
@@ -42,11 +70,16 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   return (
     <div className={`relative w-full group ${className}`}>
       {/* Main Image */}
-      <div className="relative aspect-square w-full overflow-hidden bg-gray-100 rounded-lg">
+      <div
+        className="relative aspect-square w-full overflow-hidden bg-gray-100 rounded-lg touch-pan-y"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         <img
           src={images[currentIndex]}
           alt={`${alt} - Image ${currentIndex + 1}`}
-          className="w-full h-full object-cover transition-opacity duration-300"
+          className="w-full h-full object-cover transition-opacity duration-300 select-none"
           loading="lazy"
         />
 
