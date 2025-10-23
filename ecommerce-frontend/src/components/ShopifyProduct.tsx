@@ -2,18 +2,21 @@ import { useShopifyBuyButton } from '../hooks/useShopifyBuyButton';
 
 interface ShopifyProductProps {
   productId: string;
+  instanceId?: string;  // Unique identifier for this instance (e.g., 'card' or 'modal')
   className?: string;
 }
 
 /**
  * Reusable component for displaying a Shopify product with Buy Button
  * Automatically handles SDK initialization and product rendering
+ * instanceId ensures unique containers when same product appears multiple times
  */
 export const ShopifyProduct: React.FC<ShopifyProductProps> = ({
   productId,
+  instanceId = 'default',
   className = ''
 }) => {
-  const containerId = `shopify-product-${productId}`;
+  const containerId = `shopify-product-${productId}-${instanceId}`;
   const { isLoading, error } = useShopifyBuyButton({ productId, containerId });
 
   if (error) {
