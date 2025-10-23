@@ -1,14 +1,75 @@
-import { ShopifyProduct } from '../components/ShopifyProduct';
+import { ProductCard } from '../components/ProductCard';
 
 export const Products: React.FC = () => {
-  // You can add more product IDs here as you add products to your Shopify store
-  const productIds = [
-    '8299395809420', // First product
-    '8299447058572', // Second product
-    '8299446042764', // Third product
-    '8299447222412', // Fourth product
-    '8299447517324', // Fifth product
-    '8299445289100', // Sixth product
+  // Product data with IDs and images
+  // TODO: Replace placeholder images with actual product images
+  const products = [
+    {
+      id: '8299395809420',
+      name: 'Kit Botanero',
+      images: [
+        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+Botanero+1',
+        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+Botanero+2',
+        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+Botanero+3',
+        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+Botanero+4',
+        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+Botanero+5',
+      ],
+    },
+    {
+      id: '8299447058572',
+      name: 'Kit 2',
+      images: [
+        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+2+-+1',
+        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+2+-+2',
+        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+2+-+3',
+        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+2+-+4',
+        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+2+-+5',
+      ],
+    },
+    {
+      id: '8299446042764',
+      name: 'Kit 3',
+      images: [
+        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+3+-+1',
+        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+3+-+2',
+        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+3+-+3',
+        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+3+-+4',
+        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+3+-+5',
+      ],
+    },
+    {
+      id: '8299447222412',
+      name: 'Kit 4',
+      images: [
+        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+4+-+1',
+        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+4+-+2',
+        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+4+-+3',
+        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+4+-+4',
+        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+4+-+5',
+      ],
+    },
+    {
+      id: '8299447517324',
+      name: 'Kit 5',
+      images: [
+        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+5+-+1',
+        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+5+-+2',
+        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+5+-+3',
+        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+5+-+4',
+        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+5+-+5',
+      ],
+    },
+    {
+      id: '8299445289100',
+      name: 'Kit 6',
+      images: [
+        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+6+-+1',
+        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+6+-+2',
+        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+6+-+3',
+        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+6+-+4',
+        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+6+-+5',
+      ],
+    },
   ];
 
   return (
@@ -22,13 +83,14 @@ export const Products: React.FC = () => {
         </p>
       </div>
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
-        {productIds.map((productId) => (
-          <ShopifyProduct
-            key={productId}
-            productId={productId}
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow"
+      {/* Product Grid - Mobile Optimized */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto">
+        {products.map((product) => (
+          <ProductCard
+            key={product.id}
+            productId={product.id}
+            images={product.images}
+            productName={product.name}
           />
         ))}
       </div>

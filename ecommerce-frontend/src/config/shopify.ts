@@ -65,11 +65,11 @@ export const SHOPIFY_UI_OPTIONS = {
         'border-radius': '4px',
       },
     },
-    layout: 'horizontal',
+    layout: 'vertical',
     contents: {
-      img: false,
-      imgWithCarousel: true,
-      description: true,
+      img: false,          // Hide images - using custom carousel instead
+      imgWithCarousel: false,  // Hide Shopify carousel
+      description: false,  // Hide description (keep it clean)
       variantTitle: true,  // Show the selected variant name (e.g., color)
       options: true,       // Show variant selector
       button: true,        // Show ONE "añadir al carrito" button
