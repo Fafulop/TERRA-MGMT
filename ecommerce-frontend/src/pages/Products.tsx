@@ -5,6 +5,10 @@ export const Products: React.FC = () => {
   const productIds = [
     '8299395809420', // First product
     '8299447058572', // Second product
+    '8299446042764', // Third product
+    '8299447222412', // Fourth product
+    '8299447517324', // Fifth product
+    '8299445289100', // Sixth product
   ];
 
   return (

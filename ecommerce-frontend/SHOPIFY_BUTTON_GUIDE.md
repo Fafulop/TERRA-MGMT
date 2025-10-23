@@ -583,6 +583,141 @@ toggle: {
    location.reload()
    ```
 
+### Duplicate Buttons Appearing on Page Reload
+
+**Issue**: Multiple "añadir al carrito" buttons appear for each product after reloading the page (e.g., 4 buttons instead of 2)
+
+**Symptoms:**
+- First page load: Correct number of buttons (1 per product)
+- After refresh (F5): Buttons multiply (2, 3, 4+ buttons per product)
+- Each reload adds more duplicate buttons
+
+**Root Cause:**
+The Shopify Buy Button SDK creates new component instances without cleaning up previous ones. React's `useEffect` can trigger multiple times, causing the SDK to render multiple buttons in the same container.
+
+**Our Solution (Already Implemented):**
+
+We use a `componentCreatedRef` flag in `useShopifyBuyButton.ts` to prevent duplicate component creation:
+
+```typescript
+const componentCreatedRef = useRef(false); // Track component state
+
+const initializeShopifyUI = () => {
+  // Early exit if component already created
+  if (componentCreatedRef.current) {
+    return;
+  }
+
+  // ... SDK initialization ...
+
+  // Before creating component
+  if (componentCreatedRef.current) {
+    return;
+  }
+
+  // Clear any existing content
+  container.innerHTML = '';
+
+  // Create component
+  ui.createComponent('product', { ... });
+
+  // Mark as created
+  componentCreatedRef.current = true;
+};
+
+// Cleanup function
+return () => {
+  container.innerHTML = '';
+  componentCreatedRef.current = false; // Reset for remount
+};
+```
+
+**How the Fix Works:**
+
+1. **First Load**
+   - `componentCreatedRef = false`
+   - Component creates → Sets `componentCreatedRef = true`
+   - Button appears
+
+2. **Page Reload**
+   - Hook re-runs
+   - Checks `componentCreatedRef = true`
+   - **Exits early** without creating duplicate
+   - Only one button remains
+
+3. **Component Unmount**
+   - Cleanup function runs
+   - Clears HTML
+   - Resets `componentCreatedRef = false`
+   - Allows recreation if component remounts
+
+**If You're Still Seeing Duplicates:**
+
+1. **Clear Container Before Creating**
+   ```typescript
+   container.innerHTML = ''; // Add this line
+   ui.createComponent(...);
+   ```
+
+2. **Check for Multiple Hook Calls**
+   - Add `console.log` in `useShopifyBuyButton`:
+   ```typescript
+   useEffect(() => {
+     console.log('Hook running for product:', productId);
+     // ... rest of code
+   }, [productId, containerId]);
+   ```
+   - Should only log once per product per mount
+
+3. **Verify Dependencies**
+   - `useEffect` dependencies should be stable
+   - Avoid passing new objects/functions that cause re-renders
+
+4. **Hard Refresh**
+   - Clear all browser cache
+   - Close and reopen browser
+   - Test again
+
+**Alternative Approach (If Issue Persists):**
+
+Use a global registry to track created components:
+
+```typescript
+// At top of file
+const createdComponents = new Set<string>();
+
+// In initializeShopifyUI
+const componentKey = `${productId}-${containerId}`;
+if (createdComponents.has(componentKey)) {
+  return;
+}
+
+ui.createComponent(...);
+createdComponents.add(componentKey);
+
+// In cleanup
+return () => {
+  createdComponents.delete(componentKey);
+  container.innerHTML = '';
+};
+```
+
+**Configuration to Prevent Button Duplication:**
+
+Also ensure your config explicitly disables extra buttons:
+
+```typescript
+contents: {
+  button: true,              // ONE button
+  buttonWithQuantity: false, // No combined button
+  quantity: false,           // No quantity selector
+}
+```
+
+**Why This Happens:**
+
+The Shopify SDK doesn't automatically detect existing components in a container. When React re-renders or the page reloads, the SDK happily creates additional instances alongside existing ones, resulting in multiple buttons.
+
 ### Variants Not Showing
 
 **Issue**: No color/size selector appears
