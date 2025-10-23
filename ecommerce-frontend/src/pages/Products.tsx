@@ -3,7 +3,8 @@ import { ShopifyProduct } from '../components/ShopifyProduct';
 export const Products: React.FC = () => {
   // You can add more product IDs here as you add products to your Shopify store
   const productIds = [
-    '8299395809420', // Your current product ID from the provided code
+    '8299395809420', // First product
+    '8299447058572', // Second product
   ];
 
   return (

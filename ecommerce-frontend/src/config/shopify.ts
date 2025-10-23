@@ -42,12 +42,39 @@ export const SHOPIFY_UI_OPTIONS = {
       unitPrice: {
         'font-size': '15.3px',
       },
+      variantTitle: {
+        'font-size': '18px',
+        'font-weight': 'bold',
+        'color': '#4c4c4c',
+        'margin-top': '10px',
+        'margin-bottom': '10px',
+      },
+      option: {
+        'margin-bottom': '15px',
+      },
+      optionLabel: {
+        'font-size': '16px',
+        'font-weight': '600',
+        'color': '#333',
+        'margin-bottom': '8px',
+      },
+      optionSelect: {
+        'font-size': '15px',
+        'padding': '8px 12px',
+        'border': '1px solid #ccc',
+        'border-radius': '4px',
+      },
     },
     layout: 'horizontal',
     contents: {
       img: false,
       imgWithCarousel: true,
       description: true,
+      variantTitle: true,  // Show the selected variant name (e.g., color)
+      options: true,       // Show variant selector
+      button: true,        // Show ONE "añadir al carrito" button
+      buttonWithQuantity: false,  // Don't show button with quantity controls
+      quantity: false,     // Don't show quantity selector separately
     },
     width: '100%',
     text: {

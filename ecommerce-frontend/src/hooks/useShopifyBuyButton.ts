@@ -26,6 +26,7 @@ export const useShopifyBuyButton = ({ productId, containerId }: UseShopifyBuyBut
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const scriptLoadedRef = useRef(false);
+  const componentCreatedRef = useRef(false); // Track if component is already created
 
   useEffect(() => {
     const loadShopifySDK = () => {
@@ -63,6 +64,11 @@ export const useShopifyBuyButton = ({ productId, containerId }: UseShopifyBuyBut
 
     const initializeShopifyUI = () => {
       try {
+        // Prevent creating duplicate components
+        if (componentCreatedRef.current) {
+          return;
+        }
+
         if (!window.ShopifyBuy) {
           throw new Error('ShopifyBuy not available');
         }
@@ -79,6 +85,14 @@ export const useShopifyBuyButton = ({ productId, containerId }: UseShopifyBuyBut
               throw new Error(`Container with id "${containerId}" not found`);
             }
 
+            // Check again before creating (in case of race condition)
+            if (componentCreatedRef.current) {
+              return;
+            }
+
+            // Clear any existing content
+            container.innerHTML = '';
+
             ui.createComponent('product', {
               id: productId,
               node: container,
@@ -86,6 +100,8 @@ export const useShopifyBuyButton = ({ productId, containerId }: UseShopifyBuyBut
               options: SHOPIFY_UI_OPTIONS,
             });
 
+            // Mark component as created
+            componentCreatedRef.current = true;
             setIsLoading(false);
           }).catch((err: Error) => {
             setError(err.message);
@@ -106,6 +122,8 @@ export const useShopifyBuyButton = ({ productId, containerId }: UseShopifyBuyBut
       if (container) {
         container.innerHTML = '';
       }
+      // Reset the flag so component can be recreated if needed
+      componentCreatedRef.current = false;
     };
   }, [productId, containerId]);
 
