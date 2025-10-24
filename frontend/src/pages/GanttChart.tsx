@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Plus, ArrowLeft, FolderKanban } from 'lucide-react';
+import { Calendar, Plus, ArrowLeft, FolderKanban, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import GanttChart from '../components/gantt/GanttChart';
 import ProjectForm from '../components/gantt/ProjectForm';
@@ -132,6 +132,22 @@ export default function GanttChartPage() {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!selectedProjectId || !selectedProject) return;
+
+    const confirmMessage = `Are you sure you want to delete the project "${selectedProject.name}"?\n\nThis will remove the project and unlink all tasks. The tasks themselves will not be deleted.`;
+
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      await deleteProjectMutation.mutateAsync(selectedProjectId);
+      setSelectedProjectId(null);
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      alert('Failed to delete project');
+    }
+  };
+
   const handleTaskClick = (task: ProjectTask) => {
     setSelectedTask(task);
   };
@@ -217,13 +233,24 @@ export default function GanttChartPage() {
                 </div>
 
                 {selectedProject && (
-                  <button
-                    onClick={() => setShowAddTaskModal(true)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
-                  >
-                    <Plus size={20} />
-                    Add Task
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowAddTaskModal(true)}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                    >
+                      <Plus size={20} />
+                      Add Task
+                    </button>
+                    <button
+                      onClick={handleDeleteProject}
+                      disabled={deleteProjectMutation.isPending}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                      title="Delete Project"
+                    >
+                      <Trash2 size={20} />
+                      Delete
+                    </button>
+                  </div>
                 )}
               </div>
 
