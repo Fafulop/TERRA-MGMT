@@ -6,6 +6,12 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Roboto', 'sans-serif'],
+      },
+      fontWeight: {
+        normal: '300',
+      },
       colors: {
         terracotta: {
           50: '#fdf8f6',

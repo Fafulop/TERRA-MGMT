@@ -9,7 +9,7 @@ export const Footer: React.FC = () => {
           <div>
             <h3 className="text-xl font-bold text-white mb-3">Terracotta</h3>
             <p className="text-sm text-terracotta-200">
-              Productos artesanales mexicanos hechos a mano con amor y dedicación.
+              Productos artesanales mexicanos hechos a mano.
             </p>
           </div>
 

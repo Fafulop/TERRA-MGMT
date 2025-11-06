@@ -6,19 +6,12 @@ export const Products: React.FC = () => {
   const products = [
     {
       id: '8299395809420',
-      name: 'Kit Botanero',
-      description: `Kit Botanero artesanal elaborado con cerámica de alta calidad. Perfecto para servir botanas y aperitivos con estilo.
-
-Características:
-• Hecho 100% a mano por artesanos mexicanos
-• Cerámica de alta temperatura
-• Diseño único y tradicional
-• Incluye múltiples piezas para servir
-• Acabado en tonos terracota naturales
-
-Cada pieza es única y puede presentar ligeras variaciones en color y forma, lo que garantiza su autenticidad artesanal.
-
-Ideal para reuniones familiares, fiestas, o como regalo especial.`,
+      name: 'Juego de vajilla para botanas',
+      description: `El kit incluye 6 piezas:
+• 1 plato trinche de 27 cm
+• 1 bowl grande de 20 cm
+• 2 bowls chicos de 15 cm
+• 2 salseros de 100 ml`,
       images: [
         'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+Botanero+1',
         'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+Botanero+2',
@@ -29,17 +22,9 @@ Ideal para reuniones familiares, fiestas, o como regalo especial.`,
     },
     {
       id: '8299447058572',
-      name: 'Kit 2',
-      description: `Elegante set de cerámica artesanal con diseño contemporáneo. Combina la tradición mexicana con líneas modernas.
-
-Características:
-• Cerámica de gres esmaltada
-• Resistente al horno y microondas
-• Diseño versátil y funcional
-• Colores vibrantes y duraderos
-• Fácil de limpiar
-
-Perfecto para el uso diario o para ocasiones especiales. Cada pieza ha sido cuidadosamente elaborada para garantizar calidad y durabilidad.`,
+      name: 'Kit de tarros cerveceros',
+      description: `El kit incluye 4 piezas:
+• 4 tarros de 450 ml`,
       images: [
         'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+2+-+1',
         'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+2+-+2',
@@ -50,17 +35,10 @@ Perfecto para el uso diario o para ocasiones especiales. Cada pieza ha sido cuid
     },
     {
       id: '8299446042764',
-      name: 'Kit 3',
-      description: `Colección artesanal de cerámica con acabados rústicos. Ideal para crear un ambiente cálido y acogedor en tu hogar.
-
-Características:
-• Acabado mate natural
-• Textura única en cada pieza
-• Diseño inspirado en la tradición oaxaqueña
-• Materiales 100% naturales
-• Sustentable y ecológico
-
-Cada kit incluye piezas cuidadosamente seleccionadas que combinan funcionalidad con arte tradicional mexicano.`,
+      name: 'Kit tequileros',
+      description: `El kit incluye 8 piezas:
+• 6 tequileros de 100 ml
+• 2 salseros de 100 ml`,
       images: [
         'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+3+-+1',
         'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+3+-+2',
@@ -71,17 +49,10 @@ Cada kit incluye piezas cuidadosamente seleccionadas que combinan funcionalidad 
     },
     {
       id: '8299447222412',
-      name: 'Kit 4',
-      description: `Set premium de cerámica artesanal con diseños exclusivos. Perfecta fusión entre arte y funcionalidad.
-
-Características:
-• Diseños únicos pintados a mano
-• Cerámica de alta calidad
-• Resistente a temperaturas altas
-• Apto para lavavajillas
-• Certificado de autenticidad incluido
-
-Ideal para coleccionistas o para quienes buscan piezas únicas que cuenten una historia. Elaborado por maestros artesanos con más de 20 años de experiencia.`,
+      name: 'Kit de tazas grandes para café',
+      description: `El kit incluye 8 piezas:
+• 4 tazas de 240 ml
+• 4 platitos de 11 cm`,
       images: [
         'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+4+-+1',
         'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+4+-+2',
@@ -92,17 +63,11 @@ Ideal para coleccionistas o para quienes buscan piezas únicas que cuenten una h
     },
     {
       id: '8299447517324',
-      name: 'Kit 5',
-      description: `Conjunto artesanal de cerámica con tonos tierra. Perfecto para servir y decorar con estilo mexicano auténtico.
-
-Características:
-• Tonalidades naturales de terracota
-• Acabado semibrillante
-• Piezas apilables para fácil almacenamiento
-• Diseño ergonómico
-• Producción sustentable
-
-Cada pieza refleja la riqueza cultural de México, combinando técnicas ancestrales con diseños contemporáneos. Perfecto como regalo o para renovar tu vajilla.`,
+      name: 'Kit de tazas grandes y chicas para café',
+      description: `El kit incluye 8 piezas:
+• 2 tazas grandes de 240 ml
+• 2 tazas chicas de 120 ml
+• 4 platitos grandes de 11 cm`,
       images: [
         'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+5+-+1',
         'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+5+-+2',
@@ -111,40 +76,10 @@ Cada pieza refleja la riqueza cultural de México, combinando técnicas ancestra
         'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+5+-+5',
       ],
     },
-    {
-      id: '8299445289100',
-      name: 'Kit 6',
-      description: `Set especial de cerámica artesanal con diseños geométricos. Una celebración del arte y la artesanía mexicana.
-
-Características:
-• Patrones geométricos tradicionales
-• Colores vibrantes y contrastantes
-• Cerámica de alta densidad
-• Resistente a rayones y desgaste
-• Edición limitada
-
-Inspirado en los códices prehispánicos, cada pieza cuenta una historia visual. Ideal para quienes aprecian el arte funcional y buscan añadir un toque de cultura a su mesa.`,
-      images: [
-        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+6+-+1',
-        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+6+-+2',
-        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+6+-+3',
-        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+6+-+4',
-        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+6+-+5',
-      ],
-    },
   ];
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl md:text-5xl font-bold text-terracotta-900 mb-4">
-          Nuestros Productos
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Explora nuestra colección de productos artesanales hechos a mano
-        </p>
-      </div>
-
       {/* Product Grid - Mobile Optimized */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 max-w-7xl mx-auto">
         {products.map((product) => (

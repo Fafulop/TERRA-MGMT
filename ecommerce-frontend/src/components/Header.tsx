@@ -5,9 +5,6 @@ export const Header: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <h1 className="text-3xl font-bold tracking-tight">Terracotta</h1>
-            <span className="text-terracotta-200 text-sm hidden sm:inline">
-              Artesanía Mexicana
-            </span>
           </div>
 
           <nav className="flex items-center space-x-6">
