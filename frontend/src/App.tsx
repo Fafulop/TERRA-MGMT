@@ -21,9 +21,7 @@ const Contactos = React.lazy(() => import('./pages/Contactos'))
 const Documentos = React.lazy(() => import('./pages/Documentos'))
 const GanttChart = React.lazy(() => import('./pages/GanttChart'))
 const Calendar = React.lazy(() => import('./pages/Calendar'))
-const Inventario = React.lazy(() => import('./pages/Inventario'))
-const InventarioItems = React.lazy(() => import('./pages/InventarioItems'))
-const InventarioCount = React.lazy(() => import('./pages/InventarioCount'))
+const Produccion = React.lazy(() => import('./pages/Produccion'))
 
 const queryClient = new QueryClient()
 
@@ -62,9 +60,7 @@ function App() {
                 <Route path="/documentos" element={<Documentos />} />
                 <Route path="/gantt" element={<GanttChart />} />
                 <Route path="/calendar" element={<Calendar />} />
-                <Route path="/inventario" element={<Inventario />} />
-                <Route path="/inventario/items" element={<InventarioItems />} />
-                <Route path="/inventario/count" element={<InventarioCount />} />
+                <Route path="/produccion" element={<Produccion />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/" element={<Dashboard />} />
               </Routes>

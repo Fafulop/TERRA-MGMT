@@ -125,23 +125,7 @@ const Dashboard: React.FC = () => {
               <p className="text-gray-500">Track your income and expenses with dual currency support (USD/MXN)!</p>
             </div>
 
-            {/* 6. Inventario Section */}
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-semibold text-gray-700">
-                  Inventario
-                </h2>
-                <button
-                  onClick={() => navigate('/inventario')}
-                  className="bg-cyan-600 text-white px-4 py-2 rounded-md hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2"
-                >
-                  Manage Inventory
-                </button>
-              </div>
-              <p className="text-gray-500">Track and manage your inventory and stock levels!</p>
-            </div>
-
-            {/* 7. Cotizaciones Section */}
+            {/* 6. Cotizaciones Section */}
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-semibold text-gray-700">
@@ -157,7 +141,7 @@ const Dashboard: React.FC = () => {
               <p className="text-gray-500">Manage your quotes and quotations in multiple currencies!</p>
             </div>
 
-            {/* 8. Areas Section */}
+            {/* 7. Areas Section */}
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-semibold text-gray-700">
@@ -173,7 +157,7 @@ const Dashboard: React.FC = () => {
               <p className="text-gray-500">Manage organizational areas and departments!</p>
             </div>
 
-            {/* 9. Contactos Section */}
+            {/* 8. Contactos Section */}
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-semibold text-gray-700">
@@ -189,7 +173,7 @@ const Dashboard: React.FC = () => {
               <p className="text-gray-500">Manage your business contacts and relationships!</p>
             </div>
 
-            {/* 10. Documentos Section */}
+            {/* 9. Documentos Section */}
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-semibold text-gray-700">
@@ -203,6 +187,22 @@ const Dashboard: React.FC = () => {
                 </button>
               </div>
               <p className="text-gray-500">Manage and organize your business documents!</p>
+            </div>
+
+            {/* 10. Producción Section */}
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-semibold text-gray-700">
+                  Producción
+                </h2>
+                <button
+                  onClick={() => navigate('/produccion')}
+                  className="bg-pink-600 text-white px-4 py-2 rounded-md hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
+                >
+                  Manage Production
+                </button>
+              </div>
+              <p className="text-gray-500">Track and manage production orders and workflows!</p>
             </div>
           </div>
         </div>

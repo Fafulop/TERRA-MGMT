@@ -1110,105 +1110,6 @@ router.post('/add-notifications-tables', async (req: Request, res: Response) => 
   }
 });
 
-// Add inventario tables migration (OLD - deprecated)
-router.post('/add-inventario-tables', async (req: Request, res: Response) => {
-  try {
-    console.log('Starting inventario tables migration...');
-
-    // Read and execute the inventario migration SQL file
-    const sqlPath = path.join(__dirname, '..', 'config', 'add-inventario-tables.sql');
-    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-
-    // Execute the SQL migration
-    await pool.query(sqlContent);
-
-    res.status(200).json({
-      message: 'Inventario tables created successfully!',
-      tables: ['inventario_items'],
-      indexes: [
-        'idx_inventario_user_id',
-        'idx_inventario_internal_id',
-        'idx_inventario_name',
-        'idx_inventario_category',
-        'idx_inventario_status',
-        'idx_inventario_location',
-        'idx_inventario_area',
-        'idx_inventario_subarea',
-        'idx_inventario_created_at'
-      ],
-      triggers: ['trigger_inventario_updated_at', 'trigger_inventario_status'],
-      features: [
-        'Inventory tracking with quantity and stock levels',
-        'Auto-calculated status (in-stock, low-stock, out-of-stock)',
-        'Cost per unit tracking in MXN',
-        'Areas/subareas taxonomy integration',
-        'Location management',
-        'Category classification',
-        'Tags for flexible categorization'
-      ]
-    });
-  } catch (error) {
-    console.error('Inventario migration error:', error);
-    res.status(500).json({
-      error: 'Failed to create inventario tables',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
-
-// Restructure inventario tables migration (NEW)
-router.post('/restructure-inventario-tables', async (req: Request, res: Response) => {
-  try {
-    console.log('Starting inventario restructure migration...');
-    console.log('This will drop the old inventario_items table and create new structure');
-
-    // Read and execute the restructure SQL file
-    const sqlPath = path.join(__dirname, '..', 'config', 'restructure-inventario-tables.sql');
-    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
-
-    // Execute the SQL migration
-    await pool.query(sqlContent);
-
-    res.status(200).json({
-      message: 'Inventario tables restructured successfully!',
-      tables: ['inventario_items', 'inventario_counts', 'count_sessions'],
-      views: ['v_current_inventory'],
-      indexes: [
-        'idx_inventario_items_internal_id',
-        'idx_inventario_items_name',
-        'idx_inventario_items_category',
-        'idx_inventario_items_status',
-        'idx_inventario_items_area',
-        'idx_inventario_items_subarea',
-        'idx_inventario_counts_item_id',
-        'idx_inventario_counts_count_date',
-        'idx_inventario_counts_item_date',
-        'idx_count_sessions_count_date'
-      ],
-      triggers: [
-        'trigger_inventario_items_updated_at',
-        'trigger_inventario_counts_updated_at',
-        'trigger_count_sessions_updated_at'
-      ],
-      features: [
-        'Separated item catalog from inventory counts',
-        'Historical inventory tracking by date',
-        'Batch count sessions for efficient counting',
-        'View current inventory (latest counts)',
-        'Cost per unit tracking in MXN',
-        'Areas/subareas taxonomy integration',
-        'Audit trail (who counted what and when)'
-      ]
-    });
-  } catch (error) {
-    console.error('Inventario restructure migration error:', error);
-    res.status(500).json({
-      error: 'Failed to restructure inventario tables',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-});
-
 // Add ledger facturas table for MXN fiscal invoices
 router.post('/add-ledger-facturas-mxn', async (req, res) => {
   try {
@@ -1263,6 +1164,86 @@ router.post('/add-ledger-facturas-mxn', async (req, res) => {
     console.error('Ledger facturas MXN migration error:', error);
     res.status(500).json({
       error: 'Failed to create ledger facturas MXN table',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Add produccion tables migration
+router.post('/add-produccion-tables', async (req: Request, res: Response) => {
+  try {
+    console.log('Starting produccion tables migration...');
+
+    const sqlPath = path.join(__dirname, '..', 'config', 'add-produccion-tables.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Produccion tables created successfully!',
+      tables: [
+        'produccion_tipo',
+        'produccion_size',
+        'produccion_capacity',
+        'produccion_esmalte_color',
+        'produccion_products'
+      ],
+      indexes: [
+        'idx_produccion_products_tipo',
+        'idx_produccion_products_size',
+        'idx_produccion_products_capacity',
+        'idx_produccion_products_esmalte',
+        'idx_produccion_products_created_by',
+        'idx_produccion_products_name'
+      ],
+      triggers: [
+        'trigger_produccion_tipo_updated_at',
+        'trigger_produccion_size_updated_at',
+        'trigger_produccion_capacity_updated_at',
+        'trigger_produccion_esmalte_color_updated_at',
+        'trigger_produccion_products_updated_at'
+      ],
+      features: [
+        'Master data tables for Tipo, Size, Capacity, and Esmalte Color',
+        'Products catalog with cost tracking',
+        'Peso en crudo (raw weight)',
+        'Costo mano de obra (labor cost)',
+        'Cantidad esmalte (glaze amount)',
+        'Costo esmalte (glaze cost)',
+        'Costo horneado (firing cost)'
+      ]
+    });
+  } catch (error) {
+    console.error('Produccion migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create produccion tables',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Make produccion fields optional migration
+router.post('/produccion-make-fields-optional', async (req: Request, res: Response) => {
+  try {
+    console.log('Making produccion fields optional...');
+
+    const sqlPath = path.join(__dirname, '..', 'config', 'produccion-make-fields-optional.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Produccion fields updated successfully!',
+      changes: [
+        'size_id is now optional',
+        'capacity_id is now optional',
+        'esmalte_color_id is now optional'
+      ]
+    });
+  } catch (error) {
+    console.error('Produccion fields migration error:', error);
+    res.status(500).json({
+      error: 'Failed to update produccion fields',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
