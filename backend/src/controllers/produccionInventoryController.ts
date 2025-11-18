@@ -282,8 +282,8 @@ export const processAdjustment = async (req: Request, res: Response) => {
     const { product_id, stage, esmalte_color_id, quantity, notes } = req.body;
     const userId = (req as any).user?.id || 1;
 
-    if (!product_id || !stage || quantity === undefined || quantity === 0) {
-      return res.status(400).json({ error: 'Product, stage, and non-zero quantity required' });
+    if (!product_id || !stage || quantity === undefined || quantity < 0) {
+      return res.status(400).json({ error: 'Product, stage, and non-negative quantity required' });
     }
 
     // Validate esmalte_color_id is only for ESMALTADO
@@ -297,48 +297,33 @@ export const processAdjustment = async (req: Request, res: Response) => {
     const colorId = stage === 'ESMALTADO' ? esmalte_color_id : null;
     const inventory = await getOrCreateInventory(product_id, stage, colorId, client);
 
-    // Check if adjustment would make inventory negative
-    const newQuantity = inventory.quantity + quantity;
-    if (newQuantity < 0) {
-      await client.query('ROLLBACK');
-      const missing = Math.abs(newQuantity);
+    // Calculate the adjustment needed to reach the target quantity
+    const adjustmentAmount = quantity - inventory.quantity;
+    const oldQuantity = inventory.quantity;
 
-      // Get product name for better error message
-      const productInfo = await client.query(
-        'SELECT name FROM produccion_products WHERE id = $1',
-        [product_id]
-      );
-
-      return res.status(400).json({
-        error: `Ajuste resultaría en inventario negativo`,
-        details: {
-          product_name: productInfo.rows[0]?.name || 'Producto',
-          stage: stage,
-          available: inventory.quantity,
-          requested: Math.abs(quantity),
-          missing: missing
-        }
-      });
-    }
-
-    // Update inventory
+    // Update inventory to the exact quantity specified
     await client.query(
       `UPDATE produccion_inventory
-       SET quantity = quantity + $1, updated_at = CURRENT_TIMESTAMP
+       SET quantity = $1, updated_at = CURRENT_TIMESTAMP
        WHERE id = $2`,
       [quantity, inventory.id]
     );
 
-    // Record movement
+    // Record movement with the adjustment amount
     await client.query(
       `INSERT INTO produccion_inventory_movements
        (product_id, movement_type, to_stage, to_color_id, quantity, notes, created_by)
        VALUES ($1, 'ADJUSTMENT', $2, $3, $4, $5, $6)`,
-      [product_id, stage, colorId, quantity, notes, userId]
+      [product_id, stage, colorId, adjustmentAmount, notes, userId]
     );
 
     await client.query('COMMIT');
-    res.status(200).json({ message: 'Inventory adjustment completed successfully' });
+    res.status(200).json({
+      message: 'Inventory adjustment completed successfully',
+      old_quantity: oldQuantity,
+      new_quantity: quantity,
+      adjustment: adjustmentAmount
+    });
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error processing adjustment:', error);

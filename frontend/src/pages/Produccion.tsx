@@ -518,7 +518,7 @@ const Produccion: React.FC = () => {
                 }}
                 className="bg-yellow-600 text-white px-4 py-3 rounded-md hover:bg-yellow-700 font-medium text-sm sm:text-base"
               >
-                + Input CRUDO
+                CRUDO
               </button>
               <button
                 onClick={() => {
@@ -528,7 +528,7 @@ const Produccion: React.FC = () => {
                 }}
                 className="bg-orange-600 text-white px-4 py-3 rounded-md hover:bg-orange-700 font-medium text-sm sm:text-base"
               >
-                Procesar SANCOCHADO
+                SANCOCHADO
               </button>
               <button
                 onClick={() => {
@@ -538,7 +538,7 @@ const Produccion: React.FC = () => {
                 }}
                 className="bg-green-600 text-white px-4 py-3 rounded-md hover:bg-green-700 font-medium text-sm sm:text-base"
               >
-                Procesar ESMALTADO
+                ESMALTADO
               </button>
               <button
                 onClick={() => {
@@ -1163,6 +1163,14 @@ const Produccion: React.FC = () => {
                   </div>
                 )}
 
+                {inventoryFormType === 'adjustment' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-2 sm:p-3">
+                    <p className="text-xs sm:text-sm text-blue-800">
+                      <strong>Nota:</strong> Ingresa la cantidad total deseada. El sistema calculará automáticamente el ajuste necesario.
+                    </p>
+                  </div>
+                )}
+
                 {/* Items Table */}
                 <div className="overflow-x-auto -mx-4 sm:mx-0">
                   <table className="min-w-full divide-y divide-gray-200">
@@ -1175,7 +1183,9 @@ const Produccion: React.FC = () => {
                         {(inventoryFormType === 'esmaltado' || inventoryFormType === 'adjustment') && (
                           <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Color</th>
                         )}
-                        <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cant.</th>
+                        <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                          {inventoryFormType === 'adjustment' ? 'Nueva Cant.' : 'Cant.'}
+                        </th>
                         <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Notas</th>
                         <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase"></th>
                       </tr>
@@ -1238,7 +1248,7 @@ const Produccion: React.FC = () => {
                               type="number"
                               value={item.quantity}
                               onChange={(e) => updateInventoryRow(index, 'quantity', e.target.value)}
-                              min={inventoryFormType === 'adjustment' ? undefined : 1}
+                              min={0}
                               step="1"
                               required
                               className="block w-16 sm:w-24 border border-gray-300 rounded-md shadow-sm py-1 px-2 text-xs sm:text-sm"
