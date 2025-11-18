@@ -21,6 +21,14 @@ import {
   updateProduct,
   deleteProduct
 } from '../controllers/produccionProductsController';
+import {
+  getInventory,
+  getMovements,
+  processCrudoInput,
+  processSancochado,
+  processEsmaltado,
+  processAdjustment
+} from '../controllers/produccionInventoryController';
 
 const router = express.Router();
 
@@ -55,5 +63,13 @@ router.get('/products/:id', getProduct);
 router.post('/products', createProduct);
 router.put('/products/:id', updateProduct);
 router.delete('/products/:id', deleteProduct);
+
+// Inventory Routes
+router.get('/inventory', getInventory);
+router.get('/inventory/movements', getMovements);
+router.post('/inventory/crudo-input', processCrudoInput);
+router.post('/inventory/sancochado-process', processSancochado);
+router.post('/inventory/esmaltado-process', processEsmaltado);
+router.post('/inventory/adjustment', processAdjustment);
 
 export default router;

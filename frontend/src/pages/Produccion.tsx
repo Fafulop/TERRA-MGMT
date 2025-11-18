@@ -2,18 +2,42 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { Product, ProductFormData, Tipo, Size, Capacity, EsmalteColor } from '../types/produccion';
+import {
+  Product,
+  ProductFormData,
+  Tipo,
+  Size,
+  Capacity,
+  EsmalteColor,
+  InventoryRecord,
+  InventoryMovement,
+  CrudoInputFormData,
+  SanchoProcessFormData,
+  EsmaltadoProcessFormData,
+  AdjustmentFormData
+} from '../types/produccion';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const Produccion: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'products' | 'masterdata'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'inventory' | 'masterdata'>('products');
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [selectedStage, setSelectedStage] = useState<'CRUDO' | 'SANCOCHADO' | 'ESMALTADO'>('CRUDO');
+
+  // Inventory states
+  const [showInventoryForm, setShowInventoryForm] = useState(false);
+  const [inventoryFormType, setInventoryFormType] = useState<'crudo' | 'sancochado' | 'esmaltado' | 'adjustment'>('crudo');
+  const [inventoryItems, setInventoryItems] = useState<Array<{
+    product_id: string;
+    quantity: string;
+    stage?: string;
+    esmalte_color_id?: string;
+    notes?: string;
+  }>>([{ product_id: '', quantity: '', notes: '' }]);
 
   const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 
@@ -58,6 +82,23 @@ const Produccion: React.FC = () => {
     }
   });
 
+  // Inventory queries
+  const { data: inventory = [] } = useQuery({
+    queryKey: ['produccion-inventory'],
+    queryFn: async () => {
+      const res = await axios.get(`${API_URL}/produccion/inventory`, { headers: getHeaders() });
+      return res.data;
+    }
+  });
+
+  const { data: movements = [] } = useQuery({
+    queryKey: ['produccion-inventory-movements'],
+    queryFn: async () => {
+      const res = await axios.get(`${API_URL}/produccion/inventory/movements`, { headers: getHeaders() });
+      return res.data;
+    }
+  });
+
   // Product mutations
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
@@ -87,6 +128,127 @@ const Produccion: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['produccion-products'] });
+    }
+  });
+
+  // Inventory mutations
+  const crudoInputMutation = useMutation({
+    mutationFn: async (items: CrudoInputFormData[]) => {
+      await Promise.all(
+        items.map(data => axios.post(`${API_URL}/produccion/inventory/crudo-input`, data, { headers: getHeaders() }))
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['produccion-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['produccion-inventory-movements'] });
+      setShowInventoryForm(false);
+      setInventoryItems([{ product_id: '', quantity: '', notes: '' }]);
+    },
+    onError: (error: any) => {
+      const errorData = error.response?.data;
+      if (errorData?.details) {
+        const { product_name, stage, available, requested, missing } = errorData.details;
+        alert(
+          `❌ ${errorData.error}\n\n` +
+          `Producto: ${product_name}\n` +
+          `Etapa: ${stage}\n\n` +
+          `Disponible: ${available}\n` +
+          `Solicitado: ${requested}\n` +
+          `Faltante: ${missing}`
+        );
+      } else {
+        alert(errorData?.error || 'Error al procesar la operación');
+      }
+    }
+  });
+
+  const sanchoProcessMutation = useMutation({
+    mutationFn: async (items: SanchoProcessFormData[]) => {
+      await Promise.all(
+        items.map(data => axios.post(`${API_URL}/produccion/inventory/sancochado-process`, data, { headers: getHeaders() }))
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['produccion-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['produccion-inventory-movements'] });
+      setShowInventoryForm(false);
+      setInventoryItems([{ product_id: '', quantity: '', notes: '' }]);
+    },
+    onError: (error: any) => {
+      const errorData = error.response?.data;
+      if (errorData?.details) {
+        const { product_name, stage, available, requested, missing } = errorData.details;
+        alert(
+          `❌ ${errorData.error}\n\n` +
+          `Producto: ${product_name}\n` +
+          `Etapa: ${stage}\n\n` +
+          `Disponible: ${available}\n` +
+          `Solicitado: ${requested}\n` +
+          `Faltante: ${missing}`
+        );
+      } else {
+        alert(errorData?.error || 'Error al procesar la operación');
+      }
+    }
+  });
+
+  const esmaltadoProcessMutation = useMutation({
+    mutationFn: async (items: EsmaltadoProcessFormData[]) => {
+      await Promise.all(
+        items.map(data => axios.post(`${API_URL}/produccion/inventory/esmaltado-process`, data, { headers: getHeaders() }))
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['produccion-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['produccion-inventory-movements'] });
+      setShowInventoryForm(false);
+      setInventoryItems([{ product_id: '', quantity: '', notes: '' }]);
+    },
+    onError: (error: any) => {
+      const errorData = error.response?.data;
+      if (errorData?.details) {
+        const { product_name, stage, available, requested, missing } = errorData.details;
+        alert(
+          `❌ ${errorData.error}\n\n` +
+          `Producto: ${product_name}\n` +
+          `Etapa: ${stage}\n\n` +
+          `Disponible: ${available}\n` +
+          `Solicitado: ${requested}\n` +
+          `Faltante: ${missing}`
+        );
+      } else {
+        alert(errorData?.error || 'Error al procesar la operación');
+      }
+    }
+  });
+
+  const adjustmentMutation = useMutation({
+    mutationFn: async (items: AdjustmentFormData[]) => {
+      await Promise.all(
+        items.map(data => axios.post(`${API_URL}/produccion/inventory/adjustment`, data, { headers: getHeaders() }))
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['produccion-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['produccion-inventory-movements'] });
+      setShowInventoryForm(false);
+      setInventoryItems([{ product_id: '', quantity: '', notes: '' }]);
+    },
+    onError: (error: any) => {
+      const errorData = error.response?.data;
+      if (errorData?.details) {
+        const { product_name, stage, available, requested, missing } = errorData.details;
+        alert(
+          `❌ ${errorData.error}\n\n` +
+          `Producto: ${product_name}\n` +
+          `Etapa: ${stage}\n\n` +
+          `Disponible: ${available}\n` +
+          `Solicitado: ${requested}\n` +
+          `Faltante: ${missing}`
+        );
+      } else {
+        alert(errorData?.error || 'Error al procesar la operación');
+      }
     }
   });
 
@@ -120,19 +282,88 @@ const Produccion: React.FC = () => {
     }
   };
 
+  const handleSubmitInventoryForm = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // Filter out empty rows
+    const validItems = inventoryItems.filter(item => item.product_id && item.quantity);
+
+    if (validItems.length === 0) {
+      alert('Por favor agrega al menos un producto');
+      return;
+    }
+
+    if (inventoryFormType === 'crudo') {
+      const items: CrudoInputFormData[] = validItems.map(item => ({
+        product_id: Number(item.product_id),
+        quantity: Number(item.quantity),
+        notes: item.notes
+      }));
+      crudoInputMutation.mutate(items);
+    } else if (inventoryFormType === 'sancochado') {
+      const items: SanchoProcessFormData[] = validItems.map(item => ({
+        product_id: Number(item.product_id),
+        quantity: Number(item.quantity),
+        notes: item.notes
+      }));
+      sanchoProcessMutation.mutate(items);
+    } else if (inventoryFormType === 'esmaltado') {
+      const items: EsmaltadoProcessFormData[] = validItems.map(item => ({
+        product_id: Number(item.product_id),
+        quantity: Number(item.quantity),
+        esmalte_color_id: Number(item.esmalte_color_id),
+        notes: item.notes
+      }));
+      esmaltadoProcessMutation.mutate(items);
+    } else if (inventoryFormType === 'adjustment') {
+      const items: AdjustmentFormData[] = validItems.map(item => ({
+        product_id: Number(item.product_id),
+        stage: item.stage as 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO',
+        esmalte_color_id: item.esmalte_color_id ? Number(item.esmalte_color_id) : undefined,
+        quantity: Number(item.quantity),
+        notes: item.notes
+      }));
+      adjustmentMutation.mutate(items);
+    }
+  };
+
+  const addInventoryRow = () => {
+    setInventoryItems([...inventoryItems, { product_id: '', quantity: '', notes: '' }]);
+  };
+
+  const removeInventoryRow = (index: number) => {
+    if (inventoryItems.length > 1) {
+      setInventoryItems(inventoryItems.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateInventoryRow = (index: number, field: string, value: string) => {
+    const newItems = [...inventoryItems];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setInventoryItems(newItems);
+  };
+
+  const getAvailableProducts = (currentIndex: number) => {
+    const selectedProductIds = inventoryItems
+      .map((item, idx) => idx !== currentIndex ? item.product_id : null)
+      .filter(id => id !== null && id !== '');
+
+    return products.filter(product => !selectedProductIds.includes(product.id.toString()));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div className="flex items-center space-x-3 sm:space-x-4">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 text-sm sm:text-base"
               >
                 ← Back
               </button>
-              <h1 className="text-3xl font-bold text-gray-900">Producción</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Producción</h1>
             </div>
             {activeTab === 'products' && (
               <button
@@ -141,7 +372,7 @@ const Produccion: React.FC = () => {
                   setSelectedStage('CRUDO');
                   setShowProductForm(true);
                 }}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm sm:text-base w-full sm:w-auto"
               >
                 + Nuevo Producto
               </button>
@@ -150,20 +381,30 @@ const Produccion: React.FC = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
         {/* Tabs */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+        <div className="mb-4 sm:mb-6">
+          <div className="border-b border-gray-200 overflow-x-auto">
+            <nav className="-mb-px flex space-x-4 sm:space-x-8">
               <button
                 onClick={() => setActiveTab('products')}
                 className={`${
                   activeTab === 'products'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                } whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm`}
               >
                 Productos
+              </button>
+              <button
+                onClick={() => setActiveTab('inventory')}
+                className={`${
+                  activeTab === 'inventory'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm`}
+              >
+                Inventario
               </button>
               <button
                 onClick={() => setActiveTab('masterdata')}
@@ -171,7 +412,7 @@ const Produccion: React.FC = () => {
                   activeTab === 'masterdata'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                } whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm`}
               >
                 Datos Maestros
               </button>
@@ -261,6 +502,198 @@ const Produccion: React.FC = () => {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Inventory Tab */}
+        {activeTab === 'inventory' && (
+          <div className="space-y-4 sm:space-y-6">
+            {/* Action Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+              <button
+                onClick={() => {
+                  setInventoryFormType('crudo');
+                  setInventoryItems([{ product_id: '', quantity: '', notes: '' }]);
+                  setShowInventoryForm(true);
+                }}
+                className="bg-yellow-600 text-white px-4 py-3 rounded-md hover:bg-yellow-700 font-medium text-sm sm:text-base"
+              >
+                + Input CRUDO
+              </button>
+              <button
+                onClick={() => {
+                  setInventoryFormType('sancochado');
+                  setInventoryItems([{ product_id: '', quantity: '', notes: '' }]);
+                  setShowInventoryForm(true);
+                }}
+                className="bg-orange-600 text-white px-4 py-3 rounded-md hover:bg-orange-700 font-medium text-sm sm:text-base"
+              >
+                Procesar SANCOCHADO
+              </button>
+              <button
+                onClick={() => {
+                  setInventoryFormType('esmaltado');
+                  setInventoryItems([{ product_id: '', quantity: '', notes: '' }]);
+                  setShowInventoryForm(true);
+                }}
+                className="bg-green-600 text-white px-4 py-3 rounded-md hover:bg-green-700 font-medium text-sm sm:text-base"
+              >
+                Procesar ESMALTADO
+              </button>
+              <button
+                onClick={() => {
+                  setInventoryFormType('adjustment');
+                  setInventoryItems([{ product_id: '', quantity: '', notes: '' }]);
+                  setShowInventoryForm(true);
+                }}
+                className="bg-gray-600 text-white px-4 py-3 rounded-md hover:bg-gray-700 font-medium text-sm sm:text-base"
+              >
+                Ajuste de Inventario
+              </button>
+            </div>
+
+            {/* Current Inventory */}
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Inventario Actual</h2>
+              </div>
+              {inventory.length === 0 ? (
+                <div className="p-6 sm:p-8 text-center text-gray-500 text-sm sm:text-base">
+                  No hay inventario. Agrega productos usando los botones arriba.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Tipo</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Etapa</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Color</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Cant.</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Costo Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {inventory.map((item: InventoryRecord) => {
+                        const costoTotal = (
+                          Number(item.costo_pasta || 0) +
+                          Number(item.costo_mano_obra || 0) +
+                          Number(item.costo_esmalte || 0) +
+                          Number(item.costo_horneado || 0)
+                        ) * item.quantity;
+
+                        return (
+                          <tr key={item.id} className="hover:bg-gray-50">
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900">
+                              {item.product_name}
+                            </td>
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden sm:table-cell">
+                              {item.tipo_name}
+                            </td>
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900">
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                item.stage === 'CRUDO' ? 'bg-yellow-100 text-yellow-800' :
+                                item.stage === 'SANCOCHADO' ? 'bg-orange-100 text-orange-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {item.stage}
+                              </span>
+                            </td>
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden lg:table-cell">
+                              {item.esmalte_color ? (
+                                <div className="flex items-center gap-2">
+                                  {item.esmalte_hex_code && (
+                                    <div
+                                      className="w-4 h-4 rounded-full border border-gray-300"
+                                      style={{ backgroundColor: item.esmalte_hex_code }}
+                                    />
+                                  )}
+                                  {item.esmalte_color}
+                                </div>
+                              ) : (
+                                '-'
+                              )}
+                            </td>
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-900">
+                              {item.quantity}
+                            </td>
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden md:table-cell">
+                              ${costoTotal.toFixed(2)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Recent Movements */}
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">Historial de Movimientos</h2>
+              </div>
+              {movements.length === 0 ? (
+                <div className="p-6 sm:p-8 text-center text-gray-500 text-sm sm:text-base">
+                  No hay movimientos registrados.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Fecha</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Desde</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Hacia</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Cant.</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Usuario</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {movements.map((movement: InventoryMovement) => (
+                        <tr key={movement.id} className="hover:bg-gray-50">
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden lg:table-cell">
+                            {new Date(movement.created_at).toLocaleString()}
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900">
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              movement.movement_type === 'CRUDO_INPUT' ? 'bg-yellow-100 text-yellow-800' :
+                              movement.movement_type === 'SANCOCHADO_PROCESS' ? 'bg-orange-100 text-orange-800' :
+                              movement.movement_type === 'ESMALTADO_PROCESS' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {movement.movement_type.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900">
+                            {movement.product_name}
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden md:table-cell">
+                            {movement.from_stage || '-'}
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden md:table-cell">
+                            {movement.to_stage || '-'}
+                            {movement.to_color && (
+                              <span className="ml-2 text-xs text-gray-500">({movement.to_color})</span>
+                            )}
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-900">
+                            {movement.quantity > 0 ? '+' : ''}{movement.quantity}
+                          </td>
+                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden sm:table-cell">
+                            {movement.created_by_name}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -696,6 +1129,184 @@ const Produccion: React.FC = () => {
                   Editar Producto
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inventory Form Modal */}
+      {showInventoryForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4">
+                {inventoryFormType === 'crudo' && 'Input de CRUDO'}
+                {inventoryFormType === 'sancochado' && 'Procesar a SANCOCHADO'}
+                {inventoryFormType === 'esmaltado' && 'Procesar a ESMALTADO'}
+                {inventoryFormType === 'adjustment' && 'Ajuste de Inventario'}
+              </h2>
+
+              <form onSubmit={handleSubmitInventoryForm} className="space-y-3 sm:space-y-4">
+                {inventoryFormType === 'sancochado' && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-md p-2 sm:p-3">
+                    <p className="text-xs sm:text-sm text-orange-800">
+                      <strong>Nota:</strong> Esto restará la cantidad del inventario CRUDO y la agregará al inventario SANCOCHADO.
+                    </p>
+                  </div>
+                )}
+
+                {inventoryFormType === 'esmaltado' && (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-2 sm:p-3">
+                    <p className="text-xs sm:text-sm text-green-800">
+                      <strong>Nota:</strong> Esto restará la cantidad del inventario SANCOCHADO y la agregará al inventario ESMALTADO con el color seleccionado.
+                    </p>
+                  </div>
+                )}
+
+                {/* Items Table */}
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                        {inventoryFormType === 'adjustment' && (
+                          <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Etapa</th>
+                        )}
+                        {(inventoryFormType === 'esmaltado' || inventoryFormType === 'adjustment') && (
+                          <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Color</th>
+                        )}
+                        <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cant.</th>
+                        <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Notas</th>
+                        <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {inventoryItems.map((item, index) => {
+                        const availableProducts = getAvailableProducts(index);
+                        return (
+                        <tr key={index}>
+                          <td className="px-2 sm:px-3 py-2">
+                            <select
+                              value={item.product_id}
+                              onChange={(e) => updateInventoryRow(index, 'product_id', e.target.value)}
+                              required
+                              className="block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-xs sm:text-sm"
+                            >
+                              <option value="">Seleccionar...</option>
+                              {availableProducts.map((product: Product) => (
+                                <option key={product.id} value={product.id}>
+                                  {product.name} - {product.tipo_name}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+
+                          {inventoryFormType === 'adjustment' && (
+                            <td className="px-2 sm:px-3 py-2">
+                              <select
+                                value={item.stage || ''}
+                                onChange={(e) => updateInventoryRow(index, 'stage', e.target.value)}
+                                required
+                                className="block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-xs sm:text-sm"
+                              >
+                                <option value="">Seleccionar...</option>
+                                <option value="CRUDO">CRUDO</option>
+                                <option value="SANCOCHADO">SANCOCHADO</option>
+                                <option value="ESMALTADO">ESMALTADO</option>
+                              </select>
+                            </td>
+                          )}
+
+                          {(inventoryFormType === 'esmaltado' || inventoryFormType === 'adjustment') && (
+                            <td className="px-2 sm:px-3 py-2 hidden sm:table-cell">
+                              <select
+                                value={item.esmalte_color_id || ''}
+                                onChange={(e) => updateInventoryRow(index, 'esmalte_color_id', e.target.value)}
+                                required={inventoryFormType === 'esmaltado'}
+                                className="block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-xs sm:text-sm"
+                              >
+                                <option value="">Seleccionar...</option>
+                                {esmalteColors.map((color: EsmalteColor) => (
+                                  <option key={color.id} value={color.id}>{color.color}</option>
+                                ))}
+                              </select>
+                            </td>
+                          )}
+
+                          <td className="px-2 sm:px-3 py-2">
+                            <input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => updateInventoryRow(index, 'quantity', e.target.value)}
+                              min={inventoryFormType === 'adjustment' ? undefined : 1}
+                              step="1"
+                              required
+                              className="block w-16 sm:w-24 border border-gray-300 rounded-md shadow-sm py-1 px-2 text-xs sm:text-sm"
+                              placeholder="0"
+                            />
+                          </td>
+
+                          <td className="px-2 sm:px-3 py-2 hidden md:table-cell">
+                            <input
+                              type="text"
+                              value={item.notes || ''}
+                              onChange={(e) => updateInventoryRow(index, 'notes', e.target.value)}
+                              className="block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-xs sm:text-sm"
+                              placeholder="Opcional"
+                            />
+                          </td>
+
+                          <td className="px-2 sm:px-3 py-2">
+                            <button
+                              type="button"
+                              onClick={() => removeInventoryRow(index)}
+                              disabled={inventoryItems.length === 1}
+                              className="text-red-600 hover:text-red-900 disabled:text-gray-300 disabled:cursor-not-allowed"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addInventoryRow}
+                  className="w-full border-2 border-dashed border-gray-300 rounded-md py-2 text-xs sm:text-sm text-gray-600 hover:border-gray-400 hover:text-gray-700"
+                >
+                  + Agregar otra línea
+                </button>
+
+                <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowInventoryForm(false);
+                      setInventoryItems([{ product_id: '', quantity: '', notes: '' }]);
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm sm:text-base order-2 sm:order-1"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className={`px-4 py-2 text-white rounded-md text-sm sm:text-base order-1 sm:order-2 ${
+                      inventoryFormType === 'crudo' ? 'bg-yellow-600 hover:bg-yellow-700' :
+                      inventoryFormType === 'sancochado' ? 'bg-orange-600 hover:bg-orange-700' :
+                      inventoryFormType === 'esmaltado' ? 'bg-green-600 hover:bg-green-700' :
+                      'bg-gray-600 hover:bg-gray-700'
+                    }`}
+                  >
+                    {inventoryFormType === 'adjustment' ? 'Ajustar' : 'Procesar'} ({inventoryItems.filter(item => item.product_id && item.quantity).length})
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

@@ -1301,4 +1301,30 @@ router.post('/produccion-add-peso-costo-fields', async (req: Request, res: Respo
   }
 });
 
+router.post('/produccion-add-inventory-tables', async (req: Request, res: Response) => {
+  try {
+    console.log('Adding inventory tables for produccion...');
+
+    const sqlPath = path.join(__dirname, '..', 'config', 'produccion-add-inventory-tables.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Inventory tables created successfully!',
+      changes: [
+        'produccion_inventory table created',
+        'produccion_inventory_movements table created',
+        'Indexes and constraints added'
+      ]
+    });
+  } catch (error) {
+    console.error('Inventory tables migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create inventory tables',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
