@@ -32,6 +32,7 @@ export interface EsmalteColor {
 export interface Product {
   id: number;
   name: string;
+  stage: 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO';
   tipo_id: number;
   tipo_name: string;
   size_id: number;
@@ -42,6 +43,8 @@ export interface Product {
   esmalte_color: string;
   esmalte_hex_code?: string;
   peso_crudo?: number;
+  peso_esmaltado?: number;
+  costo_pasta?: number;
   costo_mano_obra?: number;
   cantidad_esmalte?: number;
   costo_esmalte?: number;
@@ -55,11 +58,14 @@ export interface Product {
 
 export interface ProductFormData {
   name: string;
+  stage: 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO';
   tipo_id: number;
   size_id: number;
   capacity_id: number;
   esmalte_color_id: number;
   peso_crudo?: number;
+  peso_esmaltado?: number;
+  costo_pasta?: number;
   costo_mano_obra?: number;
   cantidad_esmalte?: number;
   costo_esmalte?: number;

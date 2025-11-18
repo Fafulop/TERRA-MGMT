@@ -13,6 +13,7 @@ const Produccion: React.FC = () => {
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+  const [selectedStage, setSelectedStage] = useState<'CRUDO' | 'SANCOCHADO' | 'ESMALTADO'>('CRUDO');
 
   const getHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem('token')}` });
 
@@ -95,6 +96,7 @@ const Produccion: React.FC = () => {
 
     const data: any = {
       name: formData.get('name') as string,
+      stage: formData.get('stage') as string,
       tipo_id: Number(formData.get('tipo_id'))
     };
 
@@ -103,6 +105,8 @@ const Produccion: React.FC = () => {
     if (formData.get('capacity_id')) data.capacity_id = Number(formData.get('capacity_id'));
     if (formData.get('esmalte_color_id')) data.esmalte_color_id = Number(formData.get('esmalte_color_id'));
     if (formData.get('peso_crudo')) data.peso_crudo = Number(formData.get('peso_crudo'));
+    if (formData.get('peso_esmaltado')) data.peso_esmaltado = Number(formData.get('peso_esmaltado'));
+    if (formData.get('costo_pasta')) data.costo_pasta = Number(formData.get('costo_pasta'));
     if (formData.get('costo_mano_obra')) data.costo_mano_obra = Number(formData.get('costo_mano_obra'));
     if (formData.get('cantidad_esmalte')) data.cantidad_esmalte = Number(formData.get('cantidad_esmalte'));
     if (formData.get('costo_esmalte')) data.costo_esmalte = Number(formData.get('costo_esmalte'));
@@ -134,6 +138,7 @@ const Produccion: React.FC = () => {
               <button
                 onClick={() => {
                   setEditingProduct(null);
+                  setSelectedStage('CRUDO');
                   setShowProductForm(true);
                 }}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
@@ -187,6 +192,7 @@ const Produccion: React.FC = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Etapa</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tamaño (CM)</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Capacidad (ML)</th>
@@ -203,6 +209,15 @@ const Produccion: React.FC = () => {
                         onClick={() => setViewingProduct(product)}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            product.stage === 'CRUDO' ? 'bg-yellow-100 text-yellow-800' :
+                            product.stage === 'SANCOCHADO' ? 'bg-orange-100 text-orange-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {product.stage}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.tipo_name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.size_cm || '-'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.capacity_ml || '-'}</td>
@@ -222,6 +237,7 @@ const Produccion: React.FC = () => {
                           <button
                             onClick={() => {
                               setEditingProduct(product);
+                              setSelectedStage(product.stage || 'CRUDO');
                               setShowProductForm(true);
                             }}
                             className="text-blue-600 hover:text-blue-900"
@@ -331,6 +347,21 @@ const Produccion: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
+                    <label className="block text-sm font-medium text-gray-700">Etapa *</label>
+                    <select
+                      name="stage"
+                      value={selectedStage}
+                      onChange={(e) => setSelectedStage(e.target.value as 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO')}
+                      required
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                    >
+                      <option value="CRUDO">CRUDO</option>
+                      <option value="SANCOCHADO">SANCOCHADO</option>
+                      <option value="ESMALTADO">ESMALTADO</option>
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="block text-sm font-medium text-gray-700">Tipo *</label>
                     <select
                       name="tipo_id"
@@ -344,7 +375,9 @@ const Produccion: React.FC = () => {
                       ))}
                     </select>
                   </div>
+                </div>
 
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Tamaño (CM)</label>
                     <select
@@ -358,9 +391,7 @@ const Produccion: React.FC = () => {
                       ))}
                     </select>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Capacidad (ML)</label>
                     <select
@@ -374,20 +405,23 @@ const Produccion: React.FC = () => {
                       ))}
                     </select>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Color Esmalte</label>
-                    <select
-                      name="esmalte_color_id"
-                      defaultValue={editingProduct?.esmalte_color_id}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                    >
-                      <option value="">Seleccionar...</option>
-                      {esmalteColors.map((color: EsmalteColor) => (
-                        <option key={color.id} value={color.id}>{color.color}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Color Esmalte {selectedStage !== 'ESMALTADO' && <span className="text-xs text-gray-500">(solo disponible para ESMALTADO)</span>}
+                  </label>
+                  <select
+                    name="esmalte_color_id"
+                    defaultValue={editingProduct?.esmalte_color_id}
+                    disabled={selectedStage !== 'ESMALTADO'}
+                    className={`mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 ${selectedStage !== 'ESMALTADO' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {esmalteColors.map((color: EsmalteColor) => (
+                      <option key={color.id} value={color.id}>{color.color}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -398,6 +432,30 @@ const Produccion: React.FC = () => {
                       name="peso_crudo"
                       step="0.01"
                       defaultValue={editingProduct?.peso_crudo}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Peso Esmaltado (g)</label>
+                    <input
+                      type="number"
+                      name="peso_esmaltado"
+                      step="0.01"
+                      defaultValue={editingProduct?.peso_esmaltado}
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Costo Pasta (MXN)</label>
+                    <input
+                      type="number"
+                      name="costo_pasta"
+                      step="0.01"
+                      defaultValue={editingProduct?.costo_pasta}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
                     />
                   </div>
@@ -502,10 +560,20 @@ const Produccion: React.FC = () => {
 
               <div className="space-y-6">
                 {/* Basic Info */}
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-3 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-500 mb-1">Nombre del Producto</label>
                     <p className="text-lg font-semibold text-gray-900">{viewingProduct.name}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Etapa</label>
+                    <span className={`inline-block px-3 py-1 text-sm font-semibold rounded-full ${
+                      viewingProduct.stage === 'CRUDO' ? 'bg-yellow-100 text-yellow-800' :
+                      viewingProduct.stage === 'SANCOCHADO' ? 'bg-orange-100 text-orange-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {viewingProduct.stage}
+                    </span>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-500 mb-1">Tipo</label>
@@ -543,10 +611,14 @@ const Produccion: React.FC = () => {
                 {/* Production Details */}
                 <div className="border-t pt-4">
                   <h3 className="text-lg font-semibold text-gray-700 mb-3">Detalles de Producción</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Peso en Crudo (g)</label>
                       <p className="text-gray-900">{viewingProduct.peso_crudo ? `${viewingProduct.peso_crudo} g` : '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Peso Esmaltado (g)</label>
+                      <p className="text-gray-900">{viewingProduct.peso_esmaltado ? `${viewingProduct.peso_esmaltado} g` : '-'}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Cantidad Esmalte (g)</label>
@@ -558,24 +630,28 @@ const Produccion: React.FC = () => {
                 {/* Costs */}
                 <div className="border-t pt-4">
                   <h3 className="text-lg font-semibold text-gray-700 mb-3">Costos (MXN)</h3>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">Pasta</label>
+                      <p className="text-gray-900">{viewingProduct.costo_pasta ? `$${Number(viewingProduct.costo_pasta).toFixed(2)}` : '-'}</p>
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Mano de Obra</label>
-                      <p className="text-gray-900">{viewingProduct.costo_mano_obra ? `$${viewingProduct.costo_mano_obra.toFixed(2)}` : '-'}</p>
+                      <p className="text-gray-900">{viewingProduct.costo_mano_obra ? `$${Number(viewingProduct.costo_mano_obra).toFixed(2)}` : '-'}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Esmalte</label>
-                      <p className="text-gray-900">{viewingProduct.costo_esmalte ? `$${viewingProduct.costo_esmalte.toFixed(2)}` : '-'}</p>
+                      <p className="text-gray-900">{viewingProduct.costo_esmalte ? `$${Number(viewingProduct.costo_esmalte).toFixed(2)}` : '-'}</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Horneado</label>
-                      <p className="text-gray-900">{viewingProduct.costo_horneado ? `$${viewingProduct.costo_horneado.toFixed(2)}` : '-'}</p>
+                      <p className="text-gray-900">{viewingProduct.costo_horneado ? `$${Number(viewingProduct.costo_horneado).toFixed(2)}` : '-'}</p>
                     </div>
                   </div>
                   <div className="mt-4 pt-4 border-t">
                     <label className="block text-sm font-medium text-gray-500 mb-1">Costo Total</label>
                     <p className="text-2xl font-bold text-green-600">
-                      ${((viewingProduct.costo_mano_obra || 0) + (viewingProduct.costo_esmalte || 0) + (viewingProduct.costo_horneado || 0)).toFixed(2)} MXN
+                      ${(Number(viewingProduct.costo_pasta || 0) + Number(viewingProduct.costo_mano_obra || 0) + Number(viewingProduct.costo_esmalte || 0) + Number(viewingProduct.costo_horneado || 0)).toFixed(2)} MXN
                     </p>
                   </div>
                 </div>
@@ -611,6 +687,7 @@ const Produccion: React.FC = () => {
                 <button
                   onClick={() => {
                     setEditingProduct(viewingProduct);
+                    setSelectedStage(viewingProduct.stage || 'CRUDO');
                     setViewingProduct(null);
                     setShowProductForm(true);
                   }}

@@ -1249,4 +1249,56 @@ router.post('/produccion-make-fields-optional', async (req: Request, res: Respon
   }
 });
 
+// Add stage field to produccion products migration
+router.post('/produccion-add-stage-field', async (req: Request, res: Response) => {
+  try {
+    console.log('Adding stage field to produccion products...');
+
+    const sqlPath = path.join(__dirname, '..', 'config', 'produccion-add-stage-field.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Stage field added successfully!',
+      changes: [
+        'stage column added (CRUDO, SANCOCHADO, ESMALTADO)',
+        'esmalte_color_id now only allowed for ESMALTADO stage',
+        'Default stage is CRUDO'
+      ]
+    });
+  } catch (error) {
+    console.error('Stage field migration error:', error);
+    res.status(500).json({
+      error: 'Failed to add stage field',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.post('/produccion-add-peso-costo-fields', async (req: Request, res: Response) => {
+  try {
+    console.log('Adding peso_esmaltado and costo_pasta fields to produccion products...');
+
+    const sqlPath = path.join(__dirname, '..', 'config', 'produccion-add-peso-costo-fields.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Peso esmaltado and costo pasta fields added successfully!',
+      changes: [
+        'peso_esmaltado column added (optional)',
+        'costo_pasta column added (optional)'
+      ]
+    });
+  } catch (error) {
+    console.error('Peso/Costo fields migration error:', error);
+    res.status(500).json({
+      error: 'Failed to add peso_esmaltado and costo_pasta fields',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

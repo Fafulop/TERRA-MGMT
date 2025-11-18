@@ -66,11 +66,14 @@ export const createProduct = async (req: Request, res: Response) => {
   try {
     const {
       name,
+      stage,
       tipo_id,
       size_id,
       capacity_id,
       esmalte_color_id,
       peso_crudo,
+      peso_esmaltado,
+      costo_pasta,
       costo_mano_obra,
       cantidad_esmalte,
       costo_esmalte,
@@ -80,24 +83,27 @@ export const createProduct = async (req: Request, res: Response) => {
 
     const userId = (req as any).user?.id || 1; // Default to user 1 if not authenticated
 
-    if (!name || !tipo_id) {
-      return res.status(400).json({ error: 'Name and Tipo are required fields' });
+    if (!name || !tipo_id || !stage) {
+      return res.status(400).json({ error: 'Name, Stage, and Tipo are required fields' });
     }
 
     const result = await pool.query(
       `INSERT INTO produccion_products (
-        name, tipo_id, size_id, capacity_id, esmalte_color_id,
-        peso_crudo, costo_mano_obra, cantidad_esmalte, costo_esmalte, costo_horneado,
+        name, stage, tipo_id, size_id, capacity_id, esmalte_color_id,
+        peso_crudo, peso_esmaltado, costo_pasta, costo_mano_obra, cantidad_esmalte, costo_esmalte, costo_horneado,
         notes, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
       RETURNING *`,
       [
         name,
+        stage,
         tipo_id,
         size_id,
         capacity_id,
         esmalte_color_id,
         peso_crudo || null,
+        peso_esmaltado || null,
+        costo_pasta || null,
         costo_mano_obra || null,
         cantidad_esmalte || null,
         costo_esmalte || null,
@@ -120,11 +126,14 @@ export const updateProduct = async (req: Request, res: Response) => {
     const { id } = req.params;
     const {
       name,
+      stage,
       tipo_id,
       size_id,
       capacity_id,
       esmalte_color_id,
       peso_crudo,
+      peso_esmaltado,
+      costo_pasta,
       costo_mano_obra,
       cantidad_esmalte,
       costo_esmalte,
@@ -135,26 +144,32 @@ export const updateProduct = async (req: Request, res: Response) => {
     const result = await pool.query(
       `UPDATE produccion_products SET
         name = COALESCE($1, name),
-        tipo_id = COALESCE($2, tipo_id),
-        size_id = COALESCE($3, size_id),
-        capacity_id = COALESCE($4, capacity_id),
-        esmalte_color_id = COALESCE($5, esmalte_color_id),
-        peso_crudo = COALESCE($6, peso_crudo),
-        costo_mano_obra = COALESCE($7, costo_mano_obra),
-        cantidad_esmalte = COALESCE($8, cantidad_esmalte),
-        costo_esmalte = COALESCE($9, costo_esmalte),
-        costo_horneado = COALESCE($10, costo_horneado),
-        notes = COALESCE($11, notes),
+        stage = COALESCE($2, stage),
+        tipo_id = COALESCE($3, tipo_id),
+        size_id = COALESCE($4, size_id),
+        capacity_id = COALESCE($5, capacity_id),
+        esmalte_color_id = COALESCE($6, esmalte_color_id),
+        peso_crudo = COALESCE($7, peso_crudo),
+        peso_esmaltado = COALESCE($8, peso_esmaltado),
+        costo_pasta = COALESCE($9, costo_pasta),
+        costo_mano_obra = COALESCE($10, costo_mano_obra),
+        cantidad_esmalte = COALESCE($11, cantidad_esmalte),
+        costo_esmalte = COALESCE($12, costo_esmalte),
+        costo_horneado = COALESCE($13, costo_horneado),
+        notes = COALESCE($14, notes),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $12
+      WHERE id = $15
       RETURNING *`,
       [
         name,
+        stage,
         tipo_id,
         size_id,
         capacity_id,
         esmalte_color_id,
         peso_crudo,
+        peso_esmaltado,
+        costo_pasta,
         costo_mano_obra,
         cantidad_esmalte,
         costo_esmalte,
