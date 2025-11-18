@@ -144,14 +144,15 @@ export const processSancochado = async (req: Request, res: Response) => {
     const crudoInventory = await getOrCreateInventory(product_id, 'CRUDO', null, client);
 
     if (crudoInventory.quantity < quantity) {
-      await client.query('ROLLBACK');
       const missing = quantity - crudoInventory.quantity;
 
-      // Get product name for better error message
+      // Get product name for better error message (before rollback)
       const productInfo = await client.query(
         'SELECT name FROM produccion_products WHERE id = $1',
         [product_id]
       );
+
+      await client.query('ROLLBACK');
 
       return res.status(400).json({
         error: `Inventario CRUDO insuficiente`,
@@ -218,14 +219,15 @@ export const processEsmaltado = async (req: Request, res: Response) => {
     const sanchoInventory = await getOrCreateInventory(product_id, 'SANCOCHADO', null, client);
 
     if (sanchoInventory.quantity < quantity) {
-      await client.query('ROLLBACK');
       const missing = quantity - sanchoInventory.quantity;
 
-      // Get product name for better error message
+      // Get product name for better error message (before rollback)
       const productInfo = await client.query(
         'SELECT name FROM produccion_products WHERE id = $1',
         [product_id]
       );
+
+      await client.query('ROLLBACK');
 
       return res.status(400).json({
         error: `Inventario SANCOCHADO insuficiente`,

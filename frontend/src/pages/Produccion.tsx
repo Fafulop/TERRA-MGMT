@@ -26,7 +26,6 @@ const Produccion: React.FC = () => {
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
-  const [selectedStage, setSelectedStage] = useState<'CRUDO' | 'SANCOCHADO' | 'ESMALTADO'>('CRUDO');
 
   // Inventory states
   const [showInventoryForm, setShowInventoryForm] = useState(false);
@@ -258,7 +257,7 @@ const Produccion: React.FC = () => {
 
     const data: any = {
       name: formData.get('name') as string,
-      stage: formData.get('stage') as string,
+      stage: 'CRUDO',
       tipo_id: Number(formData.get('tipo_id'))
     };
 
@@ -369,7 +368,6 @@ const Produccion: React.FC = () => {
               <button
                 onClick={() => {
                   setEditingProduct(null);
-                  setSelectedStage('CRUDO');
                   setShowProductForm(true);
                 }}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm sm:text-base w-full sm:w-auto"
@@ -478,7 +476,6 @@ const Produccion: React.FC = () => {
                           <button
                             onClick={() => {
                               setEditingProduct(product);
-                              setSelectedStage(product.stage || 'CRUDO');
                               setShowProductForm(true);
                             }}
                             className="text-blue-600 hover:text-blue-900"
@@ -778,36 +775,19 @@ const Produccion: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Etapa *</label>
-                    <select
-                      name="stage"
-                      value={selectedStage}
-                      onChange={(e) => setSelectedStage(e.target.value as 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO')}
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                    >
-                      <option value="CRUDO">CRUDO</option>
-                      <option value="SANCOCHADO">SANCOCHADO</option>
-                      <option value="ESMALTADO">ESMALTADO</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Tipo *</label>
-                    <select
-                      name="tipo_id"
-                      defaultValue={editingProduct?.tipo_id}
-                      required
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                    >
-                      <option value="">Seleccionar...</option>
-                      {tipos.map((tipo: Tipo) => (
-                        <option key={tipo.id} value={tipo.id}>{tipo.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Tipo *</label>
+                  <select
+                    name="tipo_id"
+                    defaultValue={editingProduct?.tipo_id}
+                    required
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                  >
+                    <option value="">Seleccionar...</option>
+                    {tipos.map((tipo: Tipo) => (
+                      <option key={tipo.id} value={tipo.id}>{tipo.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -838,23 +818,6 @@ const Produccion: React.FC = () => {
                       ))}
                     </select>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Color Esmalte {selectedStage !== 'ESMALTADO' && <span className="text-xs text-gray-500">(solo disponible para ESMALTADO)</span>}
-                  </label>
-                  <select
-                    name="esmalte_color_id"
-                    defaultValue={editingProduct?.esmalte_color_id}
-                    disabled={selectedStage !== 'ESMALTADO'}
-                    className={`mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 ${selectedStage !== 'ESMALTADO' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {esmalteColors.map((color: EsmalteColor) => (
-                      <option key={color.id} value={color.id}>{color.color}</option>
-                    ))}
-                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -1120,7 +1083,6 @@ const Produccion: React.FC = () => {
                 <button
                   onClick={() => {
                     setEditingProduct(viewingProduct);
-                    setSelectedStage(viewingProduct.stage || 'CRUDO');
                     setViewingProduct(null);
                     setShowProductForm(true);
                   }}
