@@ -364,8 +364,8 @@ const Produccion: React.FC = () => {
   };
 
   const getAvailableProducts = (currentIndex: number) => {
-    // For esmaltado form, allow same product multiple times (blocking is at color level)
-    if (inventoryFormType === 'esmaltado') {
+    // For esmaltado and adjustment forms, allow same product multiple times (blocking is at combination level)
+    if (inventoryFormType === 'esmaltado' || inventoryFormType === 'adjustment') {
       return products;
     }
 
@@ -378,29 +378,56 @@ const Produccion: React.FC = () => {
   };
 
   const getAvailableColors = (currentIndex: number) => {
-    // Only filter colors for esmaltado form type
-    if (inventoryFormType !== 'esmaltado') {
-      return esmalteColors;
+    // Filter colors for esmaltado form type (product + color combination)
+    if (inventoryFormType === 'esmaltado') {
+      const currentProduct = inventoryItems[currentIndex]?.product_id;
+
+      if (!currentProduct) {
+        return esmalteColors;
+      }
+
+      // Get all product+color combinations already selected (excluding current row)
+      const selectedCombinations = inventoryItems
+        .map((item, idx) => {
+          if (idx !== currentIndex && item.product_id === currentProduct && item.esmalte_color_id) {
+            return item.esmalte_color_id;
+          }
+          return null;
+        })
+        .filter(id => id !== null && id !== '');
+
+      // Filter out colors already used for this product
+      return esmalteColors.filter(color => !selectedCombinations.includes(color.id.toString()));
     }
 
-    const currentProduct = inventoryItems[currentIndex]?.product_id;
+    // Filter colors for adjustment form type (product + stage + color combination)
+    if (inventoryFormType === 'adjustment') {
+      const currentProduct = inventoryItems[currentIndex]?.product_id;
+      const currentStage = inventoryItems[currentIndex]?.stage;
 
-    if (!currentProduct) {
-      return esmalteColors;
+      if (!currentProduct || !currentStage) {
+        return esmalteColors;
+      }
+
+      // Get all product+stage+color combinations already selected (excluding current row)
+      const selectedCombinations = inventoryItems
+        .map((item, idx) => {
+          if (idx !== currentIndex &&
+              item.product_id === currentProduct &&
+              item.stage === currentStage &&
+              item.esmalte_color_id) {
+            return item.esmalte_color_id;
+          }
+          return null;
+        })
+        .filter(id => id !== null && id !== '');
+
+      // Filter out colors already used for this product+stage combination
+      return esmalteColors.filter(color => !selectedCombinations.includes(color.id.toString()));
     }
 
-    // Get all product+color combinations already selected (excluding current row)
-    const selectedCombinations = inventoryItems
-      .map((item, idx) => {
-        if (idx !== currentIndex && item.product_id === currentProduct && item.esmalte_color_id) {
-          return item.esmalte_color_id;
-        }
-        return null;
-      })
-      .filter(id => id !== null && id !== '');
-
-    // Filter out colors already used for this product
-    return esmalteColors.filter(color => !selectedCombinations.includes(color.id.toString()));
+    // For other forms, return all colors
+    return esmalteColors;
   };
 
   return (
@@ -1163,19 +1190,33 @@ const Produccion: React.FC = () => {
 
               <form onSubmit={handleSubmitInventoryForm} className="space-y-3 sm:space-y-4">
                 {inventoryFormType === 'sancochado' && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-md p-2 sm:p-3">
-                    <p className="text-xs sm:text-sm text-orange-800">
-                      <strong>Nota:</strong> Esto restará la cantidad del inventario CRUDO y la agregará al inventario SANCOCHADO.
-                    </p>
-                  </div>
+                  <>
+                    <div className="bg-orange-50 border border-orange-200 rounded-md p-2 sm:p-3">
+                      <p className="text-xs sm:text-sm text-orange-800">
+                        <strong>Nota:</strong> Esto restará la cantidad del inventario CRUDO y la agregará al inventario SANCOCHADO.
+                      </p>
+                    </div>
+                    <div className="bg-orange-100 border border-orange-300 rounded-md p-2 sm:p-3">
+                      <p className="text-xs sm:text-sm text-orange-900 font-semibold">
+                        NOTA: USAR ESTE MODULO A LA HORA DE SACAR HORNO DE SANCOCHADO Y CONTAR LAS PIEZAS
+                      </p>
+                    </div>
+                  </>
                 )}
 
                 {inventoryFormType === 'esmaltado' && (
-                  <div className="bg-green-50 border border-green-200 rounded-md p-2 sm:p-3">
-                    <p className="text-xs sm:text-sm text-green-800">
-                      <strong>Nota:</strong> Esto restará la cantidad del inventario SANCOCHADO y la agregará al inventario ESMALTADO con el color seleccionado.
-                    </p>
-                  </div>
+                  <>
+                    <div className="bg-green-50 border border-green-200 rounded-md p-2 sm:p-3">
+                      <p className="text-xs sm:text-sm text-green-800">
+                        <strong>Nota:</strong> Esto restará la cantidad del inventario SANCOCHADO y la agregará al inventario ESMALTADO con el color seleccionado.
+                      </p>
+                    </div>
+                    <div className="bg-green-100 border border-green-300 rounded-md p-2 sm:p-3">
+                      <p className="text-xs sm:text-sm text-green-900 font-semibold">
+                        NOTA: USAR ESTE MODULO A LA HORA DE SACAR HORNO DE ESMALTADO
+                      </p>
+                    </div>
+                  </>
                 )}
 
                 {inventoryFormType === 'adjustment' && (
