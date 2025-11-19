@@ -26,6 +26,8 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
   });
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'concept'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<LedgerEntry | null>(null);
 
   // Get unique bank accounts for filter dropdown
   const bankAccounts = useMemo(() => {
@@ -492,49 +494,42 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
-                      {currentUserId === entry.userId ? (
-                        <>
-                          {onEditEntry && (
-                            <button
-                              onClick={() => onEditEntry(entry)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="Edit entry"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                          )}
-                          {onMarkAsRealized && entry.por_realizar && (
-                            <button
-                              onClick={() => onMarkAsRealized(entry.id)}
-                              className="text-green-600 hover:text-green-900"
-                              title="Mark as realized"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </button>
-                          )}
-                          {onDeleteEntry && (
-                            <button
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this entry?')) {
-                                  onDeleteEntry(entry.id);
-                                }
-                              }}
-                              className="text-red-600 hover:text-red-900"
-                              title="Delete entry"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          )}
-                        </>
-                      ) : (
-                        <span className="text-gray-400 text-xs">View Only</span>
+                    <div className="flex justify-end space-x-8">
+                      {onEditEntry && (
+                        <button
+                          onClick={() => onEditEntry(entry)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit entry"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                      )}
+                      {onMarkAsRealized && entry.por_realizar && (
+                        <button
+                          onClick={() => onMarkAsRealized(entry.id)}
+                          className="text-green-600 hover:text-green-900"
+                          title="Mark as realized"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </button>
+                      )}
+                      {onDeleteEntry && (
+                        <button
+                          onClick={() => {
+                            setEntryToDelete(entry);
+                            setDeleteModalOpen(true);
+                          }}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete entry"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       )}
                     </div>
                   </td>
@@ -544,6 +539,90 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && entryToDelete && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+              onClick={() => {
+                setDeleteModalOpen(false);
+                setEntryToDelete(null);
+              }}
+            />
+
+            {/* Modal */}
+            <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              {/* Warning Icon */}
+              <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+
+              {/* Title */}
+              <h3 className="text-lg font-bold text-gray-900 text-center mb-2">
+                Delete Entry
+              </h3>
+
+              {/* Message */}
+              <p className="text-sm text-gray-600 text-center mb-4">
+                Are you sure you want to delete this entry? This action cannot be undone.
+              </p>
+
+              {/* Entry Details */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Date:</span>
+                    <span className="font-medium text-gray-900">{entryToDelete.date}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Amount:</span>
+                    <span className={`font-medium ${entryToDelete.entryType === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                      {entryToDelete.entryType === 'income' ? '+' : '-'}
+                      ${Math.abs(entryToDelete.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Concept:</span>
+                    <span className="font-medium text-gray-900 text-right max-w-[200px] truncate">
+                      {entryToDelete.concept}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setDeleteModalOpen(false);
+                    setEntryToDelete(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (onDeleteEntry && entryToDelete) {
+                      onDeleteEntry(entryToDelete.id);
+                    }
+                    setDeleteModalOpen(false);
+                    setEntryToDelete(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Delete Entry
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
