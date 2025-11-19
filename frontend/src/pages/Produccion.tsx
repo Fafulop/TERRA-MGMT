@@ -286,6 +286,7 @@ const Produccion: React.FC = () => {
     if (formData.get('cantidad_esmalte')) data.cantidad_esmalte = Number(formData.get('cantidad_esmalte'));
     if (formData.get('costo_esmalte')) data.costo_esmalte = Number(formData.get('costo_esmalte'));
     if (formData.get('costo_horneado')) data.costo_horneado = Number(formData.get('costo_horneado'));
+    if (formData.get('costo_h_sancocho')) data.costo_h_sancocho = Number(formData.get('costo_h_sancocho'));
     if (formData.get('notes')) data.notes = formData.get('notes') as string;
 
     if (editingProduct) {
@@ -657,7 +658,8 @@ const Produccion: React.FC = () => {
                           Number(item.costo_pasta || 0) +
                           Number(item.costo_mano_obra || 0) +
                           Number(item.costo_esmalte || 0) +
-                          Number(item.costo_horneado || 0)
+                          Number(item.costo_horneado || 0) +
+                          Number(item.costo_h_sancocho || 0)
                         ) * item.quantity;
 
                         return (
@@ -900,86 +902,103 @@ const Produccion: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Peso en Crudo (g)</label>
-                    <input
-                      type="number"
-                      name="peso_crudo"
-                      step="0.01"
-                      defaultValue={editingProduct?.peso_crudo}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                    />
-                  </div>
+                {/* Pesos y Cantidades */}
+                <div className="border-t pt-4">
+                  <h3 className="text-md font-semibold text-gray-700 mb-3">Pesos y Cantidades</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Peso en Crudo (g)</label>
+                      <input
+                        type="number"
+                        name="peso_crudo"
+                        step="0.01"
+                        defaultValue={editingProduct?.peso_crudo}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Peso Esmaltado (g)</label>
-                    <input
-                      type="number"
-                      name="peso_esmaltado"
-                      step="0.01"
-                      defaultValue={editingProduct?.peso_esmaltado}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                    />
-                  </div>
-                </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Peso Esmaltado (g)</label>
+                      <input
+                        type="number"
+                        name="peso_esmaltado"
+                        step="0.01"
+                        defaultValue={editingProduct?.peso_esmaltado}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                      />
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Costo Pasta (MXN)</label>
-                    <input
-                      type="number"
-                      name="costo_pasta"
-                      step="0.01"
-                      defaultValue={editingProduct?.costo_pasta}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Costo Mano de Obra (MXN)</label>
-                    <input
-                      type="number"
-                      name="costo_mano_obra"
-                      step="0.01"
-                      defaultValue={editingProduct?.costo_mano_obra}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Cantidad Esmalte (g)</label>
+                      <input
+                        type="number"
+                        name="cantidad_esmalte"
+                        step="0.01"
+                        defaultValue={editingProduct?.cantidad_esmalte}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Cantidad Esmalte (g)</label>
-                    <input
-                      type="number"
-                      name="cantidad_esmalte"
-                      step="0.01"
-                      defaultValue={editingProduct?.cantidad_esmalte}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                    />
-                  </div>
+                {/* Costos */}
+                <div className="border-t pt-4">
+                  <h3 className="text-md font-semibold text-gray-700 mb-3">Costos (MXN)</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Costo Pasta</label>
+                      <input
+                        type="number"
+                        name="costo_pasta"
+                        step="0.01"
+                        defaultValue={editingProduct?.costo_pasta}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Costo Esmalte (MXN)</label>
-                    <input
-                      type="number"
-                      name="costo_esmalte"
-                      step="0.01"
-                      defaultValue={editingProduct?.costo_esmalte}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Costo Mano de Obra</label>
+                      <input
+                        type="number"
+                        name="costo_mano_obra"
+                        step="0.01"
+                        defaultValue={editingProduct?.costo_mano_obra}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Costo Horneado (MXN)</label>
-                    <input
-                      type="number"
-                      name="costo_horneado"
-                      step="0.01"
-                      defaultValue={editingProduct?.costo_horneado}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Costo Esmalte</label>
+                      <input
+                        type="number"
+                        name="costo_esmalte"
+                        step="0.01"
+                        defaultValue={editingProduct?.costo_esmalte}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Costo Horneado</label>
+                      <input
+                        type="number"
+                        name="costo_horneado"
+                        step="0.01"
+                        defaultValue={editingProduct?.costo_horneado}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Costo H Sancocho</label>
+                      <input
+                        type="number"
+                        name="costo_h_sancocho"
+                        step="0.01"
+                        defaultValue={editingProduct?.costo_h_sancocho}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1106,7 +1125,7 @@ const Produccion: React.FC = () => {
                 {/* Costs */}
                 <div className="border-t pt-4">
                   <h3 className="text-lg font-semibold text-gray-700 mb-3">Costos (MXN)</h3>
-                  <div className="grid grid-cols-4 gap-4">
+                  <div className="grid grid-cols-5 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-500 mb-1">Pasta</label>
                       <p className="text-gray-900">{viewingProduct.costo_pasta ? `$${Number(viewingProduct.costo_pasta).toFixed(2)}` : '-'}</p>
@@ -1123,11 +1142,15 @@ const Produccion: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-500 mb-1">Horneado</label>
                       <p className="text-gray-900">{viewingProduct.costo_horneado ? `$${Number(viewingProduct.costo_horneado).toFixed(2)}` : '-'}</p>
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">H Sancocho</label>
+                      <p className="text-gray-900">{viewingProduct.costo_h_sancocho ? `$${Number(viewingProduct.costo_h_sancocho).toFixed(2)}` : '-'}</p>
+                    </div>
                   </div>
                   <div className="mt-4 pt-4 border-t">
                     <label className="block text-sm font-medium text-gray-500 mb-1">Costo Total</label>
                     <p className="text-2xl font-bold text-green-600">
-                      ${(Number(viewingProduct.costo_pasta || 0) + Number(viewingProduct.costo_mano_obra || 0) + Number(viewingProduct.costo_esmalte || 0) + Number(viewingProduct.costo_horneado || 0)).toFixed(2)} MXN
+                      ${(Number(viewingProduct.costo_pasta || 0) + Number(viewingProduct.costo_mano_obra || 0) + Number(viewingProduct.costo_esmalte || 0) + Number(viewingProduct.costo_horneado || 0) + Number(viewingProduct.costo_h_sancocho || 0)).toFixed(2)} MXN
                     </p>
                   </div>
                 </div>

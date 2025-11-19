@@ -78,6 +78,7 @@ export const createProduct = async (req: Request, res: Response) => {
       cantidad_esmalte,
       costo_esmalte,
       costo_horneado,
+      costo_h_sancocho,
       notes
     } = req.body;
 
@@ -90,9 +91,9 @@ export const createProduct = async (req: Request, res: Response) => {
     const result = await pool.query(
       `INSERT INTO produccion_products (
         name, stage, tipo_id, size_id, capacity_id, esmalte_color_id,
-        peso_crudo, peso_esmaltado, costo_pasta, costo_mano_obra, cantidad_esmalte, costo_esmalte, costo_horneado,
+        peso_crudo, peso_esmaltado, costo_pasta, costo_mano_obra, cantidad_esmalte, costo_esmalte, costo_horneado, costo_h_sancocho,
         notes, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
       RETURNING *`,
       [
         name,
@@ -108,6 +109,7 @@ export const createProduct = async (req: Request, res: Response) => {
         cantidad_esmalte || null,
         costo_esmalte || null,
         costo_horneado || null,
+        costo_h_sancocho || null,
         notes || null,
         userId
       ]
@@ -138,6 +140,7 @@ export const updateProduct = async (req: Request, res: Response) => {
       cantidad_esmalte,
       costo_esmalte,
       costo_horneado,
+      costo_h_sancocho,
       notes
     } = req.body;
 
@@ -156,9 +159,10 @@ export const updateProduct = async (req: Request, res: Response) => {
         cantidad_esmalte = COALESCE($11, cantidad_esmalte),
         costo_esmalte = COALESCE($12, costo_esmalte),
         costo_horneado = COALESCE($13, costo_horneado),
-        notes = COALESCE($14, notes),
+        costo_h_sancocho = COALESCE($14, costo_h_sancocho),
+        notes = COALESCE($15, notes),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $15
+      WHERE id = $16
       RETURNING *`,
       [
         name,
@@ -174,6 +178,7 @@ export const updateProduct = async (req: Request, res: Response) => {
         cantidad_esmalte,
         costo_esmalte,
         costo_horneado,
+        costo_h_sancocho,
         notes,
         id
       ]

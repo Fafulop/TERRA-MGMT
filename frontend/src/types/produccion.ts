@@ -49,6 +49,7 @@ export interface Product {
   cantidad_esmalte?: number;
   costo_esmalte?: number;
   costo_horneado?: number;
+  costo_h_sancocho?: number;
   notes?: string;
   created_by: number;
   created_by_name: string;
@@ -70,6 +71,7 @@ export interface ProductFormData {
   cantidad_esmalte?: number;
   costo_esmalte?: number;
   costo_horneado?: number;
+  costo_h_sancocho?: number;
   notes?: string;
 }
 
@@ -89,6 +91,7 @@ export interface InventoryRecord {
   costo_mano_obra: number;
   costo_esmalte: number;
   costo_horneado: number;
+  costo_h_sancocho: number;
   created_at: string;
   updated_at: string;
 }
