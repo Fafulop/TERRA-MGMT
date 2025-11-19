@@ -14,7 +14,8 @@ import {
   CrudoInputFormData,
   SanchoProcessFormData,
   EsmaltadoProcessFormData,
-  AdjustmentFormData
+  AdjustmentFormData,
+  MermaFormData
 } from '../types/produccion';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -42,7 +43,7 @@ const Produccion: React.FC = () => {
 
   // Inventory states
   const [showInventoryForm, setShowInventoryForm] = useState(false);
-  const [inventoryFormType, setInventoryFormType] = useState<'crudo' | 'sancochado' | 'esmaltado' | 'adjustment'>('crudo');
+  const [inventoryFormType, setInventoryFormType] = useState<'crudo' | 'sancochado' | 'esmaltado' | 'adjustment' | 'merma'>('crudo');
   const [visibleMovements, setVisibleMovements] = useState(5);
   const [inventoryItems, setInventoryItems] = useState<Array<{
     product_id: string;
@@ -265,6 +266,36 @@ const Produccion: React.FC = () => {
     }
   });
 
+  const mermaMutation = useMutation({
+    mutationFn: async (items: MermaFormData[]) => {
+      await Promise.all(
+        items.map(data => axios.post(`${API_URL}/produccion/inventory/merma`, data, { headers: getHeaders() }))
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['produccion-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['produccion-inventory-movements'] });
+      setShowInventoryForm(false);
+      setInventoryItems([{ product_id: '', quantity: '', notes: '' }]);
+    },
+    onError: (error: any) => {
+      const errorData = error.response?.data;
+      if (errorData?.details) {
+        const { product_name, stage, available, requested, missing } = errorData.details;
+        alert(
+          `❌ ${errorData.error}\n\n` +
+          `Producto: ${product_name}\n` +
+          `Etapa: ${stage}\n\n` +
+          `Disponible: ${available}\n` +
+          `Solicitado: ${requested}\n` +
+          `Faltante: ${missing}`
+        );
+      } else {
+        alert(errorData?.error || 'Error al procesar la operación');
+      }
+    }
+  });
+
   const handleSubmitProduct = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -338,6 +369,15 @@ const Produccion: React.FC = () => {
         notes: item.notes
       }));
       adjustmentMutation.mutate(items);
+    } else if (inventoryFormType === 'merma') {
+      const items: MermaFormData[] = validItems.map(item => ({
+        product_id: Number(item.product_id),
+        stage: item.stage as 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO',
+        esmalte_color_id: item.esmalte_color_id ? Number(item.esmalte_color_id) : undefined,
+        quantity: Number(item.quantity),
+        notes: item.notes
+      }));
+      mermaMutation.mutate(items);
     }
   };
 
@@ -365,8 +405,8 @@ const Produccion: React.FC = () => {
   };
 
   const getAvailableProducts = (currentIndex: number) => {
-    // For esmaltado and adjustment forms, allow same product multiple times (blocking is at combination level)
-    if (inventoryFormType === 'esmaltado' || inventoryFormType === 'adjustment') {
+    // For esmaltado, adjustment, and merma forms, allow same product multiple times (blocking is at combination level)
+    if (inventoryFormType === 'esmaltado' || inventoryFormType === 'adjustment' || inventoryFormType === 'merma') {
       return products;
     }
 
@@ -401,8 +441,8 @@ const Produccion: React.FC = () => {
       return esmalteColors.filter(color => !selectedCombinations.includes(color.id.toString()));
     }
 
-    // Filter colors for adjustment form type (product + stage + color combination)
-    if (inventoryFormType === 'adjustment') {
+    // Filter colors for adjustment and merma form types (product + stage + color combination)
+    if (inventoryFormType === 'adjustment' || inventoryFormType === 'merma') {
       const currentProduct = inventoryItems[currentIndex]?.product_id;
       const currentStage = inventoryItems[currentIndex]?.stage;
 
@@ -587,7 +627,7 @@ const Produccion: React.FC = () => {
         {activeTab === 'inventory' && (
           <div className="space-y-4 sm:space-y-6">
             {/* Action Buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
               <button
                 onClick={() => {
                   setInventoryFormType('crudo');
@@ -617,6 +657,16 @@ const Produccion: React.FC = () => {
                 className="bg-green-600 text-white px-4 py-3 rounded-md hover:bg-green-700 font-medium text-sm sm:text-base"
               >
                 ESMALTADO
+              </button>
+              <button
+                onClick={() => {
+                  setInventoryFormType('merma');
+                  setInventoryItems([{ product_id: '', quantity: '', notes: '', stage: '' }]);
+                  setShowInventoryForm(true);
+                }}
+                className="bg-red-600 text-white px-4 py-3 rounded-md hover:bg-red-700 font-medium text-sm sm:text-base"
+              >
+                MERMA
               </button>
               <button
                 onClick={() => {
@@ -743,6 +793,7 @@ const Produccion: React.FC = () => {
                               movement.movement_type === 'CRUDO_INPUT' ? 'bg-yellow-100 text-yellow-800' :
                               movement.movement_type === 'SANCOCHADO_PROCESS' ? 'bg-orange-100 text-orange-800' :
                               movement.movement_type === 'ESMALTADO_PROCESS' ? 'bg-green-100 text-green-800' :
+                              movement.movement_type === 'MERMA' ? 'bg-red-100 text-red-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
                               {movement.movement_type.replace('_', ' ')}
@@ -1209,19 +1260,28 @@ const Produccion: React.FC = () => {
                 {inventoryFormType === 'sancochado' && 'Procesar a SANCOCHADO'}
                 {inventoryFormType === 'esmaltado' && 'Procesar a ESMALTADO'}
                 {inventoryFormType === 'adjustment' && 'Ajuste de Inventario'}
+                {inventoryFormType === 'merma' && 'Registrar MERMA'}
               </h2>
 
               <form onSubmit={handleSubmitInventoryForm} className="space-y-3 sm:space-y-4">
+                {inventoryFormType === 'crudo' && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2 sm:p-3">
+                    <p className="text-xs sm:text-sm text-yellow-800">
+                      <strong>Nota:</strong> Agregar productos incluso si rotos o defectuosos.
+                    </p>
+                  </div>
+                )}
+
                 {inventoryFormType === 'sancochado' && (
                   <>
-                    <div className="bg-orange-50 border border-orange-200 rounded-md p-2 sm:p-3">
-                      <p className="text-xs sm:text-sm text-orange-800">
-                        <strong>Nota:</strong> Esto restará la cantidad del inventario CRUDO y la agregará al inventario SANCOCHADO.
-                      </p>
-                    </div>
                     <div className="bg-orange-100 border border-orange-300 rounded-md p-2 sm:p-3">
                       <p className="text-xs sm:text-sm text-orange-900 font-semibold">
                         NOTA: USAR ESTE MODULO A LA HORA DE SACAR HORNO DE SANCOCHADO Y CONTAR LAS PIEZAS
+                      </p>
+                    </div>
+                    <div className="bg-orange-50 border border-orange-200 rounded-md p-2 sm:p-3">
+                      <p className="text-xs sm:text-sm text-orange-800">
+                        <strong>Nota:</strong> Agregar productos incluso si rotos o defectuosos.
                       </p>
                     </div>
                   </>
@@ -1229,14 +1289,14 @@ const Produccion: React.FC = () => {
 
                 {inventoryFormType === 'esmaltado' && (
                   <>
-                    <div className="bg-green-50 border border-green-200 rounded-md p-2 sm:p-3">
-                      <p className="text-xs sm:text-sm text-green-800">
-                        <strong>Nota:</strong> Esto restará la cantidad del inventario SANCOCHADO y la agregará al inventario ESMALTADO con el color seleccionado.
-                      </p>
-                    </div>
                     <div className="bg-green-100 border border-green-300 rounded-md p-2 sm:p-3">
                       <p className="text-xs sm:text-sm text-green-900 font-semibold">
                         NOTA: USAR ESTE MODULO A LA HORA DE SACAR HORNO DE ESMALTADO
+                      </p>
+                    </div>
+                    <div className="bg-green-50 border border-green-200 rounded-md p-2 sm:p-3">
+                      <p className="text-xs sm:text-sm text-green-800">
+                        <strong>Nota:</strong> Agregar productos incluso si rotos o defectuosos.
                       </p>
                     </div>
                   </>
@@ -1245,7 +1305,15 @@ const Produccion: React.FC = () => {
                 {inventoryFormType === 'adjustment' && (
                   <div className="bg-blue-50 border border-blue-200 rounded-md p-2 sm:p-3">
                     <p className="text-xs sm:text-sm text-blue-800">
-                      <strong>Nota:</strong> Ingresa la cantidad total deseada. El sistema calculará automáticamente el ajuste necesario.
+                      <strong>Nota:</strong> Ingresa la cantidad total deseada.
+                    </p>
+                  </div>
+                )}
+
+                {inventoryFormType === 'merma' && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-2 sm:p-3">
+                    <p className="text-xs sm:text-sm text-red-800">
+                      <strong>Nota:</strong> Esto restará la cantidad del inventario seleccionado para registrar productos rotos o defectuosos.
                     </p>
                   </div>
                 )}
@@ -1256,10 +1324,10 @@ const Produccion: React.FC = () => {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                        {inventoryFormType === 'adjustment' && (
+                        {(inventoryFormType === 'adjustment' || inventoryFormType === 'merma') && (
                           <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Etapa</th>
                         )}
-                        {(inventoryFormType === 'esmaltado' || inventoryFormType === 'adjustment') && (
+                        {(inventoryFormType === 'esmaltado' || inventoryFormType === 'adjustment' || inventoryFormType === 'merma') && (
                           <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Color</th>
                         )}
                         <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
@@ -1291,7 +1359,7 @@ const Produccion: React.FC = () => {
                             </select>
                           </td>
 
-                          {inventoryFormType === 'adjustment' && (
+                          {(inventoryFormType === 'adjustment' || inventoryFormType === 'merma') && (
                             <td className="px-2 sm:px-3 py-2">
                               <select
                                 value={item.stage || ''}
@@ -1307,7 +1375,7 @@ const Produccion: React.FC = () => {
                             </td>
                           )}
 
-                          {(inventoryFormType === 'esmaltado' || inventoryFormType === 'adjustment') && (
+                          {(inventoryFormType === 'esmaltado' || inventoryFormType === 'adjustment' || inventoryFormType === 'merma') && (
                             <td className="px-2 sm:px-3 py-2 hidden sm:table-cell">
                               <select
                                 value={item.esmalte_color_id || ''}
@@ -1390,10 +1458,11 @@ const Produccion: React.FC = () => {
                       inventoryFormType === 'crudo' ? 'bg-yellow-600 hover:bg-yellow-700' :
                       inventoryFormType === 'sancochado' ? 'bg-orange-600 hover:bg-orange-700' :
                       inventoryFormType === 'esmaltado' ? 'bg-green-600 hover:bg-green-700' :
+                      inventoryFormType === 'merma' ? 'bg-red-600 hover:bg-red-700' :
                       'bg-gray-600 hover:bg-gray-700'
                     }`}
                   >
-                    {inventoryFormType === 'adjustment' ? 'Ajustar' : 'Procesar'} ({inventoryItems.filter(item => item.product_id && item.quantity).length})
+                    {inventoryFormType === 'adjustment' ? 'Ajustar' : inventoryFormType === 'merma' ? 'Registrar' : 'Procesar'} ({inventoryItems.filter(item => item.product_id && item.quantity).length})
                   </button>
                 </div>
               </form>

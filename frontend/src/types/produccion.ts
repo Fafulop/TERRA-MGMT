@@ -101,7 +101,7 @@ export interface InventoryMovement {
   product_id: number;
   product_name: string;
   tipo_name: string;
-  movement_type: 'CRUDO_INPUT' | 'SANCOCHADO_PROCESS' | 'ESMALTADO_PROCESS' | 'ADJUSTMENT';
+  movement_type: 'CRUDO_INPUT' | 'SANCOCHADO_PROCESS' | 'ESMALTADO_PROCESS' | 'ADJUSTMENT' | 'MERMA';
   from_stage: 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO' | null;
   to_stage: 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO' | null;
   from_color_id: number | null;
@@ -135,6 +135,14 @@ export interface EsmaltadoProcessFormData {
 }
 
 export interface AdjustmentFormData {
+  product_id: number;
+  stage: 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO';
+  esmalte_color_id?: number;
+  quantity: number;
+  notes?: string;
+}
+
+export interface MermaFormData {
   product_id: number;
   stage: 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO';
   esmalte_color_id?: number;

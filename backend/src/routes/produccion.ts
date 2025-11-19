@@ -27,7 +27,8 @@ import {
   processCrudoInput,
   processSancochado,
   processEsmaltado,
-  processAdjustment
+  processAdjustment,
+  processMerma
 } from '../controllers/produccionInventoryController';
 
 const router = express.Router();
@@ -71,5 +72,6 @@ router.post('/inventory/crudo-input', processCrudoInput);
 router.post('/inventory/sancochado-process', processSancochado);
 router.post('/inventory/esmaltado-process', processEsmaltado);
 router.post('/inventory/adjustment', processAdjustment);
+router.post('/inventory/merma', processMerma);
 
 export default router;

@@ -334,3 +334,82 @@ export const processAdjustment = async (req: Request, res: Response) => {
     client.release();
   }
 };
+
+// Process MERMA (discount defective/broken products from inventory)
+export const processMerma = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    const { product_id, stage, esmalte_color_id, quantity, notes } = req.body;
+    const userId = (req as any).user?.id || 1;
+
+    // Validation
+    if (!product_id || !stage || !quantity || quantity <= 0) {
+      return res.status(400).json({
+        error: 'Product, stage, and positive quantity required'
+      });
+    }
+
+    // Validate color is only for ESMALTADO
+    if (stage !== 'ESMALTADO' && esmalte_color_id) {
+      return res.status(400).json({
+        error: 'Esmalte color only allowed for ESMALTADO stage'
+      });
+    }
+
+    await client.query('BEGIN');
+
+    // Get inventory record
+    const colorId = stage === 'ESMALTADO' ? esmalte_color_id : null;
+    const inventory = await getOrCreateInventory(product_id, stage, colorId, client);
+
+    // Check if sufficient inventory exists
+    if (inventory.quantity < quantity) {
+      const missing = quantity - inventory.quantity;
+
+      // Get product name for error message
+      const productInfo = await client.query(
+        'SELECT name FROM produccion_products WHERE id = $1',
+        [product_id]
+      );
+
+      await client.query('ROLLBACK');
+
+      return res.status(400).json({
+        error: `Inventario ${stage} insuficiente`,
+        details: {
+          product_name: productInfo.rows[0]?.name || 'Producto',
+          stage: stage,
+          available: inventory.quantity,
+          requested: quantity,
+          missing: missing
+        }
+      });
+    }
+
+    // Subtract from inventory
+    await client.query(
+      `UPDATE produccion_inventory
+       SET quantity = quantity - $1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2`,
+      [quantity, inventory.id]
+    );
+
+    // Record movement (negative quantity to indicate removal)
+    await client.query(
+      `INSERT INTO produccion_inventory_movements
+       (product_id, movement_type, from_stage, from_color_id, quantity, notes, created_by)
+       VALUES ($1, 'MERMA', $2, $3, $4, $5, $6)`,
+      [product_id, stage, colorId, -quantity, notes, userId]
+    );
+
+    await client.query('COMMIT');
+    res.status(200).json({ message: 'MERMA registrada exitosamente' });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error processing MERMA:', error);
+    res.status(500).json({ error: 'Failed to process MERMA' });
+  } finally {
+    client.release();
+  }
+};
