@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import {
@@ -22,7 +22,20 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const Produccion: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'products' | 'inventory' | 'masterdata'>('products');
+
+  // Check URL parameter on mount to set initial tab
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'inventory') {
+      setActiveTab('inventory');
+    } else if (tab === 'masterdata') {
+      setActiveTab('masterdata');
+    } else if (tab === 'products') {
+      setActiveTab('products');
+    }
+  }, [searchParams]);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
@@ -30,6 +43,7 @@ const Produccion: React.FC = () => {
   // Inventory states
   const [showInventoryForm, setShowInventoryForm] = useState(false);
   const [inventoryFormType, setInventoryFormType] = useState<'crudo' | 'sancochado' | 'esmaltado' | 'adjustment'>('crudo');
+  const [visibleMovements, setVisibleMovements] = useState(5);
   const [inventoryItems, setInventoryItems] = useState<Array<{
     product_id: string;
     quantity: string;

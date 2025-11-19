@@ -344,7 +344,7 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Bank Account
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden">
                 Internal ID
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -447,7 +447,7 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {entry.bankAccount}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 hidden">
                     {entry.internalId}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

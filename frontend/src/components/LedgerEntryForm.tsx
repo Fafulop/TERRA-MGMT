@@ -51,13 +51,14 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
     removeFacturaAttachment
   } = useFacturaManager();
 
-  const bankAccounts = currency === 'USD' 
+  const bankAccounts = currency === 'USD'
     ? [
         'Mercury Cheques',
         'Mercury Credit Card'
       ]
     : [
-        'Santander'
+        'BANK',
+        'EFECTIVO'
       ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -95,7 +96,7 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
     }
 
     if (!formData.bankAccount) {
-      newErrors.bankAccount = 'Bank account is required';
+      newErrors.bankAccount = 'Método de pago es requerido';
     }
 
     if (formData.amount <= 0) {
@@ -265,7 +266,7 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
         {/* Bank Account */}
         <div>
           <label htmlFor="bankAccount" className="block text-sm font-medium text-gray-700 mb-2">
-            Bank Account *
+            MÉTODO DE PAGO *
           </label>
           <select
             id="bankAccount"
@@ -276,7 +277,7 @@ const LedgerEntryForm: React.FC<LedgerEntryFormProps> = ({
               errors.bankAccount ? 'border-red-300' : 'border-gray-300'
             }`}
           >
-            <option value="">Select bank account...</option>
+            <option value="">Seleccionar método de pago...</option>
             {bankAccounts.map((account) => (
               <option key={account} value={account}>
                 {account}
