@@ -353,15 +353,54 @@ const Produccion: React.FC = () => {
   const updateInventoryRow = (index: number, field: string, value: string) => {
     const newItems = [...inventoryItems];
     newItems[index] = { ...newItems[index], [field]: value };
+
+    // If changing product in esmaltado mode, clear the color selection
+    // so user can select from available colors for the new product
+    if (field === 'product_id' && inventoryFormType === 'esmaltado') {
+      newItems[index].esmalte_color_id = '';
+    }
+
     setInventoryItems(newItems);
   };
 
   const getAvailableProducts = (currentIndex: number) => {
+    // For esmaltado form, allow same product multiple times (blocking is at color level)
+    if (inventoryFormType === 'esmaltado') {
+      return products;
+    }
+
+    // For other forms, block already selected products
     const selectedProductIds = inventoryItems
       .map((item, idx) => idx !== currentIndex ? item.product_id : null)
       .filter(id => id !== null && id !== '');
 
     return products.filter(product => !selectedProductIds.includes(product.id.toString()));
+  };
+
+  const getAvailableColors = (currentIndex: number) => {
+    // Only filter colors for esmaltado form type
+    if (inventoryFormType !== 'esmaltado') {
+      return esmalteColors;
+    }
+
+    const currentProduct = inventoryItems[currentIndex]?.product_id;
+
+    if (!currentProduct) {
+      return esmalteColors;
+    }
+
+    // Get all product+color combinations already selected (excluding current row)
+    const selectedCombinations = inventoryItems
+      .map((item, idx) => {
+        if (idx !== currentIndex && item.product_id === currentProduct && item.esmalte_color_id) {
+          return item.esmalte_color_id;
+        }
+        return null;
+      })
+      .filter(id => id !== null && id !== '');
+
+    // Filter out colors already used for this product
+    return esmalteColors.filter(color => !selectedCombinations.includes(color.id.toString()));
   };
 
   return (
@@ -1169,6 +1208,7 @@ const Produccion: React.FC = () => {
                     <tbody className="bg-white divide-y divide-gray-200">
                       {inventoryItems.map((item, index) => {
                         const availableProducts = getAvailableProducts(index);
+                        const availableColors = getAvailableColors(index);
                         return (
                         <tr key={index}>
                           <td className="px-2 sm:px-3 py-2">
@@ -1212,7 +1252,7 @@ const Produccion: React.FC = () => {
                                 className="block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-xs sm:text-sm"
                               >
                                 <option value="">Seleccionar...</option>
-                                {esmalteColors.map((color: EsmalteColor) => (
+                                {availableColors.map((color: EsmalteColor) => (
                                   <option key={color.id} value={color.id}>{color.color}</option>
                                 ))}
                               </select>
