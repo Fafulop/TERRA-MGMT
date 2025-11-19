@@ -124,7 +124,8 @@ const CashFlow = () => {
       if (!grouped[entry.area][entry.subarea]) {
         grouped[entry.area][entry.subarea] = 0;
       }
-      grouped[entry.area][entry.subarea] += entry.amount;
+      // Use absolute value to ensure all amounts are positive for display/calculation
+      grouped[entry.area][entry.subarea] += Math.abs(entry.amount);
     });
 
     return grouped;
