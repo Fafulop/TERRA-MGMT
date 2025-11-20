@@ -23,6 +23,14 @@ const VentasMayoreo: React.FC = () => {
   const [customerAddress, setCustomerAddress] = useState('');
   const [validUntil, setValidUntil] = useState('');
   const [notes, setNotes] = useState('');
+  const [terms, setTerms] = useState(`CONDICIONES:
+- Precio sujeto a cambio sin previo aviso
+- Entrega según disponibilidad
+- Garantía de 30 días por defectos de fabricación
+- No se aceptan devoluciones sin autorización previa
+- Tiempo de entrega: 15-20 días hábiles
+
+(Edite este texto según sus necesidades)`);
 
   // Items
   const [items, setItems] = useState<QuotationItemFormData[]>([
@@ -87,6 +95,7 @@ const VentasMayoreo: React.FC = () => {
     setCustomerAddress(fullQuote.customer_address || '');
     setValidUntil(fullQuote.valid_until ? fullQuote.valid_until.split('T')[0] : '');
     setNotes(fullQuote.notes || '');
+    setTerms(fullQuote.terms || '');
 
     // Pre-fill items
     if (fullQuote.items && fullQuote.items.length > 0) {
@@ -124,6 +133,7 @@ const VentasMayoreo: React.FC = () => {
       customer_address: customerAddress,
       valid_until: validUntil,
       notes,
+      terms,
       items,
     };
 
@@ -142,6 +152,14 @@ const VentasMayoreo: React.FC = () => {
     setCustomerAddress('');
     setValidUntil('');
     setNotes('');
+    setTerms(`CONDICIONES:
+- Precio sujeto a cambio sin previo aviso
+- Entrega según disponibilidad
+- Garantía de 30 días por defectos de fabricación
+- No se aceptan devoluciones sin autorización previa
+- Tiempo de entrega: 15-20 días hábiles
+
+(Edite este texto según sus necesidades)`);
     setItems([{ product_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }]);
     setEditingQuoteId(null);
     setShowForm(false);
@@ -154,6 +172,14 @@ const VentasMayoreo: React.FC = () => {
     setCustomerAddress('');
     setValidUntil('');
     setNotes('');
+    setTerms(`CONDICIONES:
+- Precio sujeto a cambio sin previo aviso
+- Entrega según disponibilidad
+- Garantía de 30 días por defectos de fabricación
+- No se aceptan devoluciones sin autorización previa
+- Tiempo de entrega: 15-20 días hábiles
+
+(Edite este texto según sus necesidades)`);
     setItems([{ product_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }]);
     setEditingQuoteId(null);
     setShowForm(false);
@@ -461,6 +487,23 @@ const VentasMayoreo: React.FC = () => {
                 />
               </div>
 
+              {/* Terms and Conditions */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Términos y Condiciones
+                </label>
+                <textarea
+                  value={terms}
+                  onChange={(e) => setTerms(e.target.value)}
+                  rows={8}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm"
+                  placeholder="Ingrese los términos y condiciones..."
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Estos términos aparecerán en la cotización. Puede editar el texto según sus necesidades.
+                </p>
+              </div>
+
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
@@ -678,6 +721,16 @@ const VentasMayoreo: React.FC = () => {
                 <div className="border-t pt-4 mb-6">
                   <h3 className="font-semibold text-gray-700 mb-2">Notas</h3>
                   <p className="text-gray-600 whitespace-pre-wrap">{viewingQuoteDetails.notes}</p>
+                </div>
+              )}
+
+              {/* Terms */}
+              {viewingQuoteDetails.terms && (
+                <div className="border-t pt-4 mb-6">
+                  <h3 className="font-semibold text-gray-700 mb-2">Términos y Condiciones</h3>
+                  <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                    <p className="text-gray-700 whitespace-pre-wrap font-mono text-sm">{viewingQuoteDetails.terms}</p>
+                  </div>
                 </div>
               )}
 

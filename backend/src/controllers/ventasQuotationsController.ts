@@ -70,6 +70,7 @@ export const createQuotation = async (req: Request, res: Response) => {
       customer_address,
       valid_until,
       notes,
+      terms,
       items,
     } = req.body;
 
@@ -99,9 +100,10 @@ export const createQuotation = async (req: Request, res: Response) => {
         customer_address,
         valid_until,
         notes,
+        terms,
         created_by
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `, [
       quotation_number,
@@ -111,6 +113,7 @@ export const createQuotation = async (req: Request, res: Response) => {
       customer_address || null,
       valid_until || null,
       notes || null,
+      terms || null,
       userId,
     ]);
 
@@ -183,6 +186,7 @@ export const updateQuotation = async (req: Request, res: Response) => {
       customer_address,
       valid_until,
       notes,
+      terms,
       items,
     } = req.body;
 
@@ -204,8 +208,9 @@ export const updateQuotation = async (req: Request, res: Response) => {
         customer_address = $4,
         valid_until = $5,
         notes = $6,
+        terms = $7,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $7
+      WHERE id = $8
     `, [
       customer_name,
       customer_email || null,
@@ -213,6 +218,7 @@ export const updateQuotation = async (req: Request, res: Response) => {
       customer_address || null,
       valid_until || null,
       notes || null,
+      terms || null,
       id,
     ]);
 

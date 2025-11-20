@@ -30,6 +30,7 @@ export interface Quotation {
   total: number;
   valid_until?: string;
   notes?: string;
+  terms?: string;
   created_by: number;
   created_by_name: string;
   created_at: string;
@@ -44,6 +45,7 @@ export interface QuotationFormData {
   customer_address?: string;
   valid_until?: string;
   notes?: string;
+  terms?: string;
   items: QuotationItemFormData[];
 }
 

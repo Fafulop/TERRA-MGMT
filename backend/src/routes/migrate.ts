@@ -1352,4 +1352,48 @@ router.post('/ventas-quotations', async (req: Request, res: Response) => {
   }
 });
 
+router.post('/ventas-quotations-add-terms', async (req: Request, res: Response) => {
+  try {
+    console.log('Adding terms field to ventas_quotations...');
+
+    const sqlPath = path.join(__dirname, '..', 'config', 'ventas-quotations-add-terms.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Terms field added to ventas_quotations successfully!',
+      column_added: 'terms TEXT'
+    });
+  } catch (error) {
+    console.error('Ventas quotations terms migration error:', error);
+    res.status(500).json({
+      error: 'Failed to add terms field to ventas_quotations',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+router.post('/fix-quotation-number-function', async (req: Request, res: Response) => {
+  try {
+    console.log('Fixing quotation number generation function...');
+
+    const sqlPath = path.join(__dirname, '..', 'config', 'fix-quotation-number-function.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Quotation number function fixed successfully!',
+      fix: 'Changed SUBSTRING position from 10 to 12 to correctly extract sequence number'
+    });
+  } catch (error) {
+    console.error('Fix quotation number function error:', error);
+    res.status(500).json({
+      error: 'Failed to fix quotation number function',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

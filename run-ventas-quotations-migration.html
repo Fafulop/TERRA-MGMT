@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Run Ventas Quotations Migration</title>
+</head>
+<body>
+  <h1>Ventas Quotations Migration</h1>
+  <button onclick="runMigration()">Run Migration</button>
+  <pre id="output"></pre>
+
+  <script>
+    async function runMigration() {
+      const output = document.getElementById('output');
+      output.textContent = 'Running migration...\n';
+
+      try {
+        const response = await fetch('http://localhost:5000/api/migrate/ventas-quotations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          output.textContent += 'SUCCESS!\n';
+          output.textContent += JSON.stringify(result, null, 2);
+        } else {
+          output.textContent += 'FAILED!\n';
+          output.textContent += JSON.stringify(result, null, 2);
+        }
+      } catch (error) {
+        output.textContent += 'ERROR!\n';
+        output.textContent += error.message;
+      }
+    }
+  </script>
+</body>
+</html>

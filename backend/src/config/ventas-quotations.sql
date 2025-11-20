@@ -49,7 +49,8 @@ BEGIN
     year_part := TO_CHAR(CURRENT_DATE, 'YYYY');
     month_part := TO_CHAR(CURRENT_DATE, 'MM');
 
-    SELECT COALESCE(MAX(CAST(SUBSTRING(quotation_number FROM 10 FOR 6) AS INTEGER)), 0) + 1
+    -- COT-YYYYMM-NNNNNN (sequence starts at position 12)
+    SELECT COALESCE(MAX(CAST(SUBSTRING(quotation_number FROM 12 FOR 6) AS INTEGER)), 0) + 1
     INTO next_number
     FROM ventas_quotations
     WHERE quotation_number LIKE 'COT-' || year_part || month_part || '%';
