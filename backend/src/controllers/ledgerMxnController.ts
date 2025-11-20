@@ -443,10 +443,10 @@ export const updateMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
       por_realizar = false
     } = req.body;
 
-    // Check if entry exists and belongs to user
-    const checkQuery = 'SELECT id FROM ledger_entries_mxn WHERE id = $1 AND user_id = $2';
-    const checkResult = await db.query(checkQuery, [id, userId]);
-    
+    // Check if entry exists
+    const checkQuery = 'SELECT id FROM ledger_entries_mxn WHERE id = $1';
+    const checkResult = await db.query(checkQuery, [id]);
+
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: 'MXN ledger entry not found' });
     }
@@ -464,8 +464,8 @@ export const updateMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
     const finalAmount = entryType === 'expense' ? -Math.abs(parseFloat(amount)) : Math.abs(parseFloat(amount));
 
     const updateQuery = `
-      UPDATE ledger_entries_mxn 
-      SET 
+      UPDATE ledger_entries_mxn
+      SET
         amount = $1,
         concept = $2,
         bank_account = $3,
@@ -476,10 +476,10 @@ export const updateMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
         subarea = $8,
         por_realizar = $9,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $10 AND user_id = $11
+      WHERE id = $10
       RETURNING *
     `;
-    
+
     const updateValues = [
       finalAmount,
       concept,
@@ -490,8 +490,7 @@ export const updateMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
       area?.trim() || null,
       subarea?.trim() || null,
       por_realizar,
-      id,
-      userId
+      id
     ];
 
     const result = await db.query(updateQuery, updateValues);
@@ -529,17 +528,17 @@ export const deleteMxnLedgerEntry = async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    // Check if entry exists and belongs to user
-    const checkQuery = 'SELECT id FROM ledger_entries_mxn WHERE id = $1 AND user_id = $2';
-    const checkResult = await db.query(checkQuery, [id, userId]);
-    
+    // Check if entry exists
+    const checkQuery = 'SELECT id FROM ledger_entries_mxn WHERE id = $1';
+    const checkResult = await db.query(checkQuery, [id]);
+
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: 'MXN ledger entry not found' });
     }
 
     // Delete entry (attachments will be deleted automatically due to CASCADE)
-    const deleteQuery = 'DELETE FROM ledger_entries_mxn WHERE id = $1 AND user_id = $2';
-    await db.query(deleteQuery, [id, userId]);
+    const deleteQuery = 'DELETE FROM ledger_entries_mxn WHERE id = $1';
+    await db.query(deleteQuery, [id]);
 
     res.json({ message: 'MXN ledger entry deleted successfully' });
   } catch (error) {
@@ -607,10 +606,10 @@ export const markMxnAsRealized = async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
     const { id } = req.params;
 
-    // Check if entry exists and belongs to user
-    const checkQuery = 'SELECT id, por_realizar FROM ledger_entries_mxn WHERE id = $1 AND user_id = $2';
-    const checkResult = await db.query(checkQuery, [id, userId]);
-    
+    // Check if entry exists
+    const checkQuery = 'SELECT id, por_realizar FROM ledger_entries_mxn WHERE id = $1';
+    const checkResult = await db.query(checkQuery, [id]);
+
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: 'Entry not found' });
     }
@@ -622,15 +621,15 @@ export const markMxnAsRealized = async (req: AuthRequest, res: Response) => {
 
     // Update entry to mark as realized
     const updateQuery = `
-      UPDATE ledger_entries_mxn 
-      SET 
+      UPDATE ledger_entries_mxn
+      SET
         por_realizar = FALSE,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1 AND user_id = $2
+      WHERE id = $1
       RETURNING *
     `;
 
-    const result = await db.query(updateQuery, [id, userId]);
+    const result = await db.query(updateQuery, [id]);
     const updatedEntry = result.rows[0];
 
     res.json({

@@ -495,7 +495,7 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex justify-end space-x-8">
-                      {onEditEntry && entry.userId === currentUserId && (
+                      {onEditEntry && (
                         <button
                           onClick={() => onEditEntry(entry)}
                           className="text-blue-600 hover:text-blue-900"
@@ -506,7 +506,7 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
                           </svg>
                         </button>
                       )}
-                      {onMarkAsRealized && entry.por_realizar && entry.userId === currentUserId && (
+                      {onMarkAsRealized && entry.por_realizar && (
                         <button
                           onClick={() => onMarkAsRealized(entry.id)}
                           className="text-green-600 hover:text-green-900"
@@ -517,7 +517,7 @@ const LedgerTable: React.FC<LedgerTableProps> = ({
                           </svg>
                         </button>
                       )}
-                      {onDeleteEntry && entry.userId === currentUserId && (
+                      {onDeleteEntry && (
                         <button
                           onClick={() => {
                             setEntryToDelete(entry);
