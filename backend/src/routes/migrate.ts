@@ -1327,4 +1327,29 @@ router.post('/produccion-add-inventory-tables', async (req: Request, res: Respon
   }
 });
 
+router.post('/ventas-quotations', async (req: Request, res: Response) => {
+  try {
+    console.log('Creating ventas quotations tables...');
+
+    const sqlPath = path.join(__dirname, '..', 'config', 'ventas-quotations.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Ventas quotations tables created successfully!',
+      tables: ['ventas_quotations', 'ventas_quotation_items'],
+      functions: ['generate_quotation_number', 'calculate_quotation_item_totals', 'recalculate_quotation_totals'],
+      triggers: ['quotation_item_calculate_totals', 'quotation_items_update_totals'],
+      indexes: ['idx_ventas_quotations_created_at', 'idx_ventas_quotation_items_quotation_id']
+    });
+  } catch (error) {
+    console.error('Ventas quotations migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create ventas quotations tables',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
