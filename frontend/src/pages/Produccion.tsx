@@ -553,7 +553,6 @@ const Produccion: React.FC = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Etapa</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tamaño (CM)</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Capacidad (ML)</th>
@@ -570,15 +569,6 @@ const Produccion: React.FC = () => {
                         onClick={() => setViewingProduct(product)}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            product.stage === 'CRUDO' ? 'bg-yellow-100 text-yellow-800' :
-                            product.stage === 'SANCOCHADO' ? 'bg-orange-100 text-orange-800' :
-                            'bg-green-100 text-green-800'
-                          }`}>
-                            {product.stage}
-                          </span>
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.tipo_name}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.size_cm || '-'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.capacity_ml || '-'}</td>

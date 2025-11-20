@@ -185,6 +185,27 @@ const VentasMayoreo: React.FC = () => {
     setShowForm(false);
   };
 
+  const handleNewQuotation = () => {
+    // Reset form completely before opening
+    setCustomerName('');
+    setCustomerEmail('');
+    setCustomerPhone('');
+    setCustomerAddress('');
+    setValidUntil('');
+    setNotes('');
+    setTerms(`CONDICIONES:
+- Precio sujeto a cambio sin previo aviso
+- Entrega según disponibilidad
+- Garantía de 30 días por defectos de fabricación
+- No se aceptan devoluciones sin autorización previa
+- Tiempo de entrega: 15-20 días hábiles
+
+(Edite este texto según sus necesidades)`);
+    setItems([{ product_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }]);
+    setEditingQuoteId(null);
+    setShowForm(true);
+  };
+
   const formatCurrency = (amount: number) => {
     return `$${Number(amount || 0).toLocaleString('es-MX', {
       minimumFractionDigits: 2,
@@ -250,7 +271,7 @@ const VentasMayoreo: React.FC = () => {
               <h1 className="text-3xl font-bold text-gray-900">Ventas Mayoreo - Cotizaciones</h1>
             </div>
             <button
-              onClick={() => setShowForm(!showForm)}
+              onClick={() => showForm ? handleCancelForm() : handleNewQuotation()}
               className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
             >
               {showForm ? 'Cancelar' : '+ Nueva Cotización'}
