@@ -44,7 +44,8 @@ const Produccion: React.FC = () => {
   // Inventory states
   const [showInventoryForm, setShowInventoryForm] = useState(false);
   const [inventoryFormType, setInventoryFormType] = useState<'crudo' | 'sancochado' | 'esmaltado' | 'adjustment' | 'merma'>('crudo');
-  const [visibleMovements, setVisibleMovements] = useState(5);
+  const [isMovementsCollapsed, setIsMovementsCollapsed] = useState(true);
+  const [visibleMovements, setVisibleMovements] = useState(10);
   const [inventoryItems, setInventoryItems] = useState<Array<{
     product_id: string;
     quantity: string;
@@ -761,67 +762,94 @@ const Produccion: React.FC = () => {
 
             {/* Recent Movements */}
             <div className="bg-white shadow rounded-lg overflow-hidden">
-              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <div
+                className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 flex justify-between items-center"
+                onClick={() => setIsMovementsCollapsed(!isMovementsCollapsed)}
+              >
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">Historial de Movimientos</h2>
+                <svg
+                  className={`w-5 h-5 transition-transform ${isMovementsCollapsed ? '' : 'rotate-180'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </div>
-              {movements.length === 0 ? (
-                <div className="p-6 sm:p-8 text-center text-gray-500 text-sm sm:text-base">
-                  No hay movimientos registrados.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Fecha</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Desde</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Hacia</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Cant.</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Usuario</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {movements.map((movement: InventoryMovement) => (
-                        <tr key={movement.id} className="hover:bg-gray-50">
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden lg:table-cell">
-                            {new Date(movement.created_at).toLocaleString()}
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900">
-                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                              movement.movement_type === 'CRUDO_INPUT' ? 'bg-yellow-100 text-yellow-800' :
-                              movement.movement_type === 'SANCOCHADO_PROCESS' ? 'bg-orange-100 text-orange-800' :
-                              movement.movement_type === 'ESMALTADO_PROCESS' ? 'bg-green-100 text-green-800' :
-                              movement.movement_type === 'MERMA' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {movement.movement_type.replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900">
-                            {movement.product_name}
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden md:table-cell">
-                            {movement.from_stage || '-'}
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden md:table-cell">
-                            {movement.to_stage || '-'}
-                            {movement.to_color && (
-                              <span className="ml-2 text-xs text-gray-500">({movement.to_color})</span>
-                            )}
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-900">
-                            {movement.quantity > 0 ? '+' : ''}{movement.quantity}
-                          </td>
-                          <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden sm:table-cell">
-                            {movement.created_by_name}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              {!isMovementsCollapsed && (
+                <>
+                  {movements.length === 0 ? (
+                    <div className="p-6 sm:p-8 text-center text-gray-500 text-sm sm:text-base">
+                      No hay movimientos registrados.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Fecha</th>
+                              <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                              <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                              <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Desde</th>
+                              <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Hacia</th>
+                              <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Cant.</th>
+                              <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Usuario</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {movements.slice(0, visibleMovements).map((movement: InventoryMovement) => (
+                              <tr key={movement.id} className="hover:bg-gray-50">
+                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden lg:table-cell">
+                                  {new Date(movement.created_at).toLocaleString()}
+                                </td>
+                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900">
+                                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                    movement.movement_type === 'CRUDO_INPUT' ? 'bg-yellow-100 text-yellow-800' :
+                                    movement.movement_type === 'SANCOCHADO_PROCESS' ? 'bg-orange-100 text-orange-800' :
+                                    movement.movement_type === 'ESMALTADO_PROCESS' ? 'bg-green-100 text-green-800' :
+                                    movement.movement_type === 'MERMA' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {movement.movement_type.replace('_', ' ')}
+                                  </span>
+                                </td>
+                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-900">
+                                  {movement.product_name}
+                                </td>
+                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden md:table-cell">
+                                  {movement.from_stage || '-'}
+                                </td>
+                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden md:table-cell">
+                                  {movement.to_stage || '-'}
+                                  {movement.to_color && (
+                                    <span className="ml-2 text-xs text-gray-500">({movement.to_color})</span>
+                                  )}
+                                </td>
+                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold text-gray-900">
+                                  {movement.quantity > 0 ? '+' : ''}{movement.quantity}
+                                </td>
+                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden sm:table-cell">
+                                  {movement.created_by_name}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {visibleMovements < movements.length && (
+                        <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 text-center">
+                          <button
+                            onClick={() => setVisibleMovements(prev => prev + 10)}
+                            className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                          >
+                            Cargar más movimientos ({movements.length - visibleMovements} restantes)
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
               )}
             </div>
           </div>
