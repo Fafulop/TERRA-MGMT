@@ -1396,4 +1396,41 @@ router.post('/fix-quotation-number-function', async (req: Request, res: Response
   }
 });
 
+router.post('/ventas-pedido-payments', async (req: Request, res: Response) => {
+  try {
+    console.log('Creating ventas pedido payments table...');
+
+    const sqlPath = path.join(__dirname, '..', 'config', 'ventas-pedido-payments.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sqlContent);
+
+    res.status(200).json({
+      message: 'Ventas pedido payments table created successfully!',
+      table: 'ventas_pedido_payments',
+      description: 'Links cash flow movements to pedidos for payment tracking',
+      indexes: [
+        'idx_ventas_pedido_payments_pedido_id',
+        'idx_ventas_pedido_payments_ledger_entry_id'
+      ],
+      triggers: [
+        'trigger_ventas_pedido_payments_updated_at',
+        'trigger_recalculate_pedido_payment_totals'
+      ],
+      features: [
+        'Link VENTAS MAYOREO income to pedidos',
+        'Track multiple partial payments per pedido',
+        'Automatic payment status calculation (PENDING/PARTIAL/PAID)',
+        'Automatic amount_paid recalculation on attach/detach'
+      ]
+    });
+  } catch (error) {
+    console.error('Ventas pedido payments migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create ventas pedido payments table',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

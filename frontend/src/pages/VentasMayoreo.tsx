@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useQuotations, useQuotation, useCreateQuotation, useUpdateQuotation, useDeleteQuotation } from '../hooks/useVentasQuotations';
 import { usePedidos, usePedido, useCreatePedido, useUpdatePedidoStatus, useDeletePedido } from '../hooks/useVentasPedidos';
 import { usePedidoInventoryAvailability, useAllocateInventory, usePedidoAllocations, useDeallocateInventory } from '../hooks/useVentasInventory';
+import { useAvailablePayments, usePedidoPayments, useAttachPayment, useDetachPayment } from '../hooks/useVentasPayments';
 import { Quotation, QuotationItemFormData, Pedido } from '../types/ventas';
 import { Product } from '../types/produccion';
 
@@ -74,6 +75,13 @@ const VentasMayoreo: React.FC = () => {
   const { data: pedidoAllocations = [] } = usePedidoAllocations(viewingPedido?.id);
   const allocateInventoryMutation = useAllocateInventory();
   const deallocateInventoryMutation = useDeallocateInventory();
+
+  // Payment tracking hooks
+  const { data: availablePayments = [] } = useAvailablePayments();
+  const { data: pedidoPaymentsData } = usePedidoPayments(viewingPedido?.id);
+  const attachPaymentMutation = useAttachPayment();
+  const detachPaymentMutation = useDetachPayment();
+  const [showPaymentSelector, setShowPaymentSelector] = useState(false);
 
   // Fetch products
   const { data: products = [] } = useQuery({
@@ -1626,6 +1634,123 @@ const VentasMayoreo: React.FC = () => {
                 </div>
               )}
 
+              {/* Payment Tracking Section */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-semibold text-gray-700">Pagos Recibidos</h3>
+                  <button
+                    onClick={() => setShowPaymentSelector(true)}
+                    className="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 active:bg-green-800"
+                  >
+                    + Agregar Pago
+                  </button>
+                </div>
+
+                {/* Payment Summary */}
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase">Total Pedido</div>
+                      <div className="text-lg font-bold text-gray-900">{formatCurrency(viewingPedidoDetails.total)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase">Pagado</div>
+                      <div className="text-lg font-bold text-green-600">{formatCurrency(pedidoPaymentsData?.totalPaid || 0)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase">Restante</div>
+                      <div className={`text-lg font-bold ${(viewingPedidoDetails.total - (pedidoPaymentsData?.totalPaid || 0)) > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                        {formatCurrency(viewingPedidoDetails.total - (pedidoPaymentsData?.totalPaid || 0))}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Payment Progress Bar */}
+                  <div className="mt-3">
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 ${
+                          (pedidoPaymentsData?.totalPaid || 0) >= viewingPedidoDetails.total
+                            ? 'bg-green-500'
+                            : 'bg-blue-500'
+                        }`}
+                        style={{ width: `${Math.min(100, ((pedidoPaymentsData?.totalPaid || 0) / viewingPedidoDetails.total) * 100)}%` }}
+                      />
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1 text-center">
+                      {Math.round(((pedidoPaymentsData?.totalPaid || 0) / viewingPedidoDetails.total) * 100)}% pagado
+                    </div>
+                  </div>
+                </div>
+
+                {/* Attached Payments List */}
+                {pedidoPaymentsData && pedidoPaymentsData.payments.length > 0 ? (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Fecha</th>
+                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Monto</th>
+                          <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600">Concepto</th>
+                          <th className="px-4 py-2 text-center text-xs font-semibold text-gray-600">Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {pedidoPaymentsData.payments.map((payment) => (
+                          <tr key={payment.attachment_id} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {formatDate(payment.transaction_date)}
+                            </td>
+                            <td className="px-4 py-3 text-sm font-semibold text-green-600">
+                              {formatCurrency(payment.amount)}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-700">
+                              <div className="max-w-xs truncate" title={payment.concept}>
+                                {payment.concept}
+                              </div>
+                              <div className="text-xs text-gray-400">{payment.internal_id}</div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => {
+                                  if (confirm('¿Desvincular este pago del pedido?')) {
+                                    detachPaymentMutation.mutate({
+                                      attachmentId: payment.attachment_id,
+                                      pedidoId: viewingPedido!.id
+                                    }, {
+                                      onSuccess: () => {
+                                        alert('Pago desvinculado exitosamente');
+                                      },
+                                      onError: (error: any) => {
+                                        alert(`Error: ${error.response?.data?.details || error.message}`);
+                                      }
+                                    });
+                                  }
+                                }}
+                                disabled={detachPaymentMutation.isPending}
+                                className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                                title="Desvincular pago"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                    <svg className="w-12 h-12 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <p className="text-sm">No hay pagos vinculados a este pedido</p>
+                    <p className="text-xs text-gray-400 mt-1">Haz clic en "+ Agregar Pago" para vincular un movimiento</p>
+                  </div>
+                )}
+              </div>
+
               {/* Totals */}
               <div className="mb-6 bg-gray-50 p-4 rounded">
                 <div className="space-y-2 text-sm">
@@ -1680,6 +1805,114 @@ const VentasMayoreo: React.FC = () => {
             <div className="p-6 border-t border-gray-200 flex justify-end">
               <button
                 onClick={() => setViewingPedido(null)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Selector Modal */}
+      {showPaymentSelector && viewingPedido && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center md:p-4 z-[60] overflow-y-auto">
+          <div className="bg-white md:rounded-lg max-w-3xl w-full h-full md:h-auto md:max-h-[90vh] md:my-8 flex flex-col">
+            <div className="p-4 md:p-6 border-b border-gray-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Seleccionar Pago</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Movimientos de VENTAS MAYOREO disponibles para vincular
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowPaymentSelector(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+              {availablePayments.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  <p className="text-lg font-medium">No hay pagos disponibles</p>
+                  <p className="text-sm mt-1">Todos los movimientos de VENTAS MAYOREO ya están vinculados a pedidos</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Para agregar pagos, crea un ingreso en Cash Flow con Area: VENTAS y Subarea: VENTAS MAYOREO
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {availablePayments.map((payment) => (
+                    <div
+                      key={payment.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:border-green-400 hover:bg-green-50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        if (confirm(`¿Vincular este pago de ${formatCurrency(payment.amount)} al pedido?`)) {
+                          attachPaymentMutation.mutate({
+                            pedido_id: viewingPedido.id,
+                            ledger_entry_id: payment.id,
+                          }, {
+                            onSuccess: () => {
+                              alert('Pago vinculado exitosamente');
+                              setShowPaymentSelector(false);
+                            },
+                            onError: (error: any) => {
+                              alert(`Error: ${error.response?.data?.details || error.message}`);
+                            }
+                          });
+                        }
+                      }}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-lg font-bold text-green-600">
+                              {formatCurrency(payment.amount)}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              {formatDate(payment.transaction_date)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 mb-1">{payment.concept}</p>
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <span>{payment.internal_id}</span>
+                            <span>•</span>
+                            <span>{payment.bank_account}</span>
+                            {payment.username && (
+                              <>
+                                <span>•</span>
+                                <span>Por: {payment.first_name || payment.username}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <button
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 active:bg-green-800"
+                            disabled={attachPaymentMutation.isPending}
+                          >
+                            {attachPaymentMutation.isPending ? 'Vinculando...' : 'Vincular'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 md:p-6 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setShowPaymentSelector(false)}
                 className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
               >
                 Cerrar
