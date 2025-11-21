@@ -1235,66 +1235,118 @@ const VentasMayoreo: React.FC = () => {
                 </div>
               </div>
 
-              {/* Inventory Allocation */}
+              {/* Inventory Allocation Ledger */}
               {pedidoInventory.length > 0 && (
                 <div className="mb-6">
                   <h3 className="font-semibold text-gray-700 mb-3">Inventario Disponible (Etapa Esmaltado)</h3>
-                  <div className="space-y-4">
-                    {pedidoInventory.map((inventoryItem: any) => (
-                      <div key={inventoryItem.pedido_item_id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h4 className="font-medium text-gray-900">
-                              {inventoryItem.product_name}
-                              {inventoryItem.tipo_name && <span className="text-gray-500"> - {inventoryItem.tipo_name}</span>}
-                            </h4>
-                            {inventoryItem.esmalte_color && (
-                              <div className="flex items-center gap-2 mt-1">
-                                {inventoryItem.esmalte_hex_code && (
-                                  <div
-                                    className="w-3 h-3 rounded-full border border-gray-300"
-                                    style={{ backgroundColor: inventoryItem.esmalte_hex_code }}
-                                  />
-                                )}
-                                <span className="text-sm text-gray-600">{inventoryItem.esmalte_color}</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-right text-sm">
-                            <div><span className="text-gray-600">Necesita:</span> <span className="font-semibold">{inventoryItem.quantity_needed}</span></div>
-                            <div><span className="text-gray-600">Apartado:</span> <span className="font-semibold text-blue-600">{inventoryItem.quantity_allocated}</span></div>
-                            <div><span className="text-gray-600">Restante:</span> <span className={`font-semibold ${inventoryItem.still_needed > 0 ? 'text-orange-600' : 'text-green-600'}`}>{inventoryItem.still_needed}</span></div>
-                          </div>
-                        </div>
+                  <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-300">
+                            Producto
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-300">
+                            Color
+                          </th>
+                          <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-300">
+                            Cantidad
+                          </th>
+                          <th className="px-4 py-3 text-center text-xs font-semibold text-blue-700 uppercase tracking-wider border-r border-gray-300">
+                            Apartado
+                          </th>
+                          <th className="px-4 py-3 text-center text-xs font-semibold text-orange-700 uppercase tracking-wider border-r border-gray-300">
+                            Restante
+                          </th>
+                          <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-300">
+                            Lote Cant.
+                          </th>
+                          <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-300">
+                            Apartados
+                          </th>
+                          <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-300">
+                            Disponibles
+                          </th>
+                          <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                            Acción
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y-2 divide-gray-300">
+                        {pedidoInventory.map((inventoryItem: any) => {
+                          const hasInventory = inventoryItem.inventory_items && inventoryItem.inventory_items.length > 0;
+                          const numRows = hasInventory ? inventoryItem.inventory_items.length : 1;
 
-                        {inventoryItem.inventory_items.length === 0 ? (
-                          <div className="text-sm text-gray-500 italic">
-                            No hay inventario disponible en etapa esmaltado para este producto
-                          </div>
-                        ) : (
-                          <div className="overflow-x-auto">
-                            <table className="min-w-full text-sm">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Cant.</th>
-                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Apartados</th>
-                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Disponibles</th>
-                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Acción</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-gray-200">
-                                {inventoryItem.inventory_items.map((inv: any) => {
+                          return (
+                            <React.Fragment key={inventoryItem.pedido_item_id}>
+                              {hasInventory ? (
+                                inventoryItem.inventory_items.map((inv: any, invIdx: number) => {
                                   const canAllocate = inv.disponibles > 0 && inventoryItem.still_needed > 0;
                                   const maxToAllocate = Math.min(inv.disponibles, inventoryItem.still_needed);
 
                                   return (
-                                    <tr key={inv.inventory_id}>
-                                      <td className="px-3 py-2 text-gray-900">{inv.cant}</td>
-                                      <td className="px-3 py-2 text-gray-900">{inv.apartados}</td>
-                                      <td className={`px-3 py-2 font-semibold ${inv.disponibles < 0 ? 'text-red-600' : inv.disponibles === 0 ? 'text-gray-400' : 'text-green-600'}`}>
-                                        {inv.disponibles}
+                                    <tr key={inv.inventory_id} className="hover:bg-gray-50">
+                                      {invIdx === 0 && (
+                                        <>
+                                          <td rowSpan={numRows} className="px-4 py-3 border-r border-gray-200 align-top bg-gray-50">
+                                            <div className="font-medium text-gray-900 text-sm">
+                                              {inventoryItem.product_name}
+                                            </div>
+                                            {inventoryItem.tipo_name && (
+                                              <div className="text-xs text-gray-500 mt-0.5">
+                                                {inventoryItem.tipo_name}
+                                              </div>
+                                            )}
+                                          </td>
+                                          <td rowSpan={numRows} className="px-4 py-3 border-r border-gray-200 align-top bg-gray-50">
+                                            {inventoryItem.esmalte_color ? (
+                                              <div className="flex items-center gap-2">
+                                                {inventoryItem.esmalte_hex_code && (
+                                                  <div
+                                                    className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0"
+                                                    style={{ backgroundColor: inventoryItem.esmalte_hex_code }}
+                                                  />
+                                                )}
+                                                <span className="text-sm text-gray-900">{inventoryItem.esmalte_color}</span>
+                                              </div>
+                                            ) : (
+                                              <span className="text-sm text-gray-400">-</span>
+                                            )}
+                                          </td>
+                                          <td rowSpan={numRows} className="px-4 py-3 text-center border-r border-gray-200 align-top bg-gray-50">
+                                            <span className="text-base font-semibold text-gray-900">
+                                              {inventoryItem.quantity_needed}
+                                            </span>
+                                          </td>
+                                          <td rowSpan={numRows} className="px-4 py-3 text-center border-r border-gray-200 align-top bg-blue-50">
+                                            <span className="text-base font-semibold text-blue-700">
+                                              {inventoryItem.quantity_allocated}
+                                            </span>
+                                          </td>
+                                          <td rowSpan={numRows} className="px-4 py-3 text-center border-r border-gray-200 align-top bg-orange-50">
+                                            <span className={`text-base font-semibold ${inventoryItem.still_needed > 0 ? 'text-orange-700' : 'text-green-700'}`}>
+                                              {inventoryItem.still_needed}
+                                            </span>
+                                            {inventoryItem.shortfall > 0 && (
+                                              <div className="text-xs text-red-600 font-semibold mt-1 whitespace-nowrap">
+                                                ⚠️ Faltan: {inventoryItem.shortfall}
+                                              </div>
+                                            )}
+                                          </td>
+                                        </>
+                                      )}
+                                      <td className="px-3 py-3 text-center border-r border-gray-200">
+                                        <span className="text-sm text-gray-900 font-medium">{inv.cant}</span>
                                       </td>
-                                      <td className="px-3 py-2">
+                                      <td className="px-3 py-3 text-center border-r border-gray-200">
+                                        <span className="text-sm text-gray-900">{inv.apartados}</span>
+                                      </td>
+                                      <td className="px-3 py-3 text-center border-r border-gray-200">
+                                        <span className={`text-sm font-semibold ${inv.disponibles < 0 ? 'text-red-600' : inv.disponibles === 0 ? 'text-gray-400' : 'text-green-600'}`}>
+                                          {inv.disponibles}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-3 text-center">
                                         {canAllocate ? (
                                           <button
                                             onClick={() => {
@@ -1321,7 +1373,7 @@ const VentasMayoreo: React.FC = () => {
                                               }
                                             }}
                                             disabled={allocateInventoryMutation.isPending}
-                                            className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                                            className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 font-medium"
                                           >
                                             Apartar
                                           </button>
@@ -1331,27 +1383,64 @@ const VentasMayoreo: React.FC = () => {
                                       </td>
                                     </tr>
                                   );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-
-                        {/* Summary */}
-                        <div className="mt-3 flex justify-between items-center text-sm border-t border-gray-200 pt-3">
-                          <div className="space-x-4">
-                            <span><span className="text-gray-600">Total Cant:</span> <span className="font-medium">{inventoryItem.total_cant}</span></span>
-                            <span><span className="text-gray-600">Total Apartados:</span> <span className="font-medium">{inventoryItem.total_apartados}</span></span>
-                            <span><span className="text-gray-600">Total Disponibles:</span> <span className={`font-medium ${inventoryItem.total_disponibles < 0 ? 'text-red-600' : 'text-green-600'}`}>{inventoryItem.total_disponibles}</span></span>
-                          </div>
-                          {inventoryItem.shortfall > 0 && (
-                            <div className="text-red-600 font-semibold">
-                              ⚠️ Faltan producir: {inventoryItem.shortfall}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                                })
+                              ) : (
+                                <tr className="hover:bg-gray-50">
+                                  <td className="px-4 py-3 border-r border-gray-200 bg-gray-50">
+                                    <div className="font-medium text-gray-900 text-sm">
+                                      {inventoryItem.product_name}
+                                    </div>
+                                    {inventoryItem.tipo_name && (
+                                      <div className="text-xs text-gray-500 mt-0.5">
+                                        {inventoryItem.tipo_name}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 border-r border-gray-200 bg-gray-50">
+                                    {inventoryItem.esmalte_color ? (
+                                      <div className="flex items-center gap-2">
+                                        {inventoryItem.esmalte_hex_code && (
+                                          <div
+                                            className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0"
+                                            style={{ backgroundColor: inventoryItem.esmalte_hex_code }}
+                                          />
+                                        )}
+                                        <span className="text-sm text-gray-900">{inventoryItem.esmalte_color}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-sm text-gray-400">-</span>
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3 text-center border-r border-gray-200 bg-gray-50">
+                                    <span className="text-base font-semibold text-gray-900">
+                                      {inventoryItem.quantity_needed}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-center border-r border-gray-200 bg-blue-50">
+                                    <span className="text-base font-semibold text-blue-700">
+                                      {inventoryItem.quantity_allocated}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3 text-center border-r border-gray-200 bg-orange-50">
+                                    <span className={`text-base font-semibold ${inventoryItem.still_needed > 0 ? 'text-orange-700' : 'text-green-700'}`}>
+                                      {inventoryItem.still_needed}
+                                    </span>
+                                    {inventoryItem.shortfall > 0 && (
+                                      <div className="text-xs text-red-600 font-semibold mt-1 whitespace-nowrap">
+                                        ⚠️ Faltan: {inventoryItem.shortfall}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td colSpan={4} className="px-4 py-3 text-center text-sm text-gray-500 italic bg-yellow-50">
+                                    No hay inventario disponible en etapa esmaltado para este producto
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
