@@ -1497,4 +1497,33 @@ router.post('/ecommerce-pedidos', async (req, res) => {
   }
 });
 
+// Ecommerce Pedido Payments migration
+router.post('/ecommerce-pedido-payments', async (req, res) => {
+  try {
+    const sqlPath = path.join(__dirname, '../config/ecommerce-pedido-payments.sql');
+    const sql = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sql);
+
+    res.status(200).json({
+      message: 'Ecommerce pedido payments table created successfully',
+      tables: ['ecommerce_pedido_payments'],
+      columns_added: ['amount_paid', 'payment_status on ecommerce_pedidos'],
+      description: 'Payment tracking for ecommerce orders using VENTAS ECOMMERCE ledger entries',
+      features: [
+        'Link cash flow movements (VENTAS ECOMMERCE) to pedidos',
+        'Track multiple partial payments per pedido',
+        'Automatic payment status calculation (PENDING/PARTIAL/PAID)',
+        'Automatic amount_paid recalculation on attach/detach'
+      ]
+    });
+  } catch (error) {
+    console.error('Ecommerce pedido payments migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create ecommerce pedido payments table',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

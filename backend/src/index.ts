@@ -58,6 +58,7 @@ import ventasPedidosRoutes from './routes/ventasPedidos';
 import ventasInventoryRoutes from './routes/ventasInventory';
 import ecommerceKitsRoutes from './routes/ecommerceKits';
 import ecommercePedidosRoutes from './routes/ecommercePedidos';
+import ecommercePaymentsRoutes from './routes/ecommercePayments';
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from './routes/uploadthing';
 import { initializeNotificationJobs } from './jobs/notificationJobs';
@@ -90,6 +91,7 @@ app.use('/api/ventas/quotations', ventasQuotationsRoutes);
 app.use('/api/ventas/pedidos', ventasPedidosRoutes);
 app.use('/api/ventas/pedidos', ventasInventoryRoutes); // Inventory allocation routes (nested under pedidos)
 app.use('/api/ecommerce/kits', ecommerceKitsRoutes);
+app.use('/api/ecommerce/pedidos', ecommercePaymentsRoutes); // Payment routes FIRST (to catch /available before /:id)
 app.use('/api/ecommerce/pedidos', ecommercePedidosRoutes);
 
 // Catch-all for undefined routes

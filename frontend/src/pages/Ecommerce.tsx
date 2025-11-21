@@ -23,6 +23,12 @@ import {
   EcommercePedido,
   PedidoFormData,
 } from '../hooks/useEcommercePedidos';
+import {
+  useEcommerceAvailablePayments,
+  useEcommercePedidoPayments,
+  useAttachEcommercePayment,
+  useDetachEcommercePayment,
+} from '../hooks/useEcommercePayments';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -80,6 +86,8 @@ const Ecommerce: React.FC = () => {
   // Pedido state
   const [showPedidoForm, setShowPedidoForm] = useState(false);
   const [viewingPedido, setViewingPedido] = useState<EcommercePedido | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<number | null>(null);
   const [pedidoFormData, setPedidoFormData] = useState<PedidoFormData>({
     customer_name: '',
     customer_email: '',
@@ -99,6 +107,8 @@ const Ecommerce: React.FC = () => {
   const { data: esmalteColors = [] } = useEsmalteColors();
   const { data: pedidos = [], isLoading: pedidosLoading } = useEcommercePedidos();
   const { data: pedidoDetails } = useEcommercePedido(viewingPedido?.id);
+  const { data: availablePayments = [] } = useEcommerceAvailablePayments();
+  const { data: pedidoPayments } = useEcommercePedidoPayments(viewingPedido?.id);
 
   // Mutations
   const createKitMutation = useCreateKit();
@@ -108,6 +118,8 @@ const Ecommerce: React.FC = () => {
   const createPedidoMutation = useCreateEcommercePedido();
   const updatePedidoStatusMutation = useUpdateEcommercePedidoStatus();
   const deletePedidoMutation = useDeleteEcommercePedido();
+  const attachPaymentMutation = useAttachEcommercePayment();
+  const detachPaymentMutation = useDetachEcommercePayment();
 
   if (!user) {
     return (
@@ -316,8 +328,39 @@ const Ecommerce: React.FC = () => {
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'PAID': return 'bg-green-100 text-green-800';
+      case 'PARTIAL': return 'bg-orange-100 text-orange-800';
       case 'REFUNDED': return 'bg-red-100 text-red-800';
       default: return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
+  // Payment handlers
+  const handleAttachPayment = async () => {
+    if (!viewingPedido || !selectedPaymentId) return;
+
+    try {
+      await attachPaymentMutation.mutateAsync({
+        pedido_id: viewingPedido.id,
+        ledger_entry_id: selectedPaymentId,
+      });
+      setShowPaymentModal(false);
+      setSelectedPaymentId(null);
+    } catch (error: any) {
+      alert(error.response?.data?.details || error.response?.data?.error || 'Error al vincular pago');
+    }
+  };
+
+  const handleDetachPayment = async (attachmentId: number) => {
+    if (!viewingPedido) return;
+    if (!confirm('¿Desvincular este pago del pedido?')) return;
+
+    try {
+      await detachPaymentMutation.mutateAsync({
+        attachmentId,
+        pedidoId: viewingPedido.id,
+      });
+    } catch (error: any) {
+      alert(error.response?.data?.details || error.response?.data?.error || 'Error al desvincular pago');
     }
   };
 
@@ -1207,28 +1250,86 @@ const Ecommerce: React.FC = () => {
                 )}
               </div>
 
-              {/* Status Actions */}
-              {viewingPedido.status !== 'CANCELLED' && viewingPedido.status !== 'DELIVERED' && (
-                <div className="border-t pt-4 mt-4">
-                  <h3 className="font-semibold text-gray-700 mb-3">Cambiar Estado</h3>
-                  <select
-                    value={viewingPedido.status}
-                    onChange={(e) => {
-                      if (e.target.value !== viewingPedido.status) {
-                        handleUpdatePedidoStatus(viewingPedido.id, e.target.value);
-                      }
-                    }}
-                    className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-blue-500 focus:border-blue-500"
+              {/* Payments Section */}
+              <div className="border-t pt-4 mt-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-semibold text-gray-700">Pagos Vinculados</h3>
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                   >
-                    <option value="PENDING">Pendiente</option>
-                    <option value="CONFIRMED">Confirmado</option>
-                    <option value="PROCESSING">En Proceso</option>
-                    <option value="SHIPPED">Enviado</option>
-                    <option value="DELIVERED">Entregado</option>
-                    <option value="CANCELLED" className="text-red-600">Cancelado</option>
-                  </select>
+                    + Vincular Pago
+                  </button>
                 </div>
-              )}
+
+                {/* Payment Summary */}
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
+                  <div className="flex justify-between text-sm">
+                    <span>Total del Pedido:</span>
+                    <span className="font-semibold">${Number(viewingPedido.total).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Pagado:</span>
+                    <span className="font-semibold text-green-600">
+                      ${Number(pedidoPayments?.totalPaid || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm border-t border-blue-200 pt-2 mt-2">
+                    <span>Restante:</span>
+                    <span className={`font-bold ${Number(viewingPedido.total) - Number(pedidoPayments?.totalPaid || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      ${(Number(viewingPedido.total) - Number(pedidoPayments?.totalPaid || 0)).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Attached Payments List */}
+                {pedidoPayments?.payments && pedidoPayments.payments.length > 0 ? (
+                  <div className="space-y-2">
+                    {pedidoPayments.payments.map((payment) => (
+                      <div key={payment.attachment_id} className="flex justify-between items-center p-3 bg-green-50 rounded-md">
+                        <div>
+                          <p className="font-medium text-gray-900">${Number(payment.amount).toFixed(2)}</p>
+                          <p className="text-xs text-gray-500">
+                            {payment.concept} - {new Date(payment.transaction_date).toLocaleDateString()}
+                          </p>
+                          {payment.internal_id && (
+                            <p className="text-xs text-gray-400">ID: {payment.internal_id}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDetachPayment(payment.attachment_id)}
+                          className="text-red-600 hover:text-red-800 text-sm"
+                        >
+                          Desvincular
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm text-center py-2">No hay pagos vinculados</p>
+                )}
+              </div>
+
+              {/* Status Actions */}
+              <div className="border-t pt-4 mt-4">
+                <h3 className="font-semibold text-gray-700 mb-3">Cambiar Estado</h3>
+                <select
+                  value={viewingPedido.status}
+                  onChange={(e) => {
+                    if (e.target.value !== viewingPedido.status) {
+                      handleUpdatePedidoStatus(viewingPedido.id, e.target.value);
+                    }
+                  }}
+                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="PENDING">Pendiente</option>
+                  <option value="CONFIRMED">Confirmado</option>
+                  <option value="PROCESSING">En Proceso</option>
+                  <option value="SHIPPED">Enviado</option>
+                  <option value="DELIVERED">Entregado</option>
+                  <option value="CANCELLED" className="text-red-600">Cancelado</option>
+                </select>
+              </div>
 
               <div className="flex justify-end space-x-3 pt-4 mt-4 border-t">
                 <button
@@ -1236,6 +1337,76 @@ const Ecommerce: React.FC = () => {
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Attach Payment Modal */}
+      {showPaymentModal && viewingPedido && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-lg max-w-lg w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-4">Vincular Pago</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Selecciona un movimiento de VENTAS ECOMMERCE del flujo de caja para vincular a este pedido.
+              </p>
+
+              {availablePayments.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>No hay pagos disponibles para vincular.</p>
+                  <p className="text-sm mt-2">
+                    Agrega un ingreso con area "VENTAS" y subarea "VENTAS ECOMMERCE" en el flujo de caja.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {availablePayments.map((payment) => (
+                    <div
+                      key={payment.id}
+                      onClick={() => setSelectedPaymentId(payment.id)}
+                      className={`p-3 rounded-md cursor-pointer border-2 transition-colors ${
+                        selectedPaymentId === payment.id
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold text-green-600">${Number(payment.amount).toFixed(2)}</p>
+                          <p className="text-sm text-gray-700">{payment.concept}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(payment.transaction_date).toLocaleDateString()}
+                            {payment.bank_account && ` - ${payment.bank_account}`}
+                          </p>
+                        </div>
+                        {selectedPaymentId === payment.id && (
+                          <span className="text-blue-600">✓</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-4 mt-4 border-t">
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    setSelectedPaymentId(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleAttachPayment}
+                  disabled={!selectedPaymentId || attachPaymentMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {attachPaymentMutation.isPending ? 'Vinculando...' : 'Vincular Pago'}
                 </button>
               </div>
             </div>
