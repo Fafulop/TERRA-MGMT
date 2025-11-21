@@ -349,24 +349,24 @@ const VentasMayoreo: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+      <header className="bg-white shadow sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
+          <div className="flex justify-between items-center py-4 md:py-6">
+            <div className="flex items-center space-x-2 md:space-x-4">
               <button
                 onClick={() => navigate('/dashboard')}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 touch-manipulation"
               >
                 ← Volver
               </button>
-              <h1 className="text-3xl font-bold text-gray-900">Ventas Mayoreo</h1>
+              <h1 className="text-xl md:text-3xl font-bold text-gray-900">Ventas Mayoreo</h1>
             </div>
             {activeTab === 'cotizaciones' && (
               <button
                 onClick={() => showForm ? handleCancelForm() : handleNewQuotation()}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+                className="bg-green-600 text-white px-3 md:px-4 py-2 rounded-md hover:bg-green-700 active:bg-green-800 text-sm md:text-base touch-manipulation"
               >
-                {showForm ? 'Cancelar' : '+ Nueva Cotización'}
+                {showForm ? 'Cancelar' : '+ Nueva'}
               </button>
             )}
           </div>
@@ -700,83 +700,141 @@ const VentasMayoreo: React.FC = () => {
                 No hay cotizaciones. Crea una nueva para comenzar.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Número
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Cliente
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Fecha
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Total
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Items
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Acciones
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {quotations.map((quotation) => (
-                      <tr key={quotation.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                          {quotation.quotation_number}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {quotation.customer_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(quotation.created_at)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                          {formatCurrency(quotation.total)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {quotation.items_count || 0}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                          <button
-                            onClick={() => setViewingQuote(quotation)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Ver
-                          </button>
-                          <button
-                            onClick={() => handleEdit(quotation)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => setConvertingQuoteId(quotation.id)}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            → Pedido
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm('¿Eliminar esta cotización?')) {
-                                deleteQuotationMutation.mutate(quotation.id);
-                              }
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Eliminar
-                          </button>
-                        </td>
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Número
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Cliente
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Fecha
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Total
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Items
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Acciones
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {quotations.map((quotation) => (
+                        <tr key={quotation.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                            {quotation.quotation_number}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {quotation.customer_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(quotation.created_at)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                            {formatCurrency(quotation.total)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {quotation.items_count || 0}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <button
+                              onClick={() => setViewingQuote(quotation)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              Ver
+                            </button>
+                            <button
+                              onClick={() => handleEdit(quotation)}
+                              className="text-indigo-600 hover:text-indigo-900"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => setConvertingQuoteId(quotation.id)}
+                              className="text-green-600 hover:text-green-900"
+                            >
+                              → Pedido
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm('¿Eliminar esta cotización?')) {
+                                  deleteQuotationMutation.mutate(quotation.id);
+                                }
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4 p-4">
+                  {quotations.map((quotation) => (
+                    <div key={quotation.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-blue-600 mb-1">
+                            {quotation.quotation_number}
+                          </div>
+                          <div className="text-base font-medium text-gray-900">
+                            {quotation.customer_name}
+                          </div>
+                        </div>
+                        <div className="text-lg font-bold text-green-600">
+                          {formatCurrency(quotation.total)}
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-sm text-gray-500 mb-4">
+                        <span>{formatDate(quotation.created_at)}</span>
+                        <span>{quotation.items_count || 0} items</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setViewingQuote(quotation)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 active:bg-blue-800"
+                        >
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => handleEdit(quotation)}
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 active:bg-indigo-800"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => setConvertingQuoteId(quotation.id)}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 active:bg-green-800"
+                        >
+                          → Pedido
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('¿Eliminar esta cotización?')) {
+                              deleteQuotationMutation.mutate(quotation.id);
+                            }
+                          }}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 active:bg-red-800"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
@@ -795,79 +853,130 @@ const VentasMayoreo: React.FC = () => {
                 No hay pedidos. Convierte una cotización en pedido para comenzar.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Número
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Cliente
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Fecha
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Total
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Estado
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Items
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Acciones
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {pedidos.map((pedido) => (
-                      <tr key={pedido.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                          {pedido.pedido_number}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {pedido.customer_name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(pedido.order_date)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                          {formatCurrency(pedido.total)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(pedido.status)}`}>
-                            {getStatusLabel(pedido.status)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {pedido.items_count || 0}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                          <button
-                            onClick={() => setViewingPedido(pedido)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            Ver
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm('¿Eliminar este pedido?')) {
-                                deletePedidoMutation.mutate(pedido.id);
-                              }
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Eliminar
-                          </button>
-                        </td>
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Número
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Cliente
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Fecha
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Total
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Estado
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Items
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Acciones
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {pedidos.map((pedido) => (
+                        <tr key={pedido.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                            {pedido.pedido_number}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {pedido.customer_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(pedido.order_date)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                            {formatCurrency(pedido.total)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(pedido.status)}`}>
+                              {getStatusLabel(pedido.status)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {pedido.items_count || 0}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <button
+                              onClick={() => setViewingPedido(pedido)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              Ver
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm('¿Eliminar este pedido?')) {
+                                  deletePedidoMutation.mutate(pedido.id);
+                                }
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Eliminar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
+                  {pedidos.map((pedido) => (
+                    <div key={pedido.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-blue-600 mb-1">
+                            {pedido.pedido_number}
+                          </div>
+                          <div className="text-base font-medium text-gray-900">
+                            {pedido.customer_name}
+                          </div>
+                        </div>
+                        <div className="text-lg font-bold text-green-600">
+                          {formatCurrency(pedido.total)}
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-sm text-gray-500">{formatDate(pedido.order_date)}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(pedido.status)}`}>
+                          {getStatusLabel(pedido.status)}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-500 mb-4">
+                        {pedido.items_count || 0} items
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => setViewingPedido(pedido)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 active:bg-blue-800"
+                        >
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm('¿Eliminar este pedido?')) {
+                              deletePedidoMutation.mutate(pedido.id);
+                            }
+                          }}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 active:bg-red-800"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
@@ -1112,9 +1221,9 @@ const VentasMayoreo: React.FC = () => {
 
       {/* Pedido Detail Modal */}
       {viewingPedido && viewingPedidoDetails && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-lg max-w-4xl w-full my-8">
-            <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center md:p-4 z-50 overflow-y-auto">
+          <div className="bg-white md:rounded-lg max-w-4xl w-full h-full md:h-auto md:my-8">
+            <div className="p-4 md:p-6 border-b border-gray-200">
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">{viewingPedidoDetails.pedido_number}</h2>
@@ -1279,8 +1388,8 @@ const VentasMayoreo: React.FC = () => {
                     );
                   })()}
 
-                  <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                    <table className="min-w-full divide-y divide-gray-200">
+                  <div className="overflow-x-auto border border-gray-200 rounded-lg -mx-4 md:mx-0">
+                    <table className="min-w-full md:min-w-0 divide-y divide-gray-200">
                       <thead className="bg-gray-100">
                         <tr>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-300">
@@ -1297,12 +1406,6 @@ const VentasMayoreo: React.FC = () => {
                           </th>
                           <th className="px-4 py-3 text-center text-xs font-semibold text-orange-700 uppercase tracking-wider border-r border-gray-300">
                             Restante
-                          </th>
-                          <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-300">
-                            Lote Cant.
-                          </th>
-                          <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-300">
-                            Apartados
                           </th>
                           <th className="px-3 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-300">
                             Disponibles
@@ -1369,18 +1472,12 @@ const VentasMayoreo: React.FC = () => {
                                             </span>
                                             {inventoryItem.shortfall > 0 && (
                                               <div className="text-xs text-red-600 font-semibold mt-1 whitespace-nowrap">
-                                                ⚠️ Faltan: {inventoryItem.shortfall}
+                                                ⚠️ Faltan producir: {inventoryItem.shortfall}
                                               </div>
                                             )}
                                           </td>
                                         </>
                                       )}
-                                      <td className="px-3 py-3 text-center border-r border-gray-200">
-                                        <span className="text-sm text-gray-900 font-medium">{inv.cant}</span>
-                                      </td>
-                                      <td className="px-3 py-3 text-center border-r border-gray-200">
-                                        <span className="text-sm text-gray-900">{inv.apartados}</span>
-                                      </td>
                                       <td className="px-3 py-3 text-center border-r border-gray-200">
                                         <span className={`text-sm font-semibold ${inv.disponibles < 0 ? 'text-red-600' : inv.disponibles === 0 ? 'text-gray-400' : 'text-green-600'}`}>
                                           {inv.disponibles}
@@ -1511,11 +1608,11 @@ const VentasMayoreo: React.FC = () => {
                                     </span>
                                     {inventoryItem.shortfall > 0 && (
                                       <div className="text-xs text-red-600 font-semibold mt-1 whitespace-nowrap">
-                                        ⚠️ Faltan: {inventoryItem.shortfall}
+                                        ⚠️ Faltan producir: {inventoryItem.shortfall}
                                       </div>
                                     )}
                                   </td>
-                                  <td colSpan={4} className="px-4 py-3 text-center text-sm text-gray-500 italic bg-yellow-50">
+                                  <td colSpan={2} className="px-4 py-3 text-center text-sm text-gray-500 italic bg-yellow-50">
                                     No hay inventario disponible en etapa esmaltado para este producto
                                   </td>
                                 </tr>
