@@ -708,7 +708,27 @@ const Produccion: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {inventory.map((item: InventoryRecord) => {
+                      {[...inventory]
+                        .sort((a: InventoryRecord, b: InventoryRecord) => {
+                          // Stage priority: ESMALTADO (1), SANCOCHADO (2), CRUDO (3)
+                          const stagePriority: Record<string, number> = {
+                            'ESMALTADO': 1,
+                            'SANCOCHADO': 2,
+                            'CRUDO': 3
+                          };
+                          const stageA = stagePriority[a.stage] || 4;
+                          const stageB = stagePriority[b.stage] || 4;
+
+                          if (stageA !== stageB) {
+                            return stageA - stageB;
+                          }
+
+                          // Then by disponibles (quantity - apartados) descending
+                          const disponiblesA = a.quantity - (a.apartados || 0);
+                          const disponiblesB = b.quantity - (b.apartados || 0);
+                          return disponiblesB - disponiblesA;
+                        })
+                        .map((item: InventoryRecord) => {
                         const costoTotal = (
                           Number(item.costo_pasta || 0) +
                           Number(item.costo_mano_obra || 0) +

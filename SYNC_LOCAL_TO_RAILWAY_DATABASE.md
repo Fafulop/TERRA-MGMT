@@ -361,7 +361,154 @@ WHERE tablename = 'produccion_products';
 
 ---
 
+## Sync Log: November 21, 2024
+
+### What Was Synced
+
+New tables and features added to Railway:
+
+1. **Ventas Pedidos System** (`ventas-pedidos.sql`)
+   - `ventas_pedidos` - Firm orders created from quotations
+   - `ventas_pedido_items` - Line items for orders
+   - Functions: `generate_pedido_number()`, `calculate_pedido_item_totals()`, `recalculate_pedido_totals()`
+   - Triggers for automatic total calculation
+
+2. **Inventory Allocations** (`ventas-inventory-allocations.sql`)
+   - `ventas_pedido_allocations` - Track which inventory items are reserved for which orders
+   - Added `apartados` column to `produccion_inventory`
+   - Functions: `recalculate_inventory_apartados()`, `update_inventory_apartados()`
+   - Triggers for automatic apartados recalculation
+
+3. **Payment Tracking** (`ventas-pedido-payments.sql`)
+   - `ventas_pedido_payments` - Links cash flow entries (`ledger_entries_mxn`) to pedidos
+   - Functions: `recalculate_pedido_payment_totals()`
+   - Triggers for automatic payment status updates (PENDING/PARTIAL/PAID)
+
+### Step-by-Step Process Used
+
+#### Step 1: Identify Recent Migrations
+```bash
+# List SQL files by date to find recent changes
+ls -lt backend/src/config/*.sql | head -20
+```
+
+Found these new migrations:
+- `ventas-pedido-payments.sql` (Nov 21)
+- `ventas-inventory-allocations.sql` (Nov 20)
+- `ventas-pedidos.sql` (Nov 20)
+
+#### Step 2: Create Consolidated Migration Script
+
+Created `backend/src/config/railway-sync-2024-11-21.sql` combining all three migrations:
+- Safe to run multiple times (uses `IF NOT EXISTS`, `DO $$ ... END $$`)
+- Proper order: tables first, then functions, then triggers
+- Includes all indexes and comments
+
+#### Step 3: Create Node.js Migration Runner
+
+Created temporary `run-railway-sync.js`:
+```javascript
+const { Client } = require('pg');
+const fs = require('fs');
+const path = require('path');
+
+async function runMigration() {
+  const connectionString = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    console.error('ERROR: DATABASE_PUBLIC_URL or DATABASE_URL not set');
+    process.exit(1);
+  }
+
+  const client = new Client({
+    connectionString,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  await client.connect();
+
+  const sqlPath = path.join(__dirname, 'backend/src/config/railway-sync-2024-11-21.sql');
+  const sql = fs.readFileSync(sqlPath, 'utf8');
+
+  await client.query(sql);
+
+  // Verify tables
+  const result = await client.query(`
+    SELECT table_name FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name LIKE 'ventas_%'
+    ORDER BY table_name;
+  `);
+
+  console.log('Ventas tables found:');
+  result.rows.forEach(row => console.log('  - ' + row.table_name));
+
+  await client.end();
+}
+
+runMigration();
+```
+
+#### Step 4: Get Railway Database URL
+
+```bash
+# Check Railway is linked
+railway status
+# Output: Project: TERRA-MGMT, Environment: production, Service: Postgres
+
+# Get the public database URL
+railway variables --json | grep DATABASE_PUBLIC_URL
+```
+
+#### Step 5: Run Migration
+
+```bash
+# Set the URL and run the script
+DATABASE_PUBLIC_URL="postgresql://postgres:xxx@maglev.proxy.rlwy.net:51438/railway" node run-railway-sync.js
+```
+
+**Output:**
+```
+Connecting to Railway database...
+Connected successfully!
+
+Running migration script...
+Migration completed successfully!
+
+Ventas tables found:
+  - ventas_pedido_allocations
+  - ventas_pedido_items
+  - ventas_pedido_payments
+  - ventas_pedidos
+  - ventas_quotation_items
+  - ventas_quotations
+
+  apartados column exists in produccion_inventory
+
+=== SYNC COMPLETE ===
+```
+
+#### Step 6: Cleanup
+
+```bash
+# Remove temporary script
+rm run-railway-sync.js
+```
+
+The consolidated SQL file `railway-sync-2024-11-21.sql` was kept in `backend/src/config/` for reference.
+
+### Verification
+
+All tables were successfully created:
+- `ventas_pedidos` ✓
+- `ventas_pedido_items` ✓
+- `ventas_pedido_allocations` ✓
+- `ventas_pedido_payments` ✓
+- `produccion_inventory.apartados` column ✓
+
+---
+
 **Document created:** 2025-11-18
+**Last updated:** 2025-11-21
 **Project:** TERRA-MGMT
 **Database:** Railway PostgreSQL
 **Environment:** Production
