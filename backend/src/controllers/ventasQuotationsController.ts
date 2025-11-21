@@ -122,11 +122,20 @@ export const createQuotation = async (req: Request, res: Response) => {
     // Insert items
     for (const item of items) {
       const productResult = await client.query(`
-        SELECT p.name, t.name as tipo_name
+        SELECT
+          p.name,
+          t.name as tipo_name,
+          s.size_cm,
+          c.capacity_ml,
+          ec.color as esmalte_color,
+          ec.hex_code as esmalte_hex_code
         FROM produccion_products p
         LEFT JOIN produccion_tipo t ON p.tipo_id = t.id
+        LEFT JOIN produccion_size s ON p.size_id = s.id
+        LEFT JOIN produccion_capacity c ON p.capacity_id = c.id
+        LEFT JOIN produccion_esmalte_color ec ON ec.id = $2
         WHERE p.id = $1
-      `, [item.product_id]);
+      `, [item.product_id, item.esmalte_color_id || null]);
 
       if (productResult.rows.length === 0) {
         throw new Error(`Product ${item.product_id} not found`);
@@ -140,18 +149,28 @@ export const createQuotation = async (req: Request, res: Response) => {
           product_id,
           product_name,
           tipo_name,
+          size_cm,
+          capacity_ml,
+          esmalte_color_id,
+          esmalte_color,
+          esmalte_hex_code,
           quantity,
           unit_price,
           discount_percentage,
           tax_percentage,
           notes
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       `, [
         quotation.id,
         item.product_id,
         product.name,
         product.tipo_name,
+        product.size_cm,
+        product.capacity_ml,
+        item.esmalte_color_id || null,
+        product.esmalte_color,
+        product.esmalte_hex_code,
         item.quantity,
         item.unit_price,
         item.discount_percentage || 0,
@@ -228,11 +247,20 @@ export const updateQuotation = async (req: Request, res: Response) => {
     // Insert new items
     for (const item of items) {
       const productResult = await client.query(`
-        SELECT p.name, t.name as tipo_name
+        SELECT
+          p.name,
+          t.name as tipo_name,
+          s.size_cm,
+          c.capacity_ml,
+          ec.color as esmalte_color,
+          ec.hex_code as esmalte_hex_code
         FROM produccion_products p
         LEFT JOIN produccion_tipo t ON p.tipo_id = t.id
+        LEFT JOIN produccion_size s ON p.size_id = s.id
+        LEFT JOIN produccion_capacity c ON p.capacity_id = c.id
+        LEFT JOIN produccion_esmalte_color ec ON ec.id = $2
         WHERE p.id = $1
-      `, [item.product_id]);
+      `, [item.product_id, item.esmalte_color_id || null]);
 
       if (productResult.rows.length === 0) {
         throw new Error(`Product ${item.product_id} not found`);
@@ -246,18 +274,28 @@ export const updateQuotation = async (req: Request, res: Response) => {
           product_id,
           product_name,
           tipo_name,
+          size_cm,
+          capacity_ml,
+          esmalte_color_id,
+          esmalte_color,
+          esmalte_hex_code,
           quantity,
           unit_price,
           discount_percentage,
           tax_percentage,
           notes
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
       `, [
         id,
         item.product_id,
         product.name,
         product.tipo_name,
+        product.size_cm,
+        product.capacity_ml,
+        item.esmalte_color_id || null,
+        product.esmalte_color,
+        product.esmalte_hex_code,
         item.quantity,
         item.unit_price,
         item.discount_percentage || 0,

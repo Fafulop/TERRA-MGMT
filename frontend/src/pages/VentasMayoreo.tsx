@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,9 +12,21 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const VentasMayoreo: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'cotizaciones' | 'pedidos'>('cotizaciones');
   const [showForm, setShowForm] = useState(false);
   const [viewingQuote, setViewingQuote] = useState<Quotation | null>(null);
   const [editingQuoteId, setEditingQuoteId] = useState<number | null>(null);
+
+  // Check URL parameter on mount to set initial tab
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'pedidos') {
+      setActiveTab('pedidos');
+    } else if (tab === 'cotizaciones') {
+      setActiveTab('cotizaciones');
+    }
+  }, [searchParams]);
 
   // Customer fields
   const [customerName, setCustomerName] = useState('');
@@ -34,7 +46,7 @@ const VentasMayoreo: React.FC = () => {
 
   // Items
   const [items, setItems] = useState<QuotationItemFormData[]>([
-    { product_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }
+    { product_id: 0, esmalte_color_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }
   ]);
 
   const { data: quotations = [], isLoading: quotationsLoading } = useQuotations();
@@ -54,6 +66,17 @@ const VentasMayoreo: React.FC = () => {
     },
   });
 
+  // Fetch esmalte colors
+  const { data: esmalteColors = [] } = useQuery({
+    queryKey: ['produccion-esmalte-colors'],
+    queryFn: async () => {
+      const res = await axios.get(`${API_URL}/produccion/esmalte-color`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      return res.data;
+    },
+  });
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -68,7 +91,7 @@ const VentasMayoreo: React.FC = () => {
   }
 
   const handleAddItem = () => {
-    setItems([...items, { product_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }]);
+    setItems([...items, { product_id: 0, esmalte_color_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -101,6 +124,7 @@ const VentasMayoreo: React.FC = () => {
     if (fullQuote.items && fullQuote.items.length > 0) {
       setItems(fullQuote.items.map((item: any) => ({
         product_id: item.product_id,
+        esmalte_color_id: item.esmalte_color_id || 0,
         quantity: item.quantity,
         unit_price: Number(item.unit_price),
         discount_percentage: Number(item.discount_percentage),
@@ -160,7 +184,7 @@ const VentasMayoreo: React.FC = () => {
 - Tiempo de entrega: 15-20 días hábiles
 
 (Edite este texto según sus necesidades)`);
-    setItems([{ product_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }]);
+    setItems([{ product_id: 0, esmalte_color_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }]);
     setEditingQuoteId(null);
     setShowForm(false);
   };
@@ -180,7 +204,7 @@ const VentasMayoreo: React.FC = () => {
 - Tiempo de entrega: 15-20 días hábiles
 
 (Edite este texto según sus necesidades)`);
-    setItems([{ product_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }]);
+    setItems([{ product_id: 0, esmalte_color_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }]);
     setEditingQuoteId(null);
     setShowForm(false);
   };
@@ -201,7 +225,7 @@ const VentasMayoreo: React.FC = () => {
 - Tiempo de entrega: 15-20 días hábiles
 
 (Edite este texto según sus necesidades)`);
-    setItems([{ product_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }]);
+    setItems([{ product_id: 0, esmalte_color_id: 0, quantity: 1, unit_price: 0, discount_percentage: 0, tax_percentage: 16 }]);
     setEditingQuoteId(null);
     setShowForm(true);
   };
@@ -268,19 +292,52 @@ const VentasMayoreo: React.FC = () => {
               >
                 ← Volver
               </button>
-              <h1 className="text-3xl font-bold text-gray-900">Ventas Mayoreo - Cotizaciones</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Ventas Mayoreo</h1>
             </div>
-            <button
-              onClick={() => showForm ? handleCancelForm() : handleNewQuotation()}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-            >
-              {showForm ? 'Cancelar' : '+ Nueva Cotización'}
-            </button>
+            {activeTab === 'cotizaciones' && (
+              <button
+                onClick={() => showForm ? handleCancelForm() : handleNewQuotation()}
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+              >
+                {showForm ? 'Cancelar' : '+ Nueva Cotización'}
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('cotizaciones')}
+                className={`${
+                  activeTab === 'cotizaciones'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                Cotizaciones
+              </button>
+              <button
+                onClick={() => setActiveTab('pedidos')}
+                className={`${
+                  activeTab === 'pedidos'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                Pedidos en Firme
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Cotizaciones Tab */}
+        {activeTab === 'cotizaciones' && (
+          <>
         {showForm ? (
           <div className="bg-white shadow rounded-lg p-6">
             <h2 className="text-2xl font-bold mb-6">
@@ -370,7 +427,7 @@ const VentasMayoreo: React.FC = () => {
 
                     return (
                       <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-8 gap-4">
                           <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               Producto *
@@ -387,9 +444,28 @@ const VentasMayoreo: React.FC = () => {
                                 .map(p => (
                                   <option key={p.id} value={p.id}>
                                     {p.name} - {p.tipo_name}
+                                    {p.size_cm && ` - ${p.size_cm}cm`}
+                                    {p.capacity_ml && ` - ${p.capacity_ml}ml`}
                                   </option>
                                 ))
                               }
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Color
+                            </label>
+                            <select
+                              value={item.esmalte_color_id || 0}
+                              onChange={(e) => handleItemChange(index, 'esmalte_color_id', parseInt(e.target.value))}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            >
+                              <option value="0">N/A</option>
+                              {esmalteColors.map((color: any) => (
+                                <option key={color.id} value={color.id}>
+                                  {color.color}
+                                </option>
+                              ))}
                             </select>
                           </div>
                           <div>
@@ -631,6 +707,20 @@ const VentasMayoreo: React.FC = () => {
             )}
           </div>
         )}
+          </>
+        )}
+
+        {/* Pedidos en Firme Tab */}
+        {activeTab === 'pedidos' && (
+          <div className="bg-white shadow rounded-lg p-8">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Pedidos en Firme</h2>
+              <p className="text-gray-600">
+                Esta funcionalidad estará disponible próximamente.
+              </p>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* View Modal */}
@@ -687,6 +777,9 @@ const VentasMayoreo: React.FC = () => {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tamaño</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Capacidad</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Color</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Precio</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Descuento</th>
@@ -700,6 +793,21 @@ const VentasMayoreo: React.FC = () => {
                           <td className="px-4 py-2 text-sm text-gray-900">
                             {item.product_name}
                             {item.tipo_name && <span className="text-gray-500"> - {item.tipo_name}</span>}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-900">{item.size_cm ? `${item.size_cm} cm` : '-'}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900">{item.capacity_ml ? `${item.capacity_ml} ml` : '-'}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900">
+                            {item.esmalte_color ? (
+                              <div className="flex items-center gap-2">
+                                {item.esmalte_hex_code && (
+                                  <div
+                                    className="w-4 h-4 rounded-full border border-gray-300"
+                                    style={{ backgroundColor: item.esmalte_hex_code }}
+                                  />
+                                )}
+                                {item.esmalte_color}
+                              </div>
+                            ) : '-'}
                           </td>
                           <td className="px-4 py-2 text-sm text-gray-900">{item.quantity}</td>
                           <td className="px-4 py-2 text-sm text-gray-900">{formatCurrency(Number(item.unit_price))}</td>

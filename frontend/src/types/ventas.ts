@@ -6,6 +6,9 @@ export interface QuotationItem {
   product_id: number;
   product_name?: string;
   tipo_name?: string;
+  esmalte_color_id?: number;
+  esmalte_color?: string;
+  esmalte_hex_code?: string;
   quantity: number;
   unit_price: number;
   discount_percentage: number;
@@ -51,6 +54,7 @@ export interface QuotationFormData {
 
 export interface QuotationItemFormData {
   product_id: number;
+  esmalte_color_id?: number;
   quantity: number;
   unit_price: number;
   discount_percentage?: number;
