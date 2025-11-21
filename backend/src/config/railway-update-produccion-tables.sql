@@ -78,26 +78,31 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_produccion_tipo_updated_at ON produccion_tipo;
 CREATE TRIGGER trigger_produccion_tipo_updated_at
   BEFORE UPDATE ON produccion_tipo
   FOR EACH ROW
   EXECUTE FUNCTION update_produccion_updated_at();
 
+DROP TRIGGER IF EXISTS trigger_produccion_size_updated_at ON produccion_size;
 CREATE TRIGGER trigger_produccion_size_updated_at
   BEFORE UPDATE ON produccion_size
   FOR EACH ROW
   EXECUTE FUNCTION update_produccion_updated_at();
 
+DROP TRIGGER IF EXISTS trigger_produccion_capacity_updated_at ON produccion_capacity;
 CREATE TRIGGER trigger_produccion_capacity_updated_at
   BEFORE UPDATE ON produccion_capacity
   FOR EACH ROW
   EXECUTE FUNCTION update_produccion_updated_at();
 
+DROP TRIGGER IF EXISTS trigger_produccion_esmalte_color_updated_at ON produccion_esmalte_color;
 CREATE TRIGGER trigger_produccion_esmalte_color_updated_at
   BEFORE UPDATE ON produccion_esmalte_color
   FOR EACH ROW
   EXECUTE FUNCTION update_produccion_updated_at();
 
+DROP TRIGGER IF EXISTS trigger_produccion_products_updated_at ON produccion_products;
 CREATE TRIGGER trigger_produccion_products_updated_at
   BEFORE UPDATE ON produccion_products
   FOR EACH ROW
@@ -210,10 +215,20 @@ BEGIN
     ALTER TABLE produccion_products
       ADD COLUMN costo_pasta DECIMAL(10, 2);
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'produccion_products'
+    AND column_name = 'costo_h_sancocho'
+  ) THEN
+    ALTER TABLE produccion_products
+      ADD COLUMN costo_h_sancocho DECIMAL(10, 2);
+  END IF;
 END $$;
 
 COMMENT ON COLUMN produccion_products.peso_esmaltado IS 'Glazed weight in grams (optional)';
 COMMENT ON COLUMN produccion_products.costo_pasta IS 'Paste cost in MXN (optional)';
+COMMENT ON COLUMN produccion_products.costo_h_sancocho IS 'First firing cost / bisque firing cost in MXN (optional)';
 
 -- ========================================
 -- STEP 5: Create inventory tracking tables
