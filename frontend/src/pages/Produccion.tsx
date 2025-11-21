@@ -24,13 +24,15 @@ const Produccion: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'products' | 'inventory' | 'masterdata'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'inventory' | 'embalaje' | 'masterdata'>('products');
 
   // Check URL parameter on mount to set initial tab
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab === 'inventory') {
       setActiveTab('inventory');
+    } else if (tab === 'embalaje') {
+      setActiveTab('embalaje');
     } else if (tab === 'masterdata') {
       setActiveTab('masterdata');
     } else if (tab === 'products') {
@@ -527,6 +529,16 @@ const Produccion: React.FC = () => {
                 Inventario
               </button>
               <button
+                onClick={() => setActiveTab('embalaje')}
+                className={`${
+                  activeTab === 'embalaje'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm`}
+              >
+                Inventario Embalaje
+              </button>
+              <button
                 onClick={() => setActiveTab('masterdata')}
                 className={`${
                   activeTab === 'masterdata'
@@ -851,6 +863,16 @@ const Produccion: React.FC = () => {
                   )}
                 </>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Inventario Embalaje Tab */}
+        {activeTab === 'embalaje' && (
+          <div className="bg-white shadow rounded-lg p-6 sm:p-8">
+            <div className="text-center text-gray-500">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Inventario Embalaje</h2>
+              <p className="text-sm">Esta sección está en desarrollo.</p>
             </div>
           </div>
         )}
