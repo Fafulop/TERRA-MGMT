@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuotations, useQuotation, useCreateQuotation, useUpdateQuotation, useDeleteQuotation } from '../hooks/useVentasQuotations';
 import { usePedidos, usePedido, useCreatePedido, useUpdatePedidoStatus, useDeletePedido } from '../hooks/useVentasPedidos';
-import { usePedidoInventoryAvailability, useAllocateInventory } from '../hooks/useVentasInventory';
+import { usePedidoInventoryAvailability, useAllocateInventory, usePedidoAllocations, useDeallocateInventory } from '../hooks/useVentasInventory';
 import { Quotation, QuotationItemFormData, Pedido } from '../types/ventas';
 import { Product } from '../types/produccion';
 
@@ -71,7 +71,9 @@ const VentasMayoreo: React.FC = () => {
 
   // Inventory allocation hooks
   const { data: pedidoInventory = [] } = usePedidoInventoryAvailability(viewingPedido?.id);
+  const { data: pedidoAllocations = [] } = usePedidoAllocations(viewingPedido?.id);
   const allocateInventoryMutation = useAllocateInventory();
+  const deallocateInventoryMutation = useDeallocateInventory();
 
   // Fetch products
   const { data: products = [] } = useQuery({
@@ -1385,39 +1387,83 @@ const VentasMayoreo: React.FC = () => {
                                         </span>
                                       </td>
                                       <td className="px-3 py-3 text-center">
-                                        {canAllocate ? (
-                                          <button
-                                            onClick={() => {
-                                              const quantity = prompt(`¿Cuántas unidades apartar? (máximo ${maxToAllocate})`);
-                                              if (quantity) {
-                                                const qty = parseInt(quantity);
-                                                if (qty > 0 && qty <= maxToAllocate) {
-                                                  allocateInventoryMutation.mutate({
-                                                    pedido_id: viewingPedido!.id,
-                                                    pedido_item_id: inventoryItem.pedido_item_id,
-                                                    inventory_id: inv.inventory_id,
-                                                    quantity: qty,
-                                                  }, {
-                                                    onSuccess: () => {
-                                                      alert(`${qty} unidades apartadas exitosamente`);
-                                                    },
-                                                    onError: (error: any) => {
-                                                      alert(`Error: ${error.response?.data?.details || error.message}`);
-                                                    },
-                                                  });
-                                                } else {
-                                                  alert(`Cantidad inválida. Debe ser entre 1 y ${maxToAllocate}`);
-                                                }
-                                              }
-                                            }}
-                                            disabled={allocateInventoryMutation.isPending}
-                                            className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 font-medium"
-                                          >
-                                            Apartar
-                                          </button>
-                                        ) : (
-                                          <span className="text-xs text-gray-400">-</span>
-                                        )}
+                                        {(() => {
+                                          // Find allocations for this specific inventory item and pedido item
+                                          const allocationsForThisInventory = pedidoAllocations.filter(
+                                            (alloc: any) =>
+                                              alloc.pedido_item_id === inventoryItem.pedido_item_id &&
+                                              alloc.inventory_id === inv.inventory_id
+                                          );
+
+                                          const hasAllocations = allocationsForThisInventory.length > 0;
+                                          const totalAllocatedHere = allocationsForThisInventory.reduce(
+                                            (sum: number, alloc: any) => sum + Number(alloc.quantity_allocated),
+                                            0
+                                          );
+
+                                          return (
+                                            <div className="flex flex-col gap-1">
+                                              {canAllocate && (
+                                                <button
+                                                  onClick={() => {
+                                                    const quantity = prompt(`¿Cuántas unidades apartar? (máximo ${maxToAllocate})`);
+                                                    if (quantity) {
+                                                      const qty = parseInt(quantity);
+                                                      if (qty > 0 && qty <= maxToAllocate) {
+                                                        allocateInventoryMutation.mutate({
+                                                          pedido_id: viewingPedido!.id,
+                                                          pedido_item_id: inventoryItem.pedido_item_id,
+                                                          inventory_id: inv.inventory_id,
+                                                          quantity: qty,
+                                                        }, {
+                                                          onSuccess: () => {
+                                                            alert(`${qty} unidades apartadas exitosamente`);
+                                                          },
+                                                          onError: (error: any) => {
+                                                            alert(`Error: ${error.response?.data?.details || error.message}`);
+                                                          },
+                                                        });
+                                                      } else {
+                                                        alert(`Cantidad inválida. Debe ser entre 1 y ${maxToAllocate}`);
+                                                      }
+                                                    }
+                                                  }}
+                                                  disabled={allocateInventoryMutation.isPending}
+                                                  className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 font-medium"
+                                                >
+                                                  Apartar
+                                                </button>
+                                              )}
+                                              {hasAllocations && (
+                                                <button
+                                                  onClick={() => {
+                                                    if (confirm(`¿Desapartar ${totalAllocatedHere} unidades de este lote?`)) {
+                                                      // Deallocate all allocations for this inventory item
+                                                      allocationsForThisInventory.forEach((alloc: any) => {
+                                                        deallocateInventoryMutation.mutate(alloc.id, {
+                                                          onSuccess: () => {
+                                                            alert(`${alloc.quantity_allocated} unidades liberadas exitosamente`);
+                                                          },
+                                                          onError: (error: any) => {
+                                                            alert(`Error: ${error.response?.data?.details || error.message}`);
+                                                          },
+                                                        });
+                                                      });
+                                                    }
+                                                  }}
+                                                  disabled={deallocateInventoryMutation.isPending}
+                                                  className="text-xs px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 font-medium"
+                                                  title={`${totalAllocatedHere} apartados`}
+                                                >
+                                                  Desapartar ({totalAllocatedHere})
+                                                </button>
+                                              )}
+                                              {!canAllocate && !hasAllocations && (
+                                                <span className="text-xs text-gray-400">-</span>
+                                              )}
+                                            </div>
+                                          );
+                                        })()}
                                       </td>
                                     </tr>
                                   );
