@@ -736,9 +736,21 @@ const VentasMayoreo: React.FC = () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {quotations.map((quotation) => (
-                        <tr key={quotation.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                            {quotation.quotation_number}
+                        <tr
+                          key={quotation.id}
+                          className={`${
+                            quotation.linked_pedido_number
+                              ? 'bg-green-50 hover:bg-green-100'
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <div className="font-medium text-blue-600">{quotation.quotation_number}</div>
+                            {quotation.linked_pedido_number && (
+                              <div className="text-xs text-green-700 font-semibold mt-0.5">
+                                → {quotation.linked_pedido_number}
+                              </div>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {quotation.customer_name}
@@ -759,18 +771,30 @@ const VentasMayoreo: React.FC = () => {
                             >
                               Ver
                             </button>
-                            <button
-                              onClick={() => handleEdit(quotation)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => setConvertingQuoteId(quotation.id)}
-                              className="text-green-600 hover:text-green-900"
-                            >
-                              → Pedido
-                            </button>
+                            {!quotation.linked_pedido_number ? (
+                              <button
+                                onClick={() => handleEdit(quotation)}
+                                className="text-indigo-600 hover:text-indigo-900"
+                              >
+                                Editar
+                              </button>
+                            ) : (
+                              <span className="text-gray-400 cursor-not-allowed" title="No se puede editar una cotización con pedido">
+                                Editar
+                              </span>
+                            )}
+                            {!quotation.linked_pedido_number ? (
+                              <button
+                                onClick={() => setConvertingQuoteId(quotation.id)}
+                                className="text-green-600 hover:text-green-900"
+                              >
+                                → Pedido
+                              </button>
+                            ) : (
+                              <span className="text-green-600 text-xs font-semibold px-2 py-1 bg-green-100 rounded">
+                                Convertido
+                              </span>
+                            )}
                             <button
                               onClick={() => {
                                 if (confirm('¿Eliminar esta cotización?')) {
@@ -791,12 +815,24 @@ const VentasMayoreo: React.FC = () => {
                 {/* Mobile Card View */}
                 <div className="md:hidden space-y-4 p-4">
                   {quotations.map((quotation) => (
-                    <div key={quotation.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                    <div
+                      key={quotation.id}
+                      className={`rounded-lg p-4 shadow-sm ${
+                        quotation.linked_pedido_number
+                          ? 'bg-green-50 border-2 border-green-300'
+                          : 'bg-white border border-gray-200'
+                      }`}
+                    >
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <div className="text-sm font-semibold text-blue-600 mb-1">
                             {quotation.quotation_number}
                           </div>
+                          {quotation.linked_pedido_number && (
+                            <div className="text-xs text-green-700 font-semibold mb-1">
+                              → {quotation.linked_pedido_number}
+                            </div>
+                          )}
                           <div className="text-base font-medium text-gray-900">
                             {quotation.customer_name}
                           </div>
@@ -816,18 +852,30 @@ const VentasMayoreo: React.FC = () => {
                         >
                           Ver
                         </button>
-                        <button
-                          onClick={() => handleEdit(quotation)}
-                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 active:bg-indigo-800"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => setConvertingQuoteId(quotation.id)}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 active:bg-green-800"
-                        >
-                          → Pedido
-                        </button>
+                        {!quotation.linked_pedido_number ? (
+                          <button
+                            onClick={() => handleEdit(quotation)}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 active:bg-indigo-800"
+                          >
+                            Editar
+                          </button>
+                        ) : (
+                          <div className="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg text-sm font-medium text-center cursor-not-allowed">
+                            Editar
+                          </div>
+                        )}
+                        {!quotation.linked_pedido_number ? (
+                          <button
+                            onClick={() => setConvertingQuoteId(quotation.id)}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 active:bg-green-800"
+                          >
+                            → Pedido
+                          </button>
+                        ) : (
+                          <div className="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-semibold text-center">
+                            Convertido
+                          </div>
+                        )}
                         <button
                           onClick={() => {
                             if (confirm('¿Eliminar esta cotización?')) {

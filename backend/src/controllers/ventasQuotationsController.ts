@@ -8,11 +8,15 @@ export const getQuotations = async (req: Request, res: Response) => {
       SELECT
         q.*,
         u.username as created_by_name,
-        COUNT(qi.id) as items_count
+        COUNT(qi.id) as items_count,
+        p.id as linked_pedido_id,
+        p.pedido_number as linked_pedido_number,
+        p.status as linked_pedido_status
       FROM ventas_quotations q
       LEFT JOIN users u ON q.created_by = u.id
       LEFT JOIN ventas_quotation_items qi ON q.id = qi.quotation_id
-      GROUP BY q.id, u.username
+      LEFT JOIN ventas_pedidos p ON q.id = p.quotation_id
+      GROUP BY q.id, u.username, p.id, p.pedido_number, p.status
       ORDER BY q.created_at DESC
     `);
     res.json(result.rows);
