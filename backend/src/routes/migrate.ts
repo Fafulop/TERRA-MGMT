@@ -1433,4 +1433,37 @@ router.post('/ventas-pedido-payments', async (req: Request, res: Response) => {
   }
 });
 
+// Ecommerce Kits migration
+router.post('/ecommerce-kits', async (req, res) => {
+  try {
+    const sqlPath = path.join(__dirname, '../config/ecommerce-kits.sql');
+    const sql = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sql);
+
+    res.status(200).json({
+      message: 'Ecommerce kits tables created successfully',
+      tables: [
+        'ecommerce_kits',
+        'ecommerce_kit_items',
+        'ecommerce_kit_allocations'
+      ],
+      description: 'Kits system for bundling products with stock management',
+      features: [
+        'Create kits from produccion_products',
+        'Own pricing per kit',
+        'Min/max stock levels',
+        'Stock affects apartados in produccion_inventory',
+        'Integration with existing allocation system'
+      ]
+    });
+  } catch (error) {
+    console.error('Ecommerce kits migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create ecommerce kits tables',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
