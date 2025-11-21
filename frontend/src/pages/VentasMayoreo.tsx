@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuotations, useQuotation, useCreateQuotation, useUpdateQuotation, useDeleteQuotation } from '../hooks/useVentasQuotations';
 import { usePedidos, usePedido, useCreatePedido, useUpdatePedidoStatus, useDeletePedido } from '../hooks/useVentasPedidos';
+import { usePedidoInventoryAvailability, useAllocateInventory } from '../hooks/useVentasInventory';
 import { Quotation, QuotationItemFormData, Pedido } from '../types/ventas';
 import { Product } from '../types/produccion';
 
@@ -67,6 +68,10 @@ const VentasMayoreo: React.FC = () => {
   const createPedidoMutation = useCreatePedido();
   const updatePedidoStatusMutation = useUpdatePedidoStatus();
   const deletePedidoMutation = useDeletePedido();
+
+  // Inventory allocation hooks
+  const { data: pedidoInventory = [] } = usePedidoInventoryAvailability(viewingPedido?.id);
+  const allocateInventoryMutation = useAllocateInventory();
 
   // Fetch products
   const { data: products = [] } = useQuery({
@@ -1229,6 +1234,127 @@ const VentasMayoreo: React.FC = () => {
                   </table>
                 </div>
               </div>
+
+              {/* Inventory Allocation */}
+              {pedidoInventory.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-700 mb-3">Inventario Disponible (Etapa Esmaltado)</h3>
+                  <div className="space-y-4">
+                    {pedidoInventory.map((inventoryItem: any) => (
+                      <div key={inventoryItem.pedido_item_id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              {inventoryItem.product_name}
+                              {inventoryItem.tipo_name && <span className="text-gray-500"> - {inventoryItem.tipo_name}</span>}
+                            </h4>
+                            {inventoryItem.esmalte_color && (
+                              <div className="flex items-center gap-2 mt-1">
+                                {inventoryItem.esmalte_hex_code && (
+                                  <div
+                                    className="w-3 h-3 rounded-full border border-gray-300"
+                                    style={{ backgroundColor: inventoryItem.esmalte_hex_code }}
+                                  />
+                                )}
+                                <span className="text-sm text-gray-600">{inventoryItem.esmalte_color}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right text-sm">
+                            <div><span className="text-gray-600">Necesita:</span> <span className="font-semibold">{inventoryItem.quantity_needed}</span></div>
+                            <div><span className="text-gray-600">Apartado:</span> <span className="font-semibold text-blue-600">{inventoryItem.quantity_allocated}</span></div>
+                            <div><span className="text-gray-600">Restante:</span> <span className={`font-semibold ${inventoryItem.still_needed > 0 ? 'text-orange-600' : 'text-green-600'}`}>{inventoryItem.still_needed}</span></div>
+                          </div>
+                        </div>
+
+                        {inventoryItem.inventory_items.length === 0 ? (
+                          <div className="text-sm text-gray-500 italic">
+                            No hay inventario disponible en etapa esmaltado para este producto
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full text-sm">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Cant.</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Apartados</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Disponibles</th>
+                                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200">
+                                {inventoryItem.inventory_items.map((inv: any) => {
+                                  const canAllocate = inv.disponibles > 0 && inventoryItem.still_needed > 0;
+                                  const maxToAllocate = Math.min(inv.disponibles, inventoryItem.still_needed);
+
+                                  return (
+                                    <tr key={inv.inventory_id}>
+                                      <td className="px-3 py-2 text-gray-900">{inv.cant}</td>
+                                      <td className="px-3 py-2 text-gray-900">{inv.apartados}</td>
+                                      <td className={`px-3 py-2 font-semibold ${inv.disponibles < 0 ? 'text-red-600' : inv.disponibles === 0 ? 'text-gray-400' : 'text-green-600'}`}>
+                                        {inv.disponibles}
+                                      </td>
+                                      <td className="px-3 py-2">
+                                        {canAllocate ? (
+                                          <button
+                                            onClick={() => {
+                                              const quantity = prompt(`¿Cuántas unidades apartar? (máximo ${maxToAllocate})`);
+                                              if (quantity) {
+                                                const qty = parseInt(quantity);
+                                                if (qty > 0 && qty <= maxToAllocate) {
+                                                  allocateInventoryMutation.mutate({
+                                                    pedido_id: viewingPedido!.id,
+                                                    pedido_item_id: inventoryItem.pedido_item_id,
+                                                    inventory_id: inv.inventory_id,
+                                                    quantity: qty,
+                                                  }, {
+                                                    onSuccess: () => {
+                                                      alert(`${qty} unidades apartadas exitosamente`);
+                                                    },
+                                                    onError: (error: any) => {
+                                                      alert(`Error: ${error.response?.data?.details || error.message}`);
+                                                    },
+                                                  });
+                                                } else {
+                                                  alert(`Cantidad inválida. Debe ser entre 1 y ${maxToAllocate}`);
+                                                }
+                                              }
+                                            }}
+                                            disabled={allocateInventoryMutation.isPending}
+                                            className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                                          >
+                                            Apartar
+                                          </button>
+                                        ) : (
+                                          <span className="text-xs text-gray-400">-</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Summary */}
+                        <div className="mt-3 flex justify-between items-center text-sm border-t border-gray-200 pt-3">
+                          <div className="space-x-4">
+                            <span><span className="text-gray-600">Total Cant:</span> <span className="font-medium">{inventoryItem.total_cant}</span></span>
+                            <span><span className="text-gray-600">Total Apartados:</span> <span className="font-medium">{inventoryItem.total_apartados}</span></span>
+                            <span><span className="text-gray-600">Total Disponibles:</span> <span className={`font-medium ${inventoryItem.total_disponibles < 0 ? 'text-red-600' : 'text-green-600'}`}>{inventoryItem.total_disponibles}</span></span>
+                          </div>
+                          {inventoryItem.shortfall > 0 && (
+                            <div className="text-red-600 font-semibold">
+                              ⚠️ Faltan producir: {inventoryItem.shortfall}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Totals */}
               <div className="mb-6 bg-gray-50 p-4 rounded">

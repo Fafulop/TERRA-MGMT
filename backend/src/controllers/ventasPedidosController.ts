@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import { handlePedidoDelivery, handlePedidoCancellation } from './ventasInventoryController';
 
 // Get all pedidos
 export const getPedidos = async (req: Request, res: Response) => {
@@ -184,7 +185,11 @@ export const createPedido = async (req: Request, res: Response) => {
 
 // Update pedido status
 export const updatePedidoStatus = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+
   try {
+    await client.query('BEGIN');
+
     const { id } = req.params;
     const { status } = req.body;
 
@@ -197,21 +202,50 @@ export const updatePedidoStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    const result = await pool.query(`
+    // Get current status
+    const currentResult = await client.query(
+      'SELECT status FROM ventas_pedidos WHERE id = $1',
+      [id]
+    );
+
+    if (currentResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Pedido not found' });
+    }
+
+    const currentStatus = currentResult.rows[0].status;
+
+    // Handle inventory changes based on status transition
+    if (status === 'DELIVERED' && currentStatus !== 'DELIVERED') {
+      // Subtract inventory: both cant and apartados
+      await handlePedidoDelivery(parseInt(id), client);
+
+      // Set actual delivery date
+      await client.query(`
+        UPDATE ventas_pedidos
+        SET actual_delivery_date = CURRENT_DATE
+        WHERE id = $1
+      `, [id]);
+    } else if (status === 'CANCELLED' && currentStatus !== 'CANCELLED') {
+      // Release allocations: remove apartados only
+      await handlePedidoCancellation(parseInt(id), client);
+    }
+
+    // Update pedido status
+    const result = await client.query(`
       UPDATE ventas_pedidos
       SET status = $1, updated_at = CURRENT_TIMESTAMP
       WHERE id = $2
       RETURNING *
     `, [status, id]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Pedido not found' });
-    }
-
+    await client.query('COMMIT');
     res.json(result.rows[0]);
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Error updating pedido status:', error);
-    res.status(500).json({ error: 'Failed to update pedido status' });
+    res.status(500).json({ error: 'Failed to update pedido status', details: (error as Error).message });
+  } finally {
+    client.release();
   }
 };
 

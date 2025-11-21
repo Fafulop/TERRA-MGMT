@@ -55,6 +55,7 @@ import notificationRoutes from './routes/notifications';
 import produccionRoutes from './routes/produccion';
 import ventasQuotationsRoutes from './routes/ventasQuotations';
 import ventasPedidosRoutes from './routes/ventasPedidos';
+import ventasInventoryRoutes from './routes/ventasInventory';
 import { createRouteHandler } from "uploadthing/express";
 import { uploadRouter } from './routes/uploadthing';
 import { initializeNotificationJobs } from './jobs/notificationJobs';
@@ -85,6 +86,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/produccion', produccionRoutes);
 app.use('/api/ventas/quotations', ventasQuotationsRoutes);
 app.use('/api/ventas/pedidos', ventasPedidosRoutes);
+app.use('/api/ventas/pedidos', ventasInventoryRoutes); // Inventory allocation routes (nested under pedidos)
 
 // Catch-all for undefined routes
 app.use('/api', (req, res) => {

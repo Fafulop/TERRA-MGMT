@@ -690,7 +690,9 @@ const Produccion: React.FC = () => {
                         <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Etapa</th>
                         <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Color</th>
                         <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase">Cant.</th>
-                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Costo Total</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Apartados</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Disponibles</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase hidden lg:table-cell">Costo Total</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -739,6 +741,14 @@ const Produccion: React.FC = () => {
                               {item.quantity}
                             </td>
                             <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden md:table-cell">
+                              {item.apartados || 0}
+                            </td>
+                            <td className={`px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-semibold hidden md:table-cell ${
+                              (item.quantity - (item.apartados || 0)) < 0 ? 'text-red-600' : 'text-gray-900'
+                            }`}>
+                              {item.quantity - (item.apartados || 0)}
+                            </td>
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-900 hidden lg:table-cell">
                               ${costoTotal.toFixed(2)}
                             </td>
                           </tr>
