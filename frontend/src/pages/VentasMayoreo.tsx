@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuotations, useQuotation, useCreateQuotation, useUpdateQuotation, useDeleteQuotation } from '../hooks/useVentasQuotations';
-import { Quotation, QuotationItemFormData } from '../types/ventas';
+import { usePedidos, usePedido, useCreatePedido, useUpdatePedidoStatus, useDeletePedido } from '../hooks/useVentasPedidos';
+import { Quotation, QuotationItemFormData, Pedido } from '../types/ventas';
 import { Product } from '../types/produccion';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -17,6 +18,11 @@ const VentasMayoreo: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [viewingQuote, setViewingQuote] = useState<Quotation | null>(null);
   const [editingQuoteId, setEditingQuoteId] = useState<number | null>(null);
+  const [viewingPedido, setViewingPedido] = useState<Pedido | null>(null);
+  const [convertingQuoteId, setConvertingQuoteId] = useState<number | null>(null);
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [pedidoNotes, setPedidoNotes] = useState('');
 
   // Check URL parameter on mount to set initial tab
   useEffect(() => {
@@ -54,6 +60,13 @@ const VentasMayoreo: React.FC = () => {
   const createQuotationMutation = useCreateQuotation();
   const updateQuotationMutation = useUpdateQuotation();
   const deleteQuotationMutation = useDeleteQuotation();
+
+  // Pedidos hooks
+  const { data: pedidos = [], isLoading: pedidosLoading } = usePedidos();
+  const { data: viewingPedidoDetails } = usePedido(viewingPedido?.id);
+  const createPedidoMutation = useCreatePedido();
+  const updatePedidoStatusMutation = useUpdatePedidoStatus();
+  const deletePedidoMutation = useDeletePedido();
 
   // Fetch products
   const { data: products = [] } = useQuery({
@@ -242,6 +255,53 @@ const VentasMayoreo: React.FC = () => {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+    });
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    const colors: Record<string, string> = {
+      'PENDING': 'bg-yellow-100 text-yellow-800',
+      'CONFIRMED': 'bg-blue-100 text-blue-800',
+      'IN_PRODUCTION': 'bg-purple-100 text-purple-800',
+      'READY': 'bg-green-100 text-green-800',
+      'DELIVERED': 'bg-gray-100 text-gray-800',
+      'CANCELLED': 'bg-red-100 text-red-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      'PENDING': 'Pendiente',
+      'CONFIRMED': 'Confirmado',
+      'IN_PRODUCTION': 'En Producción',
+      'READY': 'Listo',
+      'DELIVERED': 'Entregado',
+      'CANCELLED': 'Cancelado',
+    };
+    return labels[status] || status;
+  };
+
+  const handleConvertToPedido = () => {
+    if (!convertingQuoteId) return;
+
+    createPedidoMutation.mutate({
+      quotation_id: convertingQuoteId,
+      expected_delivery_date: expectedDeliveryDate || undefined,
+      payment_method: paymentMethod || undefined,
+      notes: pedidoNotes || undefined,
+    }, {
+      onSuccess: () => {
+        setConvertingQuoteId(null);
+        setExpectedDeliveryDate('');
+        setPaymentMethod('');
+        setPedidoNotes('');
+        setActiveTab('pedidos');
+        alert('Pedido creado exitosamente');
+      },
+      onError: (error: any) => {
+        alert(`Error creating pedido: ${error.message}`);
+      },
     });
   };
 
@@ -689,6 +749,12 @@ const VentasMayoreo: React.FC = () => {
                             Editar
                           </button>
                           <button
+                            onClick={() => setConvertingQuoteId(quotation.id)}
+                            className="text-green-600 hover:text-green-900"
+                          >
+                            → Pedido
+                          </button>
+                          <button
                             onClick={() => {
                               if (confirm('¿Eliminar esta cotización?')) {
                                 deleteQuotationMutation.mutate(quotation.id);
@@ -712,13 +778,90 @@ const VentasMayoreo: React.FC = () => {
 
         {/* Pedidos en Firme Tab */}
         {activeTab === 'pedidos' && (
-          <div className="bg-white shadow rounded-lg p-8">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Pedidos en Firme</h2>
-              <p className="text-gray-600">
-                Esta funcionalidad estará disponible próximamente.
-              </p>
-            </div>
+          <div className="bg-white shadow rounded-lg p-6">
+            <h2 className="text-2xl font-bold mb-6">Pedidos en Firme</h2>
+
+            {pedidosLoading ? (
+              <div className="text-center py-8">Cargando...</div>
+            ) : pedidos.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No hay pedidos. Convierte una cotización en pedido para comenzar.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Número
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Cliente
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Fecha
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Total
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Estado
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Items
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Acciones
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {pedidos.map((pedido) => (
+                      <tr key={pedido.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                          {pedido.pedido_number}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {pedido.customer_name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(pedido.order_date)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                          {formatCurrency(pedido.total)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusBadgeColor(pedido.status)}`}>
+                            {getStatusLabel(pedido.status)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {pedido.items_count || 0}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                          <button
+                            onClick={() => setViewingPedido(pedido)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Ver
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm('¿Eliminar este pedido?')) {
+                                deletePedidoMutation.mutate(pedido.id);
+                              }
+                            }}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -881,6 +1024,270 @@ const VentasMayoreo: React.FC = () => {
                   Editar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Convert to Pedido Modal */}
+      {convertingQuoteId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4">Convertir a Pedido en Firme</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fecha Esperada de Entrega
+                </label>
+                <input
+                  type="date"
+                  value={expectedDeliveryDate}
+                  onChange={(e) => setExpectedDeliveryDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Método de Pago
+                </label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                >
+                  <option value="">Seleccionar...</option>
+                  <option value="CASH">Efectivo</option>
+                  <option value="TRANSFER">Transferencia</option>
+                  <option value="CARD">Tarjeta</option>
+                  <option value="CHECK">Cheque</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notas Adicionales
+                </label>
+                <textarea
+                  value={pedidoNotes}
+                  onChange={(e) => setPedidoNotes(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  placeholder="Notas adicionales para el pedido..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setConvertingQuoteId(null);
+                  setExpectedDeliveryDate('');
+                  setPaymentMethod('');
+                  setPedidoNotes('');
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConvertToPedido}
+                disabled={createPedidoMutation.isPending}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+              >
+                {createPedidoMutation.isPending ? 'Creando...' : 'Crear Pedido'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pedido Detail Modal */}
+      {viewingPedido && viewingPedidoDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-4xl w-full my-8">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{viewingPedidoDetails.pedido_number}</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Creado el {formatDate(viewingPedidoDetails.created_at)}
+                  </p>
+                  {viewingPedidoDetails.quotation_number && (
+                    <p className="text-sm text-gray-500">
+                      De cotización: {viewingPedidoDetails.quotation_number}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setViewingPedido(null)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 max-h-[70vh] overflow-y-auto">
+              {/* Status */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Estado del Pedido</label>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadgeColor(viewingPedidoDetails.status)}`}>
+                    {getStatusLabel(viewingPedidoDetails.status)}
+                  </span>
+                  <select
+                    value={viewingPedidoDetails.status}
+                    onChange={(e) => {
+                      if (confirm('¿Cambiar el estado del pedido?')) {
+                        updatePedidoStatusMutation.mutate({
+                          id: viewingPedidoDetails.id,
+                          status: e.target.value,
+                        });
+                      }
+                    }}
+                    className="ml-4 px-3 py-1 border border-gray-300 rounded-md text-sm"
+                  >
+                    <option value="PENDING">Pendiente</option>
+                    <option value="CONFIRMED">Confirmado</option>
+                    <option value="IN_PRODUCTION">En Producción</option>
+                    <option value="READY">Listo</option>
+                    <option value="DELIVERED">Entregado</option>
+                    <option value="CANCELLED">Cancelado</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Customer Info */}
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-700 mb-2">Información del Cliente</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Nombre:</span> {viewingPedidoDetails.customer_name}
+                  </div>
+                  {viewingPedidoDetails.customer_email && (
+                    <div>
+                      <span className="text-gray-500">Email:</span> {viewingPedidoDetails.customer_email}
+                    </div>
+                  )}
+                  {viewingPedidoDetails.customer_phone && (
+                    <div>
+                      <span className="text-gray-500">Teléfono:</span> {viewingPedidoDetails.customer_phone}
+                    </div>
+                  )}
+                  {viewingPedidoDetails.customer_address && (
+                    <div className="col-span-2">
+                      <span className="text-gray-500">Dirección:</span> {viewingPedidoDetails.customer_address}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Items */}
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-700 mb-2">Productos</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 border">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Color</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Precio</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {viewingPedidoDetails.items?.map((item: any, index: number) => (
+                        <tr key={index}>
+                          <td className="px-4 py-2 text-sm text-gray-900">
+                            {item.product_name}
+                            {item.tipo_name && <span className="text-gray-500"> - {item.tipo_name}</span>}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-900">
+                            {item.esmalte_color ? (
+                              <div className="flex items-center gap-2">
+                                {item.esmalte_hex_code && (
+                                  <div
+                                    className="w-4 h-4 rounded-full border border-gray-300"
+                                    style={{ backgroundColor: item.esmalte_hex_code }}
+                                  />
+                                )}
+                                {item.esmalte_color}
+                              </div>
+                            ) : '-'}
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-900">{item.quantity}</td>
+                          <td className="px-4 py-2 text-sm text-gray-900">{formatCurrency(Number(item.unit_price))}</td>
+                          <td className="px-4 py-2 text-sm font-semibold text-gray-900">{formatCurrency(Number(item.total))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Totals */}
+              <div className="mb-6 bg-gray-50 p-4 rounded">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">{formatCurrency(viewingPedidoDetails.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Descuento:</span>
+                    <span className="font-medium text-red-600">-{formatCurrency(viewingPedidoDetails.discount_total)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">IVA:</span>
+                    <span className="font-medium">{formatCurrency(viewingPedidoDetails.tax_total)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold border-t border-gray-300 pt-2">
+                    <span>Total:</span>
+                    <span className="text-green-600">{formatCurrency(viewingPedidoDetails.total)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-700 mb-2">Fechas</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Fecha del Pedido:</span> {formatDate(viewingPedidoDetails.order_date)}
+                  </div>
+                  {viewingPedidoDetails.expected_delivery_date && (
+                    <div>
+                      <span className="text-gray-500">Entrega Esperada:</span> {formatDate(viewingPedidoDetails.expected_delivery_date)}
+                    </div>
+                  )}
+                  {viewingPedidoDetails.actual_delivery_date && (
+                    <div>
+                      <span className="text-gray-500">Entrega Real:</span> {formatDate(viewingPedidoDetails.actual_delivery_date)}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Notes */}
+              {viewingPedidoDetails.notes && (
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-700 mb-2">Notas</h3>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{viewingPedidoDetails.notes}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setViewingPedido(null)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>
