@@ -1466,4 +1466,35 @@ router.post('/ecommerce-kits', async (req, res) => {
   }
 });
 
+// Ecommerce Pedidos migration
+router.post('/ecommerce-pedidos', async (req, res) => {
+  try {
+    const sqlPath = path.join(__dirname, '../config/ecommerce-pedidos.sql');
+    const sql = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sql);
+
+    res.status(200).json({
+      message: 'Ecommerce pedidos tables created successfully',
+      tables: [
+        'ecommerce_pedidos',
+        'ecommerce_pedido_items'
+      ],
+      description: 'Ecommerce orders that consume kit stock',
+      features: [
+        'Create orders from kits',
+        'Automatic stock deduction from kits (not from apartados)',
+        'Order status workflow (PENDING -> DELIVERED)',
+        'Stock returned on cancellation'
+      ]
+    });
+  } catch (error) {
+    console.error('Ecommerce pedidos migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create ecommerce pedidos tables',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
