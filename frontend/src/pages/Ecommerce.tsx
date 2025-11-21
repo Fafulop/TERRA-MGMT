@@ -320,6 +320,7 @@ const Ecommerce: React.FC = () => {
       case 'PROCESSING': return 'bg-purple-100 text-purple-800';
       case 'SHIPPED': return 'bg-indigo-100 text-indigo-800';
       case 'DELIVERED': return 'bg-green-100 text-green-800';
+      case 'ENTREGADO_Y_PAGADO': return 'bg-emerald-100 text-emerald-800';
       case 'CANCELLED': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -420,7 +421,7 @@ const Ecommerce: React.FC = () => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 } whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm`}
               >
-                KITS
+                INVENTARIO KITS
               </button>
               <button
                 onClick={() => setActiveTab('pedidos')}
@@ -1322,11 +1323,9 @@ const Ecommerce: React.FC = () => {
                   }}
                   className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="PENDING">Pendiente</option>
-                  <option value="CONFIRMED">Confirmado</option>
                   <option value="PROCESSING">En Proceso</option>
                   <option value="SHIPPED">Enviado</option>
-                  <option value="DELIVERED">Entregado</option>
+                  <option value="ENTREGADO_Y_PAGADO">Entregado y Pagado</option>
                   <option value="CANCELLED" className="text-red-600">Cancelado</option>
                 </select>
               </div>

@@ -19,12 +19,13 @@ CREATE TABLE IF NOT EXISTS ecommerce_pedidos (
 
     -- Order status
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (status IN (
-        'PENDING',      -- Pedido pendiente
-        'CONFIRMED',    -- Pedido confirmado
-        'PROCESSING',   -- En proceso / preparando
-        'SHIPPED',      -- Enviado
-        'DELIVERED',    -- Entregado
-        'CANCELLED'     -- Cancelado
+        'PENDING',              -- Pedido pendiente
+        'CONFIRMED',            -- Pedido confirmado
+        'PROCESSING',           -- En proceso / preparando
+        'SHIPPED',              -- Enviado
+        'DELIVERED',            -- Entregado
+        'ENTREGADO_Y_PAGADO',   -- Entregado y Pagado
+        'CANCELLED'             -- Cancelado
     )),
 
     -- Financial
@@ -166,5 +167,5 @@ CREATE INDEX IF NOT EXISTS idx_ecommerce_pedido_items_kit_id ON ecommerce_pedido
 -- Comments
 COMMENT ON TABLE ecommerce_pedidos IS 'Ecommerce orders that consume kit stock';
 COMMENT ON TABLE ecommerce_pedido_items IS 'Kits included in each order';
-COMMENT ON COLUMN ecommerce_pedidos.status IS 'Order status: PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED';
+COMMENT ON COLUMN ecommerce_pedidos.status IS 'Order status: PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, ENTREGADO_Y_PAGADO, CANCELLED';
 COMMENT ON COLUMN ecommerce_pedido_items.kit_name IS 'Kit name at time of order (denormalized for history)';

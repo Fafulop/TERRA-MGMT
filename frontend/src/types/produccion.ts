@@ -88,6 +88,7 @@ export interface InventoryRecord {
   esmalte_hex_code: string | null;
   quantity: number;
   apartados: number;
+  vendidos: number;
   costo_pasta: number;
   costo_mano_obra: number;
   costo_esmalte: number;

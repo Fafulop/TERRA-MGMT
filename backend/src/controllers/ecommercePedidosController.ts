@@ -213,7 +213,7 @@ export const updatePedidoStatus = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+    const validStatuses = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'ENTREGADO_Y_PAGADO', 'CANCELLED'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
     }
@@ -275,6 +275,40 @@ export const updatePedidoStatus = async (req: Request, res: Response) => {
               updated_at = CURRENT_TIMESTAMP
           WHERE id = $2
         `, [item.quantity, item.kit_id]);
+      }
+    }
+
+    // If marking as ENTREGADO_Y_PAGADO, update produccion inventory (VENDIDOS)
+    if (status === 'ENTREGADO_Y_PAGADO' && currentStatus !== 'ENTREGADO_Y_PAGADO') {
+      // Get all kits in this pedido
+      const pedidoItemsResult = await client.query(
+        'SELECT kit_id, quantity FROM ecommerce_pedido_items WHERE pedido_id = $1',
+        [id]
+      );
+
+      for (const pedidoItem of pedidoItemsResult.rows) {
+        // Get all products in this kit
+        const kitItemsResult = await client.query(
+          'SELECT product_id, esmalte_color_id, quantity FROM ecommerce_kit_items WHERE kit_id = $1',
+          [pedidoItem.kit_id]
+        );
+
+        for (const kitItem of kitItemsResult.rows) {
+          const totalQuantity = pedidoItem.quantity * kitItem.quantity;
+
+          // Update produccion_inventory: subtract from quantity and apartados, add to vendidos
+          await client.query(`
+            UPDATE produccion_inventory
+            SET
+              quantity = quantity - $1,
+              apartados = apartados - $1,
+              vendidos = COALESCE(vendidos, 0) + $1,
+              updated_at = CURRENT_TIMESTAMP
+            WHERE product_id = $2
+              AND stage = 'ESMALTADO'
+              AND (esmalte_color_id = $3 OR (esmalte_color_id IS NULL AND $3 IS NULL))
+          `, [totalQuantity, kitItem.product_id, kitItem.esmalte_color_id]);
+        }
       }
     }
 

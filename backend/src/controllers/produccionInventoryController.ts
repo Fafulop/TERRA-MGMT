@@ -14,6 +14,7 @@ export const getInventory = async (req: Request, res: Response) => {
         p.costo_mano_obra,
         p.costo_esmalte,
         p.costo_horneado,
+        p.costo_h_sancocho,
         e.color as esmalte_color,
         e.hex_code as esmalte_hex_code
       FROM produccion_inventory i
