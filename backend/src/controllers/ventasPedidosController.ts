@@ -197,7 +197,7 @@ export const updatePedidoStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Status is required' });
     }
 
-    const validStatuses = ['PENDING', 'CONFIRMED', 'IN_PRODUCTION', 'READY', 'DELIVERED', 'CANCELLED'];
+    const validStatuses = ['PENDING', 'CONFIRMED', 'IN_PRODUCTION', 'READY', 'DELIVERED', 'ENTREGADO_Y_PAGADO', 'CANCELLED'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
     }
@@ -215,9 +215,11 @@ export const updatePedidoStatus = async (req: Request, res: Response) => {
     const currentStatus = currentResult.rows[0].status;
 
     // Handle inventory changes based on status transition
-    if (status === 'DELIVERED' && currentStatus !== 'DELIVERED') {
+    if ((status === 'DELIVERED' || status === 'ENTREGADO_Y_PAGADO') &&
+        (currentStatus !== 'DELIVERED' && currentStatus !== 'ENTREGADO_Y_PAGADO')) {
       // Subtract inventory: both cant and apartados
-      await handlePedidoDelivery(parseInt(id), client);
+      // If ENTREGADO_Y_PAGADO, also add to vendidos
+      await handlePedidoDelivery(parseInt(id), client, status);
 
       // Set actual delivery date
       await client.query(`

@@ -280,6 +280,7 @@ const VentasMayoreo: React.FC = () => {
       'IN_PRODUCTION': 'bg-purple-100 text-purple-800',
       'READY': 'bg-green-100 text-green-800',
       'DELIVERED': 'bg-gray-100 text-gray-800',
+      'ENTREGADO_Y_PAGADO': 'bg-emerald-100 text-emerald-800',
       'CANCELLED': 'bg-red-100 text-red-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
@@ -292,6 +293,7 @@ const VentasMayoreo: React.FC = () => {
       'IN_PRODUCTION': 'En Producción',
       'READY': 'Listo',
       'DELIVERED': 'Entregado',
+      'ENTREGADO_Y_PAGADO': 'Entregado y Pagado',
       'CANCELLED': 'Cancelado',
     };
     return labels[status] || status;
@@ -1323,11 +1325,9 @@ const VentasMayoreo: React.FC = () => {
                     }}
                     className="ml-4 px-3 py-1 border border-gray-300 rounded-md text-sm"
                   >
-                    <option value="PENDING">Pendiente</option>
-                    <option value="CONFIRMED">Confirmado</option>
                     <option value="IN_PRODUCTION">En Producción</option>
                     <option value="READY">Listo</option>
-                    <option value="DELIVERED">Entregado</option>
+                    <option value="ENTREGADO_Y_PAGADO">Entregado y Pagado</option>
                     <option value="CANCELLED">Cancelado</option>
                   </select>
                 </div>

@@ -196,7 +196,7 @@ export const deallocateInventory = async (req: Request, res: Response) => {
 };
 
 // Handle pedido delivery - subtract from both cant and apartados
-export const handlePedidoDelivery = async (pedido_id: number, client: any) => {
+export const handlePedidoDelivery = async (pedido_id: number, client: any, status?: string) => {
   // Get all allocations for this pedido
   const allocations = await client.query(`
     SELECT inventory_id, SUM(quantity_allocated) as total_allocated
@@ -205,16 +205,33 @@ export const handlePedidoDelivery = async (pedido_id: number, client: any) => {
     GROUP BY inventory_id
   `, [pedido_id]);
 
-  // For each inventory item, subtract the allocated quantity from cant
+  // For each inventory item, subtract from quantity
+  // If ENTREGADO_Y_PAGADO, also add to vendidos
+  // NOTE: Do NOT subtract apartados here - the DELETE trigger will handle it!
   for (const allocation of allocations.rows) {
-    await client.query(`
-      UPDATE produccion_inventory
-      SET quantity = quantity - $1
-      WHERE id = $2 AND quantity >= $1
-    `, [allocation.total_allocated, allocation.inventory_id]);
+    if (status === 'ENTREGADO_Y_PAGADO') {
+      // Subtract from quantity, add to vendidos
+      await client.query(`
+        UPDATE produccion_inventory
+        SET
+          quantity = quantity - $1,
+          vendidos = COALESCE(vendidos, 0) + $1,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2 AND quantity >= $1
+      `, [allocation.total_allocated, allocation.inventory_id]);
+    } else {
+      // Just subtract from quantity (for DELIVERED status)
+      await client.query(`
+        UPDATE produccion_inventory
+        SET
+          quantity = quantity - $1,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2 AND quantity >= $1
+      `, [allocation.total_allocated, allocation.inventory_id]);
+    }
   }
 
-  // Delete allocations (trigger will automatically update apartados)
+  // Delete allocations (trigger will automatically recalculate apartados based on remaining allocations)
   await client.query(`
     DELETE FROM ventas_pedido_allocations
     WHERE pedido_id = $1

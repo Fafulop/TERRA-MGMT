@@ -19,12 +19,13 @@ CREATE TABLE IF NOT EXISTS ventas_pedidos (
 
     -- Order details
     status VARCHAR(50) NOT NULL DEFAULT 'PENDING' CHECK (status IN (
-        'PENDING',      -- Pedido pendiente de confirmación
-        'CONFIRMED',    -- Pedido confirmado
-        'IN_PRODUCTION',-- En producción
-        'READY',        -- Listo para entrega
-        'DELIVERED',    -- Entregado
-        'CANCELLED'     -- Cancelado
+        'PENDING',              -- Pedido pendiente de confirmación
+        'CONFIRMED',            -- Pedido confirmado
+        'IN_PRODUCTION',        -- En producción
+        'READY',                -- Listo para entrega
+        'DELIVERED',            -- Entregado
+        'ENTREGADO_Y_PAGADO',   -- Entregado y Pagado
+        'CANCELLED'             -- Cancelado
     )),
 
     -- Financial information
@@ -173,7 +174,7 @@ CREATE INDEX IF NOT EXISTS idx_ventas_pedido_items_pedido_id ON ventas_pedido_it
 -- Comments
 COMMENT ON TABLE ventas_pedidos IS 'Firm orders (Pedidos en Firme) created from quotations';
 COMMENT ON TABLE ventas_pedido_items IS 'Line items for firm orders';
-COMMENT ON COLUMN ventas_pedidos.status IS 'Order status: PENDING, CONFIRMED, IN_PRODUCTION, READY, DELIVERED, CANCELLED';
+COMMENT ON COLUMN ventas_pedidos.status IS 'Order status: PENDING, CONFIRMED, IN_PRODUCTION, READY, DELIVERED, ENTREGADO_Y_PAGADO, CANCELLED';
 COMMENT ON COLUMN ventas_pedidos.payment_status IS 'Payment status: PENDING, PARTIAL, PAID';
 COMMENT ON COLUMN ventas_pedido_items.quantity_produced IS 'Number of units produced';
 COMMENT ON COLUMN ventas_pedido_items.quantity_delivered IS 'Number of units delivered';
