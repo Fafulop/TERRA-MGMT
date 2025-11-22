@@ -24,7 +24,7 @@ const Produccion: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'products' | 'inventory' | 'embalaje' | 'masterdata'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'inventory' | 'embalaje' | 'masterdata' | 'produccion'>('products');
 
   // Check URL parameter on mount to set initial tab
   useEffect(() => {
@@ -37,6 +37,8 @@ const Produccion: React.FC = () => {
       setActiveTab('masterdata');
     } else if (tab === 'products') {
       setActiveTab('products');
+    } else if (tab === 'produccion') {
+      setActiveTab('produccion');
     }
   }, [searchParams]);
   const [showProductForm, setShowProductForm] = useState(false);
@@ -548,6 +550,16 @@ const Produccion: React.FC = () => {
               >
                 Datos Maestros
               </button>
+              <button
+                onClick={() => setActiveTab('produccion')}
+                className={`${
+                  activeTab === 'produccion'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm`}
+              >
+                Producción
+              </button>
             </nav>
           </div>
         </div>
@@ -958,6 +970,16 @@ const Produccion: React.FC = () => {
               }}
               displayKey="color"
             />
+          </div>
+        )}
+
+        {/* Produccion Tab */}
+        {activeTab === 'produccion' && (
+          <div className="bg-white shadow rounded-lg p-6 sm:p-8">
+            <div className="text-center text-gray-500">
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Producción</h2>
+              <p className="text-sm">Esta sección está en desarrollo.</p>
+            </div>
           </div>
         )}
       </main>
