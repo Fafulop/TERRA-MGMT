@@ -601,8 +601,135 @@ All new tables and columns successfully created on Railway:
 
 ---
 
+## Sync Log: November 24, 2024 (Embalaje Inventory System)
+
+### What Was Synced
+
+Complete embalaje (packaging) inventory system with dual allocation tracking:
+
+1. **Product Categorization** (`add-product-category.sql`)
+   - Added `product_category` column to `produccion_products` (CERAMICA/EMBALAJE)
+   - CHECK constraint to enforce valid categories
+   - Set all existing products to 'CERAMICA' by default
+   - Created index for performance
+
+2. **Embalaje Inventory Tables** (`add-embalaje-inventory.sql`)
+   - `embalaje_inventory` - Main inventory table with quantity and apartados tracking
+   - `embalaje_inventory_movements` - Movement history (INPUT, OUTPUT, ADJUSTMENT)
+   - `embalaje_kit_allocations` - Allocations for ecommerce kits
+   - Functions: `recalculate_embalaje_apartados()`
+   - Triggers: Auto-recalculate apartados when kit allocations change
+
+3. **Ventas Mayoreo Embalaje Allocations** (`ventas-embalaje-allocations.sql`)
+   - `ventas_pedido_embalaje_allocations` - Allocations for Ventas Mayoreo pedidos
+   - Enhanced function: `recalculate_embalaje_ventas_apartados()` - combines BOTH ventas and ecommerce allocations
+   - Triggers: Auto-update apartados from both allocation sources
+
+### Migration Process
+
+#### Created Consolidated Script
+`backend/src/config/railway-sync-embalaje-2024-11-24.sql` - 273 lines combining all 3 migrations in correct order:
+1. Product category column (dependency for other tables)
+2. Embalaje inventory tables with kit allocations
+3. Ventas embalaje allocations with enhanced triggers
+
+#### Execution Steps
+```bash
+# 1. Verify Railway link
+railway status
+# Output: Project: TERRA-MGMT, Environment: production, Service: Postgres
+
+# 2. Created temporary Node.js migration runner
+# run-embalaje-sync.js
+
+# 3. Ran migration with Railway environment variables
+railway run node run-embalaje-sync.js
+```
+
+#### Results
+```
+✅ Migration completed successfully!
+
+✓ product_category column exists in produccion_products
+
+Embalaje tables found:
+  ✓ embalaje_inventory
+  ✓ embalaje_inventory_movements
+  ✓ embalaje_kit_allocations
+  ✓ ventas_pedido_embalaje_allocations
+
+Inventory columns:
+  ✓ apartados column exists in embalaje_inventory
+
+Triggers created:
+  ✓ update_embalaje_inventory_updated_at on embalaje_inventory
+  ✓ trigger_recalculate_embalaje_apartados on embalaje_kit_allocations
+  ✓ trigger_recalculate_embalaje_ventas_apartados on ventas_pedido_embalaje_allocations
+  ✓ trigger_ventas_embalaje_allocations_updated_at on ventas_pedido_embalaje_allocations
+```
+
+### Verification
+
+All new tables, columns, and triggers successfully created on Railway:
+- `produccion_products.product_category` column ✓
+- `embalaje_inventory` ✓
+- `embalaje_inventory_movements` ✓
+- `embalaje_kit_allocations` ✓
+- `ventas_pedido_embalaje_allocations` ✓
+- Automatic apartados calculation triggers ✓
+
+### Backend Integration
+
+Updated controllers to support embalaje products:
+
+1. **ventasInventoryController.ts**
+   - `getPedidoInventoryAvailability()` now detects product category
+   - Queries appropriate table (produccion_inventory vs embalaje_inventory)
+   - Sums allocations from BOTH ceramic and embalaje allocation tables
+   - Returns product_category in response for frontend routing
+
+2. **ecommerceKitsController.ts**
+   - `adjustKitStock()` detects product category
+   - Allocates from correct inventory table
+   - Creates allocations in appropriate table (ecommerce_kit_allocations vs embalaje_kit_allocations)
+
+3. **ventasPedidosController.ts**
+   - Calls embalaje delivery/cancellation handlers
+   - Manages embalaje inventory lifecycle with pedidos
+
+### Frontend Integration
+
+1. **VentasMayoreo.tsx**
+   - Smart mutation selection based on product_category
+   - Uses `allocateEmbalajeInventory` for embalaje products
+   - Uses `allocateInventory` for ceramic products
+   - Query invalidation ensures real-time UI updates
+
+2. **Produccion.tsx**
+   - Complete Inventario Embalaje tab
+   - Add/Remove/Adjust inventory operations
+   - Current inventory display with apartados tracking
+   - Movement history
+
+### Impact
+
+- ✅ Full embalaje inventory system operational in production
+- ✅ Ventas Mayoreo pedidos can allocate embalaje products
+- ✅ Ecommerce kits support both ceramic and embalaje products
+- ✅ Apartados calculation combines allocations from ventas AND ecommerce
+- ✅ Real-time inventory tracking with automatic apartados updates
+- ✅ Complete audit trail via movement history
+
+### Git Commits
+
+Two commits pushed to main:
+- `79eeb9b` - Add embalaje inventory allocation support for Ventas Mayoreo
+- `1306050` - Add product_category support and integrate embalaje with ecommerce kits
+
+---
+
 **Document created:** 2025-11-18
-**Last updated:** 2025-11-21 (Ecommerce Sync)
+**Last updated:** 2025-11-24 (Embalaje Inventory System Sync)
 **Project:** TERRA-MGMT
 **Database:** Railway PostgreSQL
 **Environment:** Production
