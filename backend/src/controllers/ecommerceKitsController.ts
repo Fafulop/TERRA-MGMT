@@ -363,46 +363,88 @@ export const adjustKitStock = async (req: Request, res: Response) => {
     // If increasing stock, we need to allocate inventory
     if (adjustment > 0) {
       for (const item of kit.items) {
-        // Find matching inventory (ESMALTADO stage)
-        const inventoryResult = await client.query(`
-          SELECT id, quantity, apartados
-          FROM produccion_inventory
-          WHERE product_id = $1
-            AND stage = 'ESMALTADO'
-            AND ($2::INTEGER IS NULL OR esmalte_color_id = $2)
-          ORDER BY (quantity - apartados) DESC
-          LIMIT 1
-        `, [item.product_id, item.esmalte_color_id]);
+        // Get product category to determine which inventory table to use
+        const productCategoryResult = await client.query(
+          'SELECT product_category, name FROM produccion_products WHERE id = $1',
+          [item.product_id]
+        );
 
-        if (inventoryResult.rows.length === 0) {
-          throw new Error(`No ESMALTADO inventory found for product ${item.product_id}`);
+        if (productCategoryResult.rows.length === 0) {
+          throw new Error(`Product ${item.product_id} not found`);
         }
 
-        const inventory = inventoryResult.rows[0];
+        const { product_category, name: productName } = productCategoryResult.rows[0];
+        let inventory;
+        let inventoryType: 'ceramica' | 'embalaje';
+
+        if (product_category === 'CERAMICA') {
+          // Search in produccion_inventory for ESMALTADO stage
+          const inventoryResult = await client.query(`
+            SELECT id, quantity, apartados
+            FROM produccion_inventory
+            WHERE product_id = $1
+              AND stage = 'ESMALTADO'
+              AND ($2::INTEGER IS NULL OR esmalte_color_id = $2)
+            ORDER BY (quantity - apartados) DESC
+            LIMIT 1
+          `, [item.product_id, item.esmalte_color_id]);
+
+          if (inventoryResult.rows.length === 0) {
+            throw new Error(`No ESMALTADO inventory found for ceramic product: ${productName}`);
+          }
+
+          inventory = inventoryResult.rows[0];
+          inventoryType = 'ceramica';
+        } else if (product_category === 'EMBALAJE') {
+          // Search in embalaje_inventory
+          const inventoryResult = await client.query(`
+            SELECT id, quantity, apartados
+            FROM embalaje_inventory
+            WHERE product_id = $1
+            ORDER BY (quantity - apartados) DESC
+            LIMIT 1
+          `, [item.product_id]);
+
+          if (inventoryResult.rows.length === 0) {
+            throw new Error(`No inventory found for embalaje product: ${productName}`);
+          }
+
+          inventory = inventoryResult.rows[0];
+          inventoryType = 'embalaje';
+        } else {
+          throw new Error(`Unknown product category: ${product_category}`);
+        }
+
         const requiredQty = item.quantity * adjustment;
         const available = inventory.quantity - inventory.apartados;
 
         if (available < requiredQty) {
-          // Get product name for error message
-          const productResult = await client.query(
-            'SELECT name FROM produccion_products WHERE id = $1',
-            [item.product_id]
-          );
           throw new Error(
-            `Insufficient inventory for ${productResult.rows[0]?.name || 'product'}. ` +
+            `Insufficient inventory for ${productName}. ` +
             `Available: ${available}, Required: ${requiredQty}`
           );
         }
 
-        // Create or update allocation
-        await client.query(`
-          INSERT INTO ecommerce_kit_allocations (kit_id, inventory_id, quantity_allocated, allocated_by)
-          VALUES ($1, $2, $3, $4)
-          ON CONFLICT (kit_id, inventory_id)
-          DO UPDATE SET
-            quantity_allocated = ecommerce_kit_allocations.quantity_allocated + $3,
-            updated_at = CURRENT_TIMESTAMP
-        `, [id, inventory.id, requiredQty, userId]);
+        // Create or update allocation in appropriate table
+        if (inventoryType === 'ceramica') {
+          await client.query(`
+            INSERT INTO ecommerce_kit_allocations (kit_id, inventory_id, quantity_allocated, allocated_by)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (kit_id, inventory_id)
+            DO UPDATE SET
+              quantity_allocated = ecommerce_kit_allocations.quantity_allocated + $3,
+              updated_at = CURRENT_TIMESTAMP
+          `, [id, inventory.id, requiredQty, userId]);
+        } else {
+          await client.query(`
+            INSERT INTO embalaje_kit_allocations (kit_id, inventory_id, quantity_allocated, allocated_by)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (kit_id, inventory_id)
+            DO UPDATE SET
+              quantity_allocated = embalaje_kit_allocations.quantity_allocated + $3,
+              updated_at = CURRENT_TIMESTAMP
+          `, [id, inventory.id, requiredQty, userId]);
+        }
       }
     }
 
@@ -413,31 +455,72 @@ export const adjustKitStock = async (req: Request, res: Response) => {
       for (const item of kit.items) {
         const requiredRelease = item.quantity * releaseQty;
 
-        // Get current allocation
-        const allocationResult = await client.query(`
-          SELECT ka.id, ka.inventory_id, ka.quantity_allocated
-          FROM ecommerce_kit_allocations ka
-          JOIN produccion_inventory pi ON ka.inventory_id = pi.id
-          WHERE ka.kit_id = $1
-            AND pi.product_id = $2
-            AND ($3::INTEGER IS NULL OR pi.esmalte_color_id = $3)
-        `, [id, item.product_id, item.esmalte_color_id]);
+        // Get product category to determine which allocation table to use
+        const productCategoryResult = await client.query(
+          'SELECT product_category FROM produccion_products WHERE id = $1',
+          [item.product_id]
+        );
 
-        if (allocationResult.rows.length > 0) {
-          const allocation = allocationResult.rows[0];
-          const newAllocation = allocation.quantity_allocated - requiredRelease;
+        if (productCategoryResult.rows.length === 0) {
+          continue; // Skip if product not found
+        }
 
-          if (newAllocation <= 0) {
-            await client.query(
-              'DELETE FROM ecommerce_kit_allocations WHERE id = $1',
-              [allocation.id]
-            );
-          } else {
-            await client.query(`
-              UPDATE ecommerce_kit_allocations
-              SET quantity_allocated = $1, updated_at = CURRENT_TIMESTAMP
-              WHERE id = $2
-            `, [newAllocation, allocation.id]);
+        const { product_category } = productCategoryResult.rows[0];
+
+        if (product_category === 'CERAMICA') {
+          // Get current allocation from ecommerce_kit_allocations
+          const allocationResult = await client.query(`
+            SELECT ka.id, ka.inventory_id, ka.quantity_allocated
+            FROM ecommerce_kit_allocations ka
+            JOIN produccion_inventory pi ON ka.inventory_id = pi.id
+            WHERE ka.kit_id = $1
+              AND pi.product_id = $2
+              AND ($3::INTEGER IS NULL OR pi.esmalte_color_id = $3)
+          `, [id, item.product_id, item.esmalte_color_id]);
+
+          if (allocationResult.rows.length > 0) {
+            const allocation = allocationResult.rows[0];
+            const newAllocation = allocation.quantity_allocated - requiredRelease;
+
+            if (newAllocation <= 0) {
+              await client.query(
+                'DELETE FROM ecommerce_kit_allocations WHERE id = $1',
+                [allocation.id]
+              );
+            } else {
+              await client.query(`
+                UPDATE ecommerce_kit_allocations
+                SET quantity_allocated = $1, updated_at = CURRENT_TIMESTAMP
+                WHERE id = $2
+              `, [newAllocation, allocation.id]);
+            }
+          }
+        } else if (product_category === 'EMBALAJE') {
+          // Get current allocation from embalaje_kit_allocations
+          const allocationResult = await client.query(`
+            SELECT ka.id, ka.inventory_id, ka.quantity_allocated
+            FROM embalaje_kit_allocations ka
+            JOIN embalaje_inventory ei ON ka.inventory_id = ei.id
+            WHERE ka.kit_id = $1
+              AND ei.product_id = $2
+          `, [id, item.product_id]);
+
+          if (allocationResult.rows.length > 0) {
+            const allocation = allocationResult.rows[0];
+            const newAllocation = allocation.quantity_allocated - requiredRelease;
+
+            if (newAllocation <= 0) {
+              await client.query(
+                'DELETE FROM embalaje_kit_allocations WHERE id = $1',
+                [allocation.id]
+              );
+            } else {
+              await client.query(`
+                UPDATE embalaje_kit_allocations
+                SET quantity_allocated = $1, updated_at = CURRENT_TIMESTAMP
+                WHERE id = $2
+              `, [newAllocation, allocation.id]);
+            }
           }
         }
       }

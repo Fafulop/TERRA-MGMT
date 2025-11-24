@@ -507,8 +507,102 @@ All tables were successfully created:
 
 ---
 
+## Sync Log: November 21, 2024 (Ecommerce System)
+
+### What Was Synced
+
+Complete Ecommerce system with payment tracking and inventory management:
+
+1. **Ecommerce Kits System** (`ecommerce-kits.sql`)
+   - `ecommerce_kits` - Product bundles/kits with own pricing and stock
+   - `ecommerce_kit_items` - Products that make up each kit
+   - `ecommerce_kit_allocations` - Inventory allocations reserved for kit stock
+   - Functions: `recalculate_inventory_apartados_with_kits()`, `update_inventory_apartados_from_kit()`
+   - Enhanced apartados calculation to include both pedido and kit allocations
+
+2. **Ecommerce Pedidos (Orders)** (`ecommerce-pedidos.sql`)
+   - `ecommerce_pedidos` - Customer orders that consume kit stock
+   - `ecommerce_pedido_items` - Kits included in each order
+   - Functions: `generate_ecommerce_pedido_number()`, `calculate_ecommerce_pedido_item_subtotal()`, `recalculate_ecommerce_pedido_totals()`
+   - Pedido numbering format: ECO-YYYYMM-NNNNNN
+
+3. **Payment Tracking for Ecommerce** (`ecommerce-pedido-payments.sql`)
+   - `ecommerce_pedido_payments` - Links cash flow (VENTAS ECOMMERCE) to pedidos
+   - Added `amount_paid` and `payment_status` columns to `ecommerce_pedidos`
+   - Functions: `recalculate_ecommerce_pedido_payment_totals()`
+   - Payment statuses: PENDING, PARTIAL, PAID, REFUNDED
+
+4. **Inventory Tracking** (`add-vendidos-column.sql`)
+   - Added `vendidos` column to `produccion_inventory`
+   - Tracks total units sold (from delivered and paid orders)
+
+5. **Status Enhancements** (`add-entregado-y-pagado-status.sql`, `add-entregado-y-pagado-ventas.sql`)
+   - Added `ENTREGADO_Y_PAGADO` (Delivered and Paid) status to both:
+     - `ecommerce_pedidos`
+     - `ventas_pedidos`
+
+### Migration Process
+
+#### Created Consolidated Script
+`backend/src/config/railway-sync-ecommerce-2024-11-21.sql` - 550+ lines combining all ecommerce migrations
+
+#### Execution Steps
+```bash
+# 1. Railway already linked to TERRA-MGMT/production/Postgres
+railway status
+# Output: Project: TERRA-MGMT, Environment: production, Service: Postgres
+
+# 2. Created temporary Node.js migration runner
+# run-ecommerce-sync.js
+
+# 3. Ran migration with Railway environment variables
+railway run /d/node run-ecommerce-sync.js
+```
+
+#### Results
+```
+✅ Migration completed successfully!
+
+Ecommerce tables found:
+  ✓ ecommerce_kit_allocations
+  ✓ ecommerce_kit_items
+  ✓ ecommerce_kits
+  ✓ ecommerce_pedido_items
+  ✓ ecommerce_pedido_payments
+  ✓ ecommerce_pedidos
+
+Inventory updates:
+  ✓ vendidos column exists in produccion_inventory
+
+Status constraints:
+  ✓ ventas_pedidos status constraint updated (includes ENTREGADO_Y_PAGADO)
+  ✓ ecommerce_pedidos status constraint updated (includes ENTREGADO_Y_PAGADO)
+```
+
+### Verification
+
+All new tables and columns successfully created on Railway:
+- `ecommerce_kits` ✓
+- `ecommerce_kit_items` ✓
+- `ecommerce_kit_allocations` ✓
+- `ecommerce_pedidos` ✓
+- `ecommerce_pedido_items` ✓
+- `ecommerce_pedido_payments` ✓
+- `produccion_inventory.vendidos` column ✓
+- Status constraints updated for both ecommerce and ventas ✓
+
+### Impact
+
+- ✅ Full ecommerce system now operational in production
+- ✅ Kit-based order management with inventory tracking
+- ✅ Payment tracking integrated with cash flow system
+- ✅ Sold products tracking (vendidos) for analytics
+- ✅ Unified status system across ecommerce and ventas mayoreo
+
+---
+
 **Document created:** 2025-11-18
-**Last updated:** 2025-11-21
+**Last updated:** 2025-11-21 (Ecommerce Sync)
 **Project:** TERRA-MGMT
 **Database:** Railway PostgreSQL
 **Environment:** Production

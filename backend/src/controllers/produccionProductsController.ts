@@ -79,7 +79,8 @@ export const createProduct = async (req: Request, res: Response) => {
       costo_esmalte,
       costo_horneado,
       costo_h_sancocho,
-      notes
+      notes,
+      product_category
     } = req.body;
 
     const userId = (req as any).user?.id || 1; // Default to user 1 if not authenticated
@@ -88,12 +89,15 @@ export const createProduct = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Name, Stage, and Tipo are required fields' });
     }
 
+    // Default to CERAMICA if not provided
+    const category = product_category || 'CERAMICA';
+
     const result = await pool.query(
       `INSERT INTO produccion_products (
         name, stage, tipo_id, size_id, capacity_id, esmalte_color_id,
         peso_crudo, peso_esmaltado, costo_pasta, costo_mano_obra, cantidad_esmalte, costo_esmalte, costo_horneado, costo_h_sancocho,
-        notes, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+        notes, created_by, product_category
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING *`,
       [
         name,
@@ -111,7 +115,8 @@ export const createProduct = async (req: Request, res: Response) => {
         costo_horneado || null,
         costo_h_sancocho || null,
         notes || null,
-        userId
+        userId,
+        category
       ]
     );
 
@@ -141,7 +146,8 @@ export const updateProduct = async (req: Request, res: Response) => {
       costo_esmalte,
       costo_horneado,
       costo_h_sancocho,
-      notes
+      notes,
+      product_category
     } = req.body;
 
     const result = await pool.query(
@@ -161,8 +167,9 @@ export const updateProduct = async (req: Request, res: Response) => {
         costo_horneado = COALESCE($13, costo_horneado),
         costo_h_sancocho = COALESCE($14, costo_h_sancocho),
         notes = COALESCE($15, notes),
+        product_category = COALESCE($16, product_category),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $16
+      WHERE id = $17
       RETURNING *`,
       [
         name,
@@ -180,6 +187,7 @@ export const updateProduct = async (req: Request, res: Response) => {
         costo_horneado,
         costo_h_sancocho,
         notes,
+        product_category,
         id
       ]
     );

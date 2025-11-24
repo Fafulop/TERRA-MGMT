@@ -1,6 +1,11 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
-import { handlePedidoDelivery, handlePedidoCancellation } from './ventasInventoryController';
+import {
+  handlePedidoDelivery,
+  handlePedidoCancellation,
+  handlePedidoEmbalajeDelivery,
+  handlePedidoEmbalajeCancellation
+} from './ventasInventoryController';
 
 // Get all pedidos
 export const getPedidos = async (req: Request, res: Response) => {
@@ -220,6 +225,7 @@ export const updatePedidoStatus = async (req: Request, res: Response) => {
       // Subtract inventory: both cant and apartados
       // If ENTREGADO_Y_PAGADO, also add to vendidos
       await handlePedidoDelivery(parseInt(id), client, status);
+      await handlePedidoEmbalajeDelivery(parseInt(id), client, status);
 
       // Set actual delivery date
       await client.query(`
@@ -230,6 +236,7 @@ export const updatePedidoStatus = async (req: Request, res: Response) => {
     } else if (status === 'CANCELLED' && currentStatus !== 'CANCELLED') {
       // Release allocations: remove apartados only
       await handlePedidoCancellation(parseInt(id), client);
+      await handlePedidoEmbalajeCancellation(parseInt(id), client);
     }
 
     // Update pedido status

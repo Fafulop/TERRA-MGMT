@@ -33,6 +33,7 @@ export interface Product {
   id: number;
   name: string;
   stage: 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO';
+  product_category: 'CERAMICA' | 'EMBALAJE';
   tipo_id: number;
   tipo_name: string;
   size_id: number;
@@ -60,6 +61,7 @@ export interface Product {
 export interface ProductFormData {
   name: string;
   stage: 'CRUDO' | 'SANCOCHADO' | 'ESMALTADO';
+  product_category: 'CERAMICA' | 'EMBALAJE';
   tipo_id: number;
   size_id: number;
   capacity_id: number;
