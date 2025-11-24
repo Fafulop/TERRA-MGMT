@@ -1573,4 +1573,138 @@ router.post('/add-google-oauth', async (req, res) => {
   }
 });
 
+// Add product category migration
+router.post('/add-product-category', async (req, res) => {
+  try {
+    console.log('Starting product category migration...');
+
+    // Add product_category column
+    await pool.query(`
+      ALTER TABLE produccion_products
+      ADD COLUMN IF NOT EXISTS product_category VARCHAR(50)
+      CHECK (product_category IN ('CERAMICA', 'EMBALAJE'))
+    `);
+    console.log('✓ Added product_category column');
+
+    // Set default for existing products
+    await pool.query(`
+      UPDATE produccion_products
+      SET product_category = 'CERAMICA'
+      WHERE product_category IS NULL
+    `);
+    console.log('✓ Set default category for existing products');
+
+    // Make column required and set default
+    await pool.query(`
+      ALTER TABLE produccion_products
+      ALTER COLUMN product_category SET NOT NULL
+    `);
+    await pool.query(`
+      ALTER TABLE produccion_products
+      ALTER COLUMN product_category SET DEFAULT 'CERAMICA'
+    `);
+    console.log('✓ Applied constraints');
+
+    // Create index
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_produccion_products_category ON produccion_products(product_category)
+    `);
+    console.log('✓ Created index on product_category');
+
+    res.status(200).json({
+      message: 'Product category migration completed successfully!',
+      table: 'produccion_products',
+      column_added: 'product_category VARCHAR(50) CHECK (IN CERAMICA, EMBALAJE)',
+      index_added: 'idx_produccion_products_category',
+      features: [
+        'Products can now be categorized as CERAMICA or EMBALAJE',
+        'Existing products automatically set to CERAMICA',
+        'Default category for new products is CERAMICA'
+      ]
+    });
+  } catch (error) {
+    console.error('Product category migration error:', error);
+    res.status(500).json({
+      error: 'Failed to add product category',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Add embalaje inventory tables migration
+router.post('/add-embalaje-inventory', async (req, res) => {
+  try {
+    console.log('Starting embalaje inventory migration...');
+
+    // Read SQL file
+    const sqlPath = path.join(__dirname, '../config/add-embalaje-inventory.sql');
+    const sql = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sql);
+    console.log('✓ Created embalaje inventory tables and triggers');
+
+    res.status(200).json({
+      message: 'Embalaje inventory migration completed successfully!',
+      tables: [
+        'embalaje_inventory',
+        'embalaje_inventory_movements',
+        'embalaje_kit_allocations'
+      ],
+      features: [
+        'Simple inventory tracking for packaging/other products',
+        'Movement history with INPUT, OUTPUT, ADJUSTMENT types',
+        'Kit allocation support for ecommerce',
+        'Automatic apartados calculation via triggers',
+        'Automatic updated_at timestamps'
+      ],
+      triggers: [
+        'update_embalaje_inventory_updated_at',
+        'recalculate_embalaje_apartados'
+      ]
+    });
+  } catch (error) {
+    console.error('Embalaje inventory migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create embalaje inventory tables',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Add ventas embalaje allocations migration
+router.post('/add-ventas-embalaje-allocations', async (req, res) => {
+  try {
+    console.log('Starting ventas embalaje allocations migration...');
+
+    // Read SQL file
+    const sqlPath = path.join(__dirname, '../config/ventas-embalaje-allocations.sql');
+    const sql = fs.readFileSync(sqlPath, 'utf8');
+
+    await pool.query(sql);
+    console.log('✓ Created ventas_pedido_embalaje_allocations table and triggers');
+
+    res.status(200).json({
+      message: 'Ventas embalaje allocations migration completed successfully!',
+      tables: [
+        'ventas_pedido_embalaje_allocations'
+      ],
+      features: [
+        'Embalaje product allocation for Ventas Mayoreo pedidos',
+        'Automatic apartados calculation combining ventas and ecommerce kit allocations',
+        'Automatic updated_at timestamps'
+      ],
+      triggers: [
+        'trigger_recalculate_embalaje_ventas_apartados',
+        'trigger_ventas_embalaje_allocations_updated_at'
+      ]
+    });
+  } catch (error) {
+    console.error('Ventas embalaje allocations migration error:', error);
+    res.status(500).json({
+      error: 'Failed to create ventas embalaje allocations table',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

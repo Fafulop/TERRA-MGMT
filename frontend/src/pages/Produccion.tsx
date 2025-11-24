@@ -118,6 +118,32 @@ const Produccion: React.FC = () => {
     }
   });
 
+  // Embalaje inventory queries
+  const { data: embalajeInventory = [] } = useQuery({
+    queryKey: ['embalaje-inventory'],
+    queryFn: async () => {
+      const res = await axios.get(`${API_URL}/embalaje/inventory`, { headers: getHeaders() });
+      return res.data;
+    }
+  });
+
+  const { data: embalajeMovements = [] } = useQuery({
+    queryKey: ['embalaje-inventory-movements'],
+    queryFn: async () => {
+      const res = await axios.get(`${API_URL}/embalaje/inventory/movements`, { headers: getHeaders() });
+      return res.data;
+    }
+  });
+
+  // Embalaje inventory states
+  const [showEmbalajeForm, setShowEmbalajeForm] = useState(false);
+  const [embalajeFormType, setEmbalajeFormType] = useState<'add' | 'remove' | 'adjust'>('add');
+  const [embalajeItems, setEmbalajeItems] = useState<Array<{
+    product_id: string;
+    quantity: string;
+    notes?: string;
+  }>>([{ product_id: '', quantity: '', notes: '' }]);
+
   // Product mutations
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
@@ -301,6 +327,55 @@ const Produccion: React.FC = () => {
     }
   });
 
+  // Embalaje mutations
+  const embalajeAddMutation = useMutation({
+    mutationFn: async (items: { product_id: number; quantity: number; notes?: string }[]) => {
+      await axios.post(`${API_URL}/embalaje/inventory/add`, { items }, { headers: getHeaders() });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['embalaje-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['embalaje-inventory-movements'] });
+      setShowEmbalajeForm(false);
+      setEmbalajeItems([{ product_id: '', quantity: '', notes: '' }]);
+    },
+    onError: (error: any) => {
+      const errorData = error.response?.data;
+      alert(errorData?.details || errorData?.error || 'Error al agregar inventario');
+    }
+  });
+
+  const embalajeRemoveMutation = useMutation({
+    mutationFn: async (items: { product_id: number; quantity: number; notes?: string }[]) => {
+      await axios.post(`${API_URL}/embalaje/inventory/remove`, { items }, { headers: getHeaders() });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['embalaje-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['embalaje-inventory-movements'] });
+      setShowEmbalajeForm(false);
+      setEmbalajeItems([{ product_id: '', quantity: '', notes: '' }]);
+    },
+    onError: (error: any) => {
+      const errorData = error.response?.data;
+      alert(errorData?.details || errorData?.error || 'Error al remover inventario');
+    }
+  });
+
+  const embalajeAdjustMutation = useMutation({
+    mutationFn: async (items: { product_id: number; quantity: number; notes?: string }[]) => {
+      await axios.post(`${API_URL}/embalaje/inventory/adjust`, { items }, { headers: getHeaders() });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['embalaje-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['embalaje-inventory-movements'] });
+      setShowEmbalajeForm(false);
+      setEmbalajeItems([{ product_id: '', quantity: '', notes: '' }]);
+    },
+    onError: (error: any) => {
+      const errorData = error.response?.data;
+      alert(errorData?.details || errorData?.error || 'Error al ajustar inventario');
+    }
+  });
+
   const handleSubmitProduct = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -308,7 +383,8 @@ const Produccion: React.FC = () => {
     const data: any = {
       name: formData.get('name') as string,
       stage: 'CRUDO',
-      tipo_id: Number(formData.get('tipo_id'))
+      tipo_id: Number(formData.get('tipo_id')),
+      product_category: formData.get('product_category') as string
     };
 
     // Add optional fields only if they have values
@@ -393,6 +469,42 @@ const Produccion: React.FC = () => {
   const removeInventoryRow = (index: number) => {
     if (inventoryItems.length > 1) {
       setInventoryItems(inventoryItems.filter((_, i) => i !== index));
+    }
+  };
+
+  // Embalaje form handlers
+  const handleSubmitEmbalajeForm = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const validItems = embalajeItems.filter(item => item.product_id && item.quantity);
+
+    if (validItems.length === 0) {
+      alert('Por favor agrega al menos un producto');
+      return;
+    }
+
+    const items = validItems.map(item => ({
+      product_id: Number(item.product_id),
+      quantity: Number(item.quantity),
+      notes: item.notes
+    }));
+
+    if (embalajeFormType === 'add') {
+      embalajeAddMutation.mutate(items);
+    } else if (embalajeFormType === 'remove') {
+      embalajeRemoveMutation.mutate(items);
+    } else if (embalajeFormType === 'adjust') {
+      embalajeAdjustMutation.mutate(items);
+    }
+  };
+
+  const addEmbalajeRow = () => {
+    setEmbalajeItems([...embalajeItems, { product_id: '', quantity: '', notes: '' }]);
+  };
+
+  const removeEmbalajeRow = (index: number) => {
+    if (embalajeItems.length > 1) {
+      setEmbalajeItems(embalajeItems.filter((_, i) => i !== index));
     }
   };
 
@@ -905,10 +1017,123 @@ const Produccion: React.FC = () => {
 
         {/* Inventario Embalaje Tab */}
         {activeTab === 'embalaje' && (
-          <div className="bg-white shadow rounded-lg p-6 sm:p-8">
-            <div className="text-center text-gray-500">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Inventario Embalaje</h2>
-              <p className="text-sm">Esta sección está en desarrollo.</p>
+          <div className="space-y-6">
+            {/* Action Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <button
+                onClick={() => {
+                  setEmbalajeFormType('add');
+                  setShowEmbalajeForm(true);
+                  setEmbalajeItems([{ product_id: '', quantity: '', notes: '' }]);
+                }}
+                className="bg-green-600 text-white px-4 py-3 rounded-md hover:bg-green-700 font-medium text-sm sm:text-base"
+              >
+                + Agregar Inventario
+              </button>
+              <button
+                onClick={() => {
+                  setEmbalajeFormType('remove');
+                  setShowEmbalajeForm(true);
+                  setEmbalajeItems([{ product_id: '', quantity: '', notes: '' }]);
+                }}
+                className="bg-red-600 text-white px-4 py-3 rounded-md hover:bg-red-700 font-medium text-sm sm:text-base"
+              >
+                - Remover Inventario
+              </button>
+              <button
+                onClick={() => {
+                  setEmbalajeFormType('adjust');
+                  setShowEmbalajeForm(true);
+                  setEmbalajeItems([{ product_id: '', quantity: '', notes: '' }]);
+                }}
+                className="bg-gray-600 text-white px-4 py-3 rounded-md hover:bg-gray-700 font-medium text-sm sm:text-base"
+              >
+                Ajustar Inventario
+              </button>
+            </div>
+
+            {/* Current Inventory Table */}
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Inventario Actual</h3>
+              </div>
+              {embalajeInventory.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  No hay inventario de embalaje. Agrega productos para comenzar.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Tipo</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Apartados</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Disponible</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {embalajeInventory.map((item: any) => (
+                        <tr key={item.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.product_name}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">{item.tipo_name}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">{item.apartados}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{item.disponible}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Movement History */}
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Historial de Movimientos</h3>
+              </div>
+              {embalajeMovements.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  No hay movimientos registrados.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Fecha</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Usuario</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {embalajeMovements.slice(0, 20).map((movement: any) => (
+                        <tr key={movement.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
+                            {new Date(movement.created_at).toLocaleDateString('es-MX')}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs font-medium rounded ${
+                              movement.movement_type === 'INPUT' ? 'bg-green-100 text-green-800' :
+                              movement.movement_type === 'OUTPUT' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {movement.movement_type}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{movement.product_name}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{movement.quantity}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">{movement.created_by_name}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1016,6 +1241,19 @@ const Produccion: React.FC = () => {
                     {tipos.map((tipo: Tipo) => (
                       <option key={tipo.id} value={tipo.id}>{tipo.name}</option>
                     ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Categoría *</label>
+                  <select
+                    name="product_category"
+                    defaultValue={editingProduct?.product_category || 'CERAMICA'}
+                    required
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"
+                  >
+                    <option value="CERAMICA">Cerámica</option>
+                    <option value="EMBALAJE">Embalaje/Otros</option>
                   </select>
                 </div>
 
@@ -1559,6 +1797,157 @@ const Produccion: React.FC = () => {
                     }`}
                   >
                     {inventoryFormType === 'adjustment' ? 'Ajustar' : inventoryFormType === 'merma' ? 'Registrar' : 'Procesar'} ({inventoryItems.filter(item => item.product_id && item.quantity).length})
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Embalaje Form Modal */}
+      {showEmbalajeForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-lg sm:text-2xl font-bold mb-3 sm:mb-4">
+                {embalajeFormType === 'add' && 'Agregar Inventario Embalaje'}
+                {embalajeFormType === 'remove' && 'Remover Inventario Embalaje'}
+                {embalajeFormType === 'adjust' && 'Ajustar Inventario Embalaje'}
+              </h2>
+
+              <form onSubmit={handleSubmitEmbalajeForm} className="space-y-3 sm:space-y-4">
+                {embalajeFormType === 'add' && (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-2 sm:p-3">
+                    <p className="text-xs sm:text-sm text-green-800">
+                      <strong>Nota:</strong> Agregar productos de embalaje recibidos.
+                    </p>
+                  </div>
+                )}
+
+                {embalajeFormType === 'remove' && (
+                  <div className="bg-red-50 border border-red-200 rounded-md p-2 sm:p-3">
+                    <p className="text-xs sm:text-sm text-red-800">
+                      <strong>Nota:</strong> Esto restará la cantidad del inventario disponible.
+                    </p>
+                  </div>
+                )}
+
+                {embalajeFormType === 'adjust' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-2 sm:p-3">
+                    <p className="text-xs sm:text-sm text-blue-800">
+                      <strong>Nota:</strong> Ingresa la cantidad total deseada (no el cambio).
+                    </p>
+                  </div>
+                )}
+
+                {/* Items Table */}
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                        <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
+                        <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase hidden sm:table-cell">Notas</th>
+                        <th className="px-2 sm:px-3 py-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {embalajeItems.map((item, index) => {
+                        const embalajeProducts = products.filter((p: Product) => p.product_category === 'EMBALAJE');
+
+                        return (
+                          <tr key={index}>
+                            <td className="px-2 sm:px-3 py-2">
+                              <select
+                                value={item.product_id}
+                                onChange={(e) => {
+                                  const newItems = [...embalajeItems];
+                                  newItems[index] = { ...newItems[index], product_id: e.target.value };
+                                  setEmbalajeItems(newItems);
+                                }}
+                                required
+                                className="w-full border-gray-300 rounded-md shadow-sm text-xs sm:text-sm"
+                              >
+                                <option value="">Seleccionar...</option>
+                                {embalajeProducts.map((p: Product) => (
+                                  <option key={p.id} value={p.id}>{p.name} - {p.tipo_name}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-2 sm:px-3 py-2">
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const newItems = [...embalajeItems];
+                                  newItems[index] = { ...newItems[index], quantity: e.target.value };
+                                  setEmbalajeItems(newItems);
+                                }}
+                                required
+                                min="1"
+                                className="w-full border-gray-300 rounded-md shadow-sm text-xs sm:text-sm"
+                              />
+                            </td>
+                            <td className="px-2 sm:px-3 py-2 hidden sm:table-cell">
+                              <input
+                                type="text"
+                                value={item.notes || ''}
+                                onChange={(e) => {
+                                  const newItems = [...embalajeItems];
+                                  newItems[index] = { ...newItems[index], notes: e.target.value };
+                                  setEmbalajeItems(newItems);
+                                }}
+                                placeholder="Opcional"
+                                className="w-full border-gray-300 rounded-md shadow-sm text-xs sm:text-sm"
+                              />
+                            </td>
+                            <td className="px-2 sm:px-3 py-2 text-center">
+                              {embalajeItems.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeEmbalajeRow(index)}
+                                  className="text-red-600 hover:text-red-800 text-xs sm:text-sm"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addEmbalajeRow}
+                  className="w-full border-2 border-dashed border-gray-300 rounded-md py-2 text-xs sm:text-sm text-gray-600 hover:border-gray-400 hover:text-gray-700"
+                >
+                  + Agregar otra línea
+                </button>
+
+                <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEmbalajeForm(false);
+                      setEmbalajeItems([{ product_id: '', quantity: '', notes: '' }]);
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 text-sm sm:text-base order-2 sm:order-1"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className={`px-4 py-2 text-white rounded-md text-sm sm:text-base order-1 sm:order-2 ${
+                      embalajeFormType === 'add' ? 'bg-green-600 hover:bg-green-700' :
+                      embalajeFormType === 'remove' ? 'bg-red-600 hover:bg-red-700' :
+                      'bg-gray-600 hover:bg-gray-700'
+                    }`}
+                  >
+                    {embalajeFormType === 'add' ? 'Agregar' : embalajeFormType === 'remove' ? 'Remover' : 'Ajustar'} ({embalajeItems.filter(item => item.product_id && item.quantity).length})
                   </button>
                 </div>
               </form>

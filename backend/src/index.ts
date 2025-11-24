@@ -59,6 +59,7 @@ import personalTasksRoutes from './routes/personalTasks';
 import projectRoutes from './routes/projects';
 import notificationRoutes from './routes/notifications';
 import produccionRoutes from './routes/produccion';
+import embalajeInventoryRoutes from './routes/embalajeInventory';
 import ventasQuotationsRoutes from './routes/ventasQuotations';
 import ventasPedidosRoutes from './routes/ventasPedidos';
 import ventasInventoryRoutes from './routes/ventasInventory';
@@ -93,6 +94,7 @@ app.use('/api/personal-tasks', personalTasksRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/produccion', produccionRoutes);
+app.use('/api/embalaje', embalajeInventoryRoutes);
 app.use('/api/ventas/quotations', ventasQuotationsRoutes);
 app.use('/api/ventas/pedidos', ventasPedidosRoutes);
 app.use('/api/ventas/pedidos', ventasInventoryRoutes); // Inventory allocation routes (nested under pedidos)

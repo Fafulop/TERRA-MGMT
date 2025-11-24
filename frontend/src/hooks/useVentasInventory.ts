@@ -12,6 +12,7 @@ export interface InventoryAvailabilityItem {
   product_id: number;
   product_name: string;
   tipo_name: string;
+  product_category?: 'CERAMICA' | 'EMBALAJE';
   esmalte_color_id?: number;
   esmalte_color?: string;
   esmalte_hex_code?: string;
@@ -125,6 +126,77 @@ export const useDeallocateInventory = () => {
       queryClient.invalidateQueries({ queryKey: ['pedido-inventory'] });
       queryClient.invalidateQueries({ queryKey: ['pedido-allocations'] });
       queryClient.invalidateQueries({ queryKey: ['produccion-inventory'] });
+    },
+  });
+};
+
+// ========== EMBALAJE ALLOCATION HOOKS ==========
+
+// Get embalaje inventory availability for a pedido
+export const usePedidoEmbalajeAvailability = (pedido_id?: number) => {
+  return useQuery({
+    queryKey: ['pedido-embalaje-inventory', pedido_id],
+    queryFn: async () => {
+      const res = await axios.get(`${API_URL}/ventas/pedidos/${pedido_id}/embalaje-inventory`, {
+        headers: getHeaders(),
+      });
+      return res.data as InventoryAvailabilityItem[];
+    },
+    enabled: !!pedido_id,
+  });
+};
+
+// Get embalaje allocations for a pedido
+export const usePedidoEmbalajeAllocations = (pedido_id?: number) => {
+  return useQuery({
+    queryKey: ['pedido-embalaje-allocations', pedido_id],
+    queryFn: async () => {
+      const res = await axios.get(`${API_URL}/ventas/pedidos/${pedido_id}/embalaje-allocations`, {
+        headers: getHeaders(),
+      });
+      return res.data as Allocation[];
+    },
+    enabled: !!pedido_id,
+  });
+};
+
+// Allocate embalaje inventory to pedido item
+export const useAllocateEmbalajeInventory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: AllocationRequest) => {
+      const res = await axios.post(`${API_URL}/ventas/pedidos/embalaje-allocations`, data, {
+        headers: getHeaders(),
+      });
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ['pedido-inventory', variables.pedido_id] });
+      queryClient.invalidateQueries({ queryKey: ['pedido-embalaje-inventory', variables.pedido_id] });
+      queryClient.invalidateQueries({ queryKey: ['pedido-embalaje-allocations', variables.pedido_id] });
+      queryClient.invalidateQueries({ queryKey: ['embalaje-inventory'] });
+    },
+  });
+};
+
+// Deallocate embalaje inventory
+export const useDeallocateEmbalajeInventory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (allocation_id: number) => {
+      const res = await axios.delete(`${API_URL}/ventas/pedidos/embalaje-allocations/${allocation_id}`, {
+        headers: getHeaders(),
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pedido-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['pedido-embalaje-inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['pedido-embalaje-allocations'] });
+      queryClient.invalidateQueries({ queryKey: ['embalaje-inventory'] });
     },
   });
 };

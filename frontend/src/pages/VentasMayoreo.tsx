@@ -5,7 +5,16 @@ import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuotations, useQuotation, useCreateQuotation, useUpdateQuotation, useDeleteQuotation } from '../hooks/useVentasQuotations';
 import { usePedidos, usePedido, useCreatePedido, useUpdatePedidoStatus, useDeletePedido } from '../hooks/useVentasPedidos';
-import { usePedidoInventoryAvailability, useAllocateInventory, usePedidoAllocations, useDeallocateInventory } from '../hooks/useVentasInventory';
+import {
+  usePedidoInventoryAvailability,
+  useAllocateInventory,
+  usePedidoAllocations,
+  useDeallocateInventory,
+  usePedidoEmbalajeAvailability,
+  useAllocateEmbalajeInventory,
+  usePedidoEmbalajeAllocations,
+  useDeallocateEmbalajeInventory
+} from '../hooks/useVentasInventory';
 import { useAvailablePayments, usePedidoPayments, useAttachPayment, useDetachPayment } from '../hooks/useVentasPayments';
 import { Quotation, QuotationItemFormData, Pedido } from '../types/ventas';
 import { Product } from '../types/produccion';
@@ -75,6 +84,12 @@ const VentasMayoreo: React.FC = () => {
   const { data: pedidoAllocations = [] } = usePedidoAllocations(viewingPedido?.id);
   const allocateInventoryMutation = useAllocateInventory();
   const deallocateInventoryMutation = useDeallocateInventory();
+
+  // Embalaje allocation hooks
+  const { data: pedidoEmbalajeInventory = [] } = usePedidoEmbalajeAvailability(viewingPedido?.id);
+  const { data: pedidoEmbalajeAllocations = [] } = usePedidoEmbalajeAllocations(viewingPedido?.id);
+  const allocateEmbalajeInventoryMutation = useAllocateEmbalajeInventory();
+  const deallocateEmbalajeInventoryMutation = useDeallocateEmbalajeInventory();
 
   // Payment tracking hooks
   const { data: availablePayments = [] } = useAvailablePayments();
@@ -1563,7 +1578,11 @@ const VentasMayoreo: React.FC = () => {
                                                     if (quantity) {
                                                       const qty = parseInt(quantity);
                                                       if (qty > 0 && qty <= maxToAllocate) {
-                                                        allocateInventoryMutation.mutate({
+                                                        // Use correct mutation based on product category
+                                                        const isEmbalaje = inventoryItem.product_category === 'EMBALAJE';
+                                                        const mutation = isEmbalaje ? allocateEmbalajeInventoryMutation : allocateInventoryMutation;
+
+                                                        mutation.mutate({
                                                           pedido_id: viewingPedido!.id,
                                                           pedido_item_id: inventoryItem.pedido_item_id,
                                                           inventory_id: inv.inventory_id,
@@ -1581,7 +1600,7 @@ const VentasMayoreo: React.FC = () => {
                                                       }
                                                     }
                                                   }}
-                                                  disabled={allocateInventoryMutation.isPending}
+                                                  disabled={allocateInventoryMutation.isPending || allocateEmbalajeInventoryMutation.isPending}
                                                   className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 font-medium"
                                                 >
                                                   Apartar
