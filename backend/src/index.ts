@@ -3,10 +3,16 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import passport from 'passport';
+import { configurePassport } from './config/passport';
 
 dotenv.config();
 
 const app = express();
+
+// Configure Passport for Google OAuth
+configurePassport();
+app.use(passport.initialize());
 const PORT = process.env.PORT || 5000;
 
 // Trust proxy - Required for Railway deployment

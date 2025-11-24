@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext'
 // Eager loading for critical routes (auth)
 import Login from './pages/Login'
 import Register from './pages/Register'
+import GoogleCallback from './pages/GoogleCallback'
 
 // Lazy loading for feature routes
 const Dashboard = React.lazy(() => import('./pages/Dashboard'))
@@ -48,6 +49,7 @@ function App() {
                 {/* Eager loaded auth routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/auth/google/callback" element={<GoogleCallback />} />
                 
                 {/* Lazy loaded feature routes */}
                 <Route path="/create-task" element={<TaskCreator />} />

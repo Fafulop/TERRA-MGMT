@@ -1526,4 +1526,41 @@ router.post('/ecommerce-pedido-payments', async (req, res) => {
   }
 });
 
+// Google OAuth migration - add google_id column to users table
+router.post('/add-google-oauth', async (req, res) => {
+  try {
+    console.log('Starting Google OAuth migration...');
+
+    // Add google_id column to users table
+    await pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE
+    `);
+    console.log('✓ Added google_id column to users table');
+
+    // Create index for faster Google ID lookups
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)
+    `);
+    console.log('✓ Created index on google_id');
+
+    res.status(200).json({
+      message: 'Google OAuth migration completed successfully!',
+      table: 'users',
+      column_added: 'google_id VARCHAR(255) UNIQUE',
+      index_added: 'idx_users_google_id',
+      features: [
+        'Google Sign-In support',
+        'Account linking (existing users can link Google)',
+        'New users can register via Google'
+      ]
+    });
+  } catch (error) {
+    console.error('Google OAuth migration error:', error);
+    res.status(500).json({
+      error: 'Failed to add Google OAuth support',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

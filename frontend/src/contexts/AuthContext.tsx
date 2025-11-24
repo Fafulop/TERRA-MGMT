@@ -2,7 +2,12 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { AuthContextType, User, RegisterData } from '../types';
 import * as authService from '../services/auth';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface ExtendedAuthContextType extends AuthContextType {
+  loginWithToken: (token: string) => Promise<void>;
+  initiateGoogleLogin: () => void;
+}
+
+const AuthContext = createContext<ExtendedAuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -63,13 +68,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('token');
   };
 
-  const value: AuthContextType = {
+  const loginWithToken = async (newToken: string) => {
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+    try {
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+    } catch (error) {
+      localStorage.removeItem('token');
+      setToken(null);
+      throw error;
+    }
+  };
+
+  const initiateGoogleLogin = () => {
+    const backendUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    window.location.href = `${backendUrl}/api/auth/google`;
+  };
+
+  const value: ExtendedAuthContextType = {
     user,
     token,
     login,
     register,
     logout,
     isLoading,
+    loginWithToken,
+    initiateGoogleLogin,
   };
 
   if (isLoading) {
