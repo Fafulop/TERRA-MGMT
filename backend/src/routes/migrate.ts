@@ -13,6 +13,16 @@ interface AuthRequest extends Request {
 
 const router = express.Router();
 
+// Disable migrations in production for security
+if (process.env.NODE_ENV === 'production') {
+  router.use((req, res) => {
+    res.status(403).json({
+      error: 'Migrations disabled in production',
+      message: 'Use Railway CLI or direct database access for production migrations'
+    });
+  });
+}
+
 router.post('/add-attachments-table', async (req, res) => {
   try {
     // Create task_attachments table
