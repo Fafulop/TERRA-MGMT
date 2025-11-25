@@ -200,3 +200,31 @@ export const useDeallocateEmbalajeInventory = () => {
     },
   });
 };
+
+// ========== PRODUCTION PLANNING ==========
+
+export interface ProductionNeed {
+  product_id: number;
+  product_name: string;
+  tipo_name: string;
+  product_category: 'CERAMICA' | 'EMBALAJE';
+  esmalte_color_id?: number;
+  esmalte_color?: string;
+  esmalte_hex_code?: string;
+  restante: number;
+  pedido_id: number;
+  pedido_number: string;
+}
+
+// Get production needs from all pedidos en firme with Restante > 0
+export const useProductionNeeds = () => {
+  return useQuery({
+    queryKey: ['production-needs'],
+    queryFn: async () => {
+      const res = await axios.get(`${API_URL}/ventas/pedidos/production-needs`, {
+        headers: getHeaders(),
+      });
+      return res.data as ProductionNeed[];
+    },
+  });
+};

@@ -522,3 +522,100 @@ export const handlePedidoEmbalajeCancellation = async (pedido_id: number, client
     WHERE pedido_id = $1
   `, [pedido_id]);
 };
+
+// Get production needs from all pedidos en firme with Restante > 0
+export const getAggregatedProductionNeeds = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+
+  try {
+    // Get ALL pedidos (excluding CANCELLED and DELIVERED statuses)
+    const pedidosResult = await client.query(`
+      SELECT id, pedido_number
+      FROM ventas_pedidos
+      WHERE status NOT IN ('CANCELLED', 'DELIVERED', 'ENTREGADO_Y_PAGADO')
+      ORDER BY pedido_number
+    `);
+
+    if (pedidosResult.rows.length === 0) {
+      return res.json([]);
+    }
+
+    const productionNeeds: any[] = [];
+
+    // For each pedido, get items with Restante > 0
+    for (const pedido of pedidosResult.rows) {
+      // Get pedido items with allocations
+      const pedidoItemsResult = await client.query(`
+        SELECT
+          pi.id as pedido_item_id,
+          pi.product_id,
+          pi.product_name,
+          pi.tipo_name,
+          pi.esmalte_color_id,
+          pi.esmalte_color,
+          pi.esmalte_hex_code,
+          pi.quantity as quantity_needed,
+          (
+            COALESCE(SUM(pa.quantity_allocated), 0) +
+            COALESCE(SUM(pea.quantity_allocated), 0)
+          ) as quantity_allocated
+        FROM ventas_pedido_items pi
+        LEFT JOIN ventas_pedido_allocations pa ON pi.id = pa.pedido_item_id
+        LEFT JOIN ventas_pedido_embalaje_allocations pea ON pi.id = pea.pedido_item_id
+        WHERE pi.pedido_id = $1
+        GROUP BY pi.id
+        ORDER BY pi.product_name, pi.esmalte_color
+      `, [pedido.id]);
+
+      // For each item, check if still_needed > 0
+      for (const item of pedidoItemsResult.rows) {
+        const quantityNeeded = Number(item.quantity_needed);
+        const quantityAllocated = Number(item.quantity_allocated);
+        const stillNeeded = quantityNeeded - quantityAllocated;
+
+        // Only include items with Restante > 0
+        if (stillNeeded > 0) {
+          // Get product category
+          const productCategoryResult = await client.query(`
+            SELECT product_category FROM produccion_products WHERE id = $1
+          `, [item.product_id]);
+
+          const productCategory = productCategoryResult.rows[0]?.product_category || 'CERAMICA';
+
+          productionNeeds.push({
+            product_id: item.product_id,
+            product_name: item.product_name,
+            tipo_name: item.tipo_name,
+            product_category: productCategory,
+            esmalte_color_id: item.esmalte_color_id,
+            esmalte_color: item.esmalte_color,
+            esmalte_hex_code: item.esmalte_hex_code,
+            restante: stillNeeded,
+            pedido_id: pedido.id,
+            pedido_number: pedido.pedido_number
+          });
+        }
+      }
+    }
+
+    // Sort by product name, then color, then pedido
+    productionNeeds.sort((a, b) => {
+      if (a.product_name !== b.product_name) {
+        return a.product_name.localeCompare(b.product_name);
+      }
+      const colorA = a.esmalte_color || '';
+      const colorB = b.esmalte_color || '';
+      if (colorA !== colorB) {
+        return colorA.localeCompare(colorB);
+      }
+      return a.pedido_number.localeCompare(b.pedido_number);
+    });
+
+    res.json(productionNeeds);
+  } catch (error: any) {
+    console.error('Error getting production needs:', error);
+    res.status(500).json({ error: 'Failed to get production needs', details: error.message });
+  } finally {
+    client.release();
+  }
+};

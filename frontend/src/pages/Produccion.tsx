@@ -17,6 +17,7 @@ import {
   AdjustmentFormData,
   MermaFormData
 } from '../types/produccion';
+import { useProductionNeeds } from '../hooks/useVentasInventory';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -117,6 +118,9 @@ const Produccion: React.FC = () => {
       return res.data;
     }
   });
+
+  // Production planning - aggregated needs from "En Producción" pedidos
+  const { data: productionNeeds = [], isLoading: isLoadingProductionNeeds } = useProductionNeeds();
 
   // Embalaje inventory queries
   const { data: embalajeInventory = [] } = useQuery({
@@ -1200,11 +1204,156 @@ const Produccion: React.FC = () => {
 
         {/* Produccion Tab */}
         {activeTab === 'produccion' && (
-          <div className="bg-white shadow rounded-lg p-6 sm:p-8">
-            <div className="text-center text-gray-500">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Producción</h2>
-              <p className="text-sm">Esta sección está en desarrollo.</p>
-            </div>
+          <div className="space-y-4 sm:space-y-6">
+            {/* Production Planning - Items with Restante > 0 */}
+            {productionNeeds.length === 0 ? (
+              <div className="bg-white shadow rounded-lg p-6 sm:p-8">
+                <div className="text-center text-gray-500">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-2">Plan de Producción</h2>
+                  <p className="text-sm">No hay items pendientes en pedidos en firme.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-blue-50 border-2 border-blue-200 shadow rounded-lg overflow-hidden">
+                <div className="px-4 sm:px-6 py-3 sm:py-4 bg-blue-100 border-b border-blue-200">
+                  <h2 className="text-base sm:text-lg font-semibold text-blue-900">
+                    Plan de Producción - Pedidos en Firme
+                  </h2>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Items pendientes de apartar en todos los pedidos en firme
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-blue-200">
+                    <thead className="bg-blue-50">
+                      <tr>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-blue-900 uppercase">Producto</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-blue-900 uppercase hidden lg:table-cell">Color</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-blue-900 uppercase">Restante</th>
+                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-blue-900 uppercase">Pedido</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-blue-100">
+                      {(() => {
+                        const rows: JSX.Element[] = [];
+                        let currentGroup: { product_id: number; color_id: number | null; product_name: string; color: string | null } | null = null;
+                        let groupTotal = 0;
+
+                        productionNeeds.forEach((need, idx) => {
+                          const needColorId = need.esmalte_color_id || null;
+                          const needColor = need.esmalte_color || null;
+
+                          // Check if we're starting a new group
+                          if (
+                            !currentGroup ||
+                            currentGroup.product_id !== need.product_id ||
+                            currentGroup.color_id !== needColorId
+                          ) {
+                            // Add subtotal row for previous group
+                            if (currentGroup && groupTotal > 0) {
+                              rows.push(
+                                <tr key={`subtotal-${currentGroup.product_id}-${currentGroup.color_id}`} className="bg-blue-100 font-semibold border-t-2 border-blue-300">
+                                  <td className="px-3 sm:px-6 py-2 text-sm text-blue-900">
+                                    {currentGroup.product_name} - Subtotal
+                                  </td>
+                                  <td className="px-3 sm:px-6 py-2 text-sm text-blue-900 hidden lg:table-cell">
+                                    {currentGroup.color || '-'}
+                                  </td>
+                                  <td className="px-3 sm:px-6 py-2">
+                                    <span className="inline-flex items-center px-3 py-1 rounded text-sm font-bold bg-blue-200 text-blue-900">
+                                      {groupTotal}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 sm:px-6 py-2 text-sm text-blue-700">
+
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            // Start new group
+                            currentGroup = {
+                              product_id: need.product_id,
+                              color_id: needColorId,
+                              product_name: need.product_name,
+                              color: needColor
+                            };
+                            groupTotal = 0;
+                          }
+
+                          // Add regular row
+                          rows.push(
+                            <tr key={idx} className="hover:bg-blue-50 transition-colors">
+                              <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm">
+                                <div className="font-medium text-gray-900">{need.product_name}</div>
+                                <div className="text-xs text-gray-500 hidden sm:block">{need.tipo_name || '-'}</div>
+                              </td>
+                              <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm hidden lg:table-cell">
+                                {need.esmalte_color ? (
+                                  <div className="flex items-center space-x-2">
+                                    {need.esmalte_hex_code && (
+                                      <div
+                                        className="w-5 h-5 rounded-full border border-gray-300"
+                                        style={{ backgroundColor: need.esmalte_hex_code }}
+                                        title={need.esmalte_color}
+                                      />
+                                    )}
+                                    <span>{need.esmalte_color}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                              <td className="px-3 sm:px-6 py-3 sm:py-4">
+                                <span className="inline-flex items-center px-2 py-1 rounded text-sm font-semibold bg-orange-100 text-orange-800">
+                                  {need.restante}
+                                </span>
+                              </td>
+                              <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm">
+                                <a
+                                  href={`/ventas-mayoreo?pedido=${need.pedido_id}`}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {need.pedido_number}
+                                </a>
+                              </td>
+                            </tr>
+                          );
+
+                          groupTotal += need.restante;
+                        });
+
+                        // Add final subtotal row
+                        if (currentGroup && groupTotal > 0) {
+                          rows.push(
+                            <tr key={`subtotal-${currentGroup.product_id}-${currentGroup.color_id}`} className="bg-blue-100 font-semibold border-t-2 border-blue-300">
+                              <td className="px-3 sm:px-6 py-2 text-sm text-blue-900">
+                                {currentGroup.product_name} - Subtotal
+                              </td>
+                              <td className="px-3 sm:px-6 py-2 text-sm text-blue-900 hidden lg:table-cell">
+                                {currentGroup.color || '-'}
+                              </td>
+                              <td className="px-3 sm:px-6 py-2">
+                                <span className="inline-flex items-center px-3 py-1 rounded text-sm font-bold bg-blue-200 text-blue-900">
+                                  {groupTotal}
+                                </span>
+                              </td>
+                              <td className="px-3 sm:px-6 py-2 text-sm text-blue-700">
+
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        return rows;
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

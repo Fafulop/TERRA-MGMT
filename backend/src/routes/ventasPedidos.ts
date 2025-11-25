@@ -14,10 +14,14 @@ import {
   detachPayment,
   getPedidoPaymentSummary,
 } from '../controllers/ventasPaymentsController';
+import { getAggregatedProductionNeeds } from '../controllers/ventasInventoryController';
 
 const router = express.Router();
 
 router.use(authenticateToken);
+
+// Production planning route - MUST come before /:id to avoid conflict
+router.get('/production-needs', getAggregatedProductionNeeds);
 
 // Pedido routes
 router.get('/', getPedidos);
