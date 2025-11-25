@@ -68,7 +68,7 @@ const Ecommerce: React.FC = () => {
   const [editingKit, setEditingKit] = useState<Kit | null>(null);
   const [viewingKit, setViewingKit] = useState<Kit | null>(null);
   const [showStockModal, setShowStockModal] = useState(false);
-  const [stockAdjustment, setStockAdjustment] = useState(0);
+  const [stockAdjustment, setStockAdjustment] = useState('0');
   const [stockKitId, setStockKitId] = useState<number | null>(null);
 
   // Kit form state
@@ -215,12 +215,13 @@ const Ecommerce: React.FC = () => {
   };
 
   const handleAdjustStock = async () => {
-    if (!stockKitId || stockAdjustment === 0) return;
+    const adjustment = Number(stockAdjustment);
+    if (!stockKitId || adjustment === 0 || isNaN(adjustment)) return;
 
     try {
-      await adjustStockMutation.mutateAsync({ id: stockKitId, adjustment: stockAdjustment });
+      await adjustStockMutation.mutateAsync({ id: stockKitId, adjustment });
       setShowStockModal(false);
-      setStockAdjustment(0);
+      setStockAdjustment('0');
       setStockKitId(null);
     } catch (error: any) {
       alert(error.response?.data?.details || error.response?.data?.error || 'Error al ajustar stock');
@@ -229,7 +230,7 @@ const Ecommerce: React.FC = () => {
 
   const openStockModal = (kit: Kit) => {
     setStockKitId(kit.id);
-    setStockAdjustment(0);
+    setStockAdjustment('0');
     setShowStockModal(true);
   };
 
@@ -565,7 +566,7 @@ const Ecommerce: React.FC = () => {
                             className="text-green-600 hover:text-green-900"
                             title="Ajustar Stock"
                           >
-                            Stock
+                            +/- Stock
                           </button>
                           <button
                             onClick={() => openEditKit(kit)}
@@ -912,8 +913,10 @@ const Ecommerce: React.FC = () => {
                 <input
                   type="number"
                   value={stockAdjustment}
-                  onChange={(e) => setStockAdjustment(Number(e.target.value))}
+                  onChange={(e) => setStockAdjustment(e.target.value)}
                   className="w-full border border-gray-300 rounded-md py-2 px-3 text-lg text-center"
+                  placeholder="0"
+                  step="1"
                 />
               </div>
 
@@ -921,7 +924,7 @@ const Ecommerce: React.FC = () => {
                 <button
                   onClick={() => {
                     setShowStockModal(false);
-                    setStockAdjustment(0);
+                    setStockAdjustment('0');
                     setStockKitId(null);
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
@@ -930,7 +933,7 @@ const Ecommerce: React.FC = () => {
                 </button>
                 <button
                   onClick={handleAdjustStock}
-                  disabled={stockAdjustment === 0 || adjustStockMutation.isPending}
+                  disabled={Number(stockAdjustment) === 0 || isNaN(Number(stockAdjustment)) || adjustStockMutation.isPending}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
                 >
                   {adjustStockMutation.isPending ? 'Procesando...' : 'Aplicar Ajuste'}
