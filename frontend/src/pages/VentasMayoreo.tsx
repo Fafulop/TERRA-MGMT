@@ -1322,31 +1322,62 @@ const VentasMayoreo: React.FC = () => {
 
             <div className="p-6 max-h-[70vh] overflow-y-auto">
               {/* Status */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Estado del Pedido</label>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadgeColor(viewingPedidoDetails.status)}`}>
-                    {getStatusLabel(viewingPedidoDetails.status)}
-                  </span>
-                  <select
-                    value={viewingPedidoDetails.status}
-                    onChange={(e) => {
-                      if (confirm('¿Cambiar el estado del pedido?')) {
-                        updatePedidoStatusMutation.mutate({
-                          id: viewingPedidoDetails.id,
-                          status: e.target.value,
-                        });
-                      }
-                    }}
-                    className="ml-4 px-3 py-1 border border-gray-300 rounded-md text-sm"
-                  >
-                    <option value="IN_PRODUCTION">En Producción</option>
-                    <option value="READY">Listo</option>
-                    <option value="ENTREGADO_Y_PAGADO">Entregado y Pagado</option>
-                    <option value="CANCELLED">Cancelado</option>
-                  </select>
-                </div>
-              </div>
+              {(() => {
+                // Check if all inventory is allocated
+                const allAllocated = pedidoInventory.length > 0 && pedidoInventory.every((item: any) => item.still_needed === 0);
+                const canMarkAsEntregado = allAllocated || viewingPedidoDetails.status === 'ENTREGADO_Y_PAGADO';
+
+                return (
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Estado del Pedido</label>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadgeColor(viewingPedidoDetails.status)}`}>
+                        {getStatusLabel(viewingPedidoDetails.status)}
+                      </span>
+                      <select
+                        value={viewingPedidoDetails.status}
+                        onChange={(e) => {
+                          if (e.target.value === 'ENTREGADO_Y_PAGADO' && !allAllocated) {
+                            alert('No se puede marcar como Entregado y Pagado. El pedido debe estar listo para empacar (todos los productos apartados).');
+                            return;
+                          }
+                          if (confirm('¿Cambiar el estado del pedido?')) {
+                            updatePedidoStatusMutation.mutate({
+                              id: viewingPedidoDetails.id,
+                              status: e.target.value,
+                            });
+                          }
+                        }}
+                        className="ml-4 px-3 py-1 border border-gray-300 rounded-md text-sm"
+                        disabled={viewingPedidoDetails.status === 'CANCELLED'}
+                      >
+                        {viewingPedidoDetails.status === 'ENTREGADO_Y_PAGADO' ? (
+                          <>
+                            <option value="ENTREGADO_Y_PAGADO">Entregado y Pagado</option>
+                            <option value="CANCELLED">Cancelado</option>
+                          </>
+                        ) : viewingPedidoDetails.status === 'CANCELLED' ? (
+                          <option value="CANCELLED">Cancelado</option>
+                        ) : (
+                          <>
+                            <option value="IN_PRODUCTION">En Producción</option>
+                            <option value="READY">Listo</option>
+                            <option value="ENTREGADO_Y_PAGADO" disabled={!allAllocated}>
+                              Entregado y Pagado{!allAllocated ? ' (faltan productos por apartar)' : ''}
+                            </option>
+                            <option value="CANCELLED">Cancelado</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                    {!allAllocated && viewingPedidoDetails.status !== 'ENTREGADO_Y_PAGADO' && viewingPedidoDetails.status !== 'CANCELLED' && (
+                      <p className="text-xs text-orange-600 mt-2">
+                        ⚠ Debe apartar todos los productos antes de marcar como Entregado y Pagado
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Customer Info */}
               <div className="mb-6">
@@ -1495,7 +1526,7 @@ const VentasMayoreo: React.FC = () => {
                             <React.Fragment key={inventoryItem.pedido_item_id}>
                               {hasInventory ? (
                                 inventoryItem.inventory_items.map((inv: any, invIdx: number) => {
-                                  const canAllocate = inv.disponibles > 0 && inventoryItem.still_needed > 0;
+                                  const canAllocate = inv.disponibles > 0 && inventoryItem.still_needed > 0 && viewingPedidoDetails.status !== 'CANCELLED';
                                   const maxToAllocate = Math.min(inv.disponibles, inventoryItem.still_needed);
 
                                   return (
@@ -1604,30 +1635,6 @@ const VentasMayoreo: React.FC = () => {
                                                   className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 font-medium"
                                                 >
                                                   Apartar
-                                                </button>
-                                              )}
-                                              {hasAllocations && (
-                                                <button
-                                                  onClick={() => {
-                                                    if (confirm(`¿Desapartar ${totalAllocatedHere} unidades de este lote?`)) {
-                                                      // Deallocate all allocations for this inventory item
-                                                      allocationsForThisInventory.forEach((alloc: any) => {
-                                                        deallocateInventoryMutation.mutate(alloc.id, {
-                                                          onSuccess: () => {
-                                                            alert(`${alloc.quantity_allocated} unidades liberadas exitosamente`);
-                                                          },
-                                                          onError: (error: any) => {
-                                                            alert(`Error: ${error.response?.data?.details || error.message}`);
-                                                          },
-                                                        });
-                                                      });
-                                                    }
-                                                  }}
-                                                  disabled={deallocateInventoryMutation.isPending}
-                                                  className="text-xs px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 font-medium"
-                                                  title={`${totalAllocatedHere} apartados`}
-                                                >
-                                                  Desapartar ({totalAllocatedHere})
                                                 </button>
                                               )}
                                               {!canAllocate && !hasAllocations && (

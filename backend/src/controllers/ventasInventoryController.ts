@@ -249,7 +249,8 @@ export const deallocateInventory = async (req: Request, res: Response) => {
   }
 };
 
-// Handle pedido delivery - subtract from both cant and apartados
+// Handle pedido delivery - ONLY for ENTREGADO_Y_PAGADO status
+// Subtracts from quantity and apartados, adds to vendidos
 export const handlePedidoDelivery = async (pedido_id: number, client: any, status?: string) => {
   // Get all allocations for this pedido
   const allocations = await client.query(`
@@ -259,41 +260,56 @@ export const handlePedidoDelivery = async (pedido_id: number, client: any, statu
     GROUP BY inventory_id
   `, [pedido_id]);
 
-  // For each inventory item, subtract from quantity
-  // If ENTREGADO_Y_PAGADO, also add to vendidos
-  // NOTE: Do NOT subtract apartados here - the DELETE trigger will handle it!
+  // For each inventory item, subtract from quantity and apartados, add to vendidos
+  // Keep allocations for record-keeping instead of deleting them
   for (const allocation of allocations.rows) {
-    if (status === 'ENTREGADO_Y_PAGADO') {
-      // Subtract from quantity, add to vendidos
-      await client.query(`
-        UPDATE produccion_inventory
-        SET
-          quantity = quantity - $1,
-          vendidos = COALESCE(vendidos, 0) + $1,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $2 AND quantity >= $1
-      `, [allocation.total_allocated, allocation.inventory_id]);
-    } else {
-      // Just subtract from quantity (for DELIVERED status)
-      await client.query(`
-        UPDATE produccion_inventory
-        SET
-          quantity = quantity - $1,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $2 AND quantity >= $1
-      `, [allocation.total_allocated, allocation.inventory_id]);
-    }
+    await client.query(`
+      UPDATE produccion_inventory
+      SET
+        quantity = quantity - $1,
+        apartados = apartados - $1,
+        vendidos = COALESCE(vendidos, 0) + $1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2 AND quantity >= $1 AND apartados >= $1
+    `, [allocation.total_allocated, allocation.inventory_id]);
   }
 
-  // Delete allocations (trigger will automatically recalculate apartados based on remaining allocations)
+  // Keep allocations for record-keeping (don't delete them)
+  // This allows users to see which inventory was used even after delivery
+};
+
+// Handle pedido cancellation - only remove apartados
+export const handlePedidoCancellation = async (pedido_id: number, client: any) => {
+  // Delete allocations (trigger will automatically update apartados)
   await client.query(`
     DELETE FROM ventas_pedido_allocations
     WHERE pedido_id = $1
   `, [pedido_id]);
 };
 
-// Handle pedido cancellation - only remove apartados
-export const handlePedidoCancellation = async (pedido_id: number, client: any) => {
+// Handle pedido cancellation from ENTREGADO_Y_PAGADO - reverse the delivery
+export const handlePedidoCancellationFromEntregado = async (pedido_id: number, client: any) => {
+  // Get all allocations for this pedido
+  const allocations = await client.query(`
+    SELECT inventory_id, SUM(quantity_allocated) as total_allocated
+    FROM ventas_pedido_allocations
+    WHERE pedido_id = $1
+    GROUP BY inventory_id
+  `, [pedido_id]);
+
+  // For each inventory item, add back to quantity and subtract from vendidos
+  // Then delete allocations which will release apartados
+  for (const allocation of allocations.rows) {
+    await client.query(`
+      UPDATE produccion_inventory
+      SET
+        quantity = quantity + $1,
+        vendidos = COALESCE(vendidos, 0) - $1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+    `, [allocation.total_allocated, allocation.inventory_id]);
+  }
+
   // Delete allocations (trigger will automatically update apartados)
   await client.query(`
     DELETE FROM ventas_pedido_allocations
@@ -486,7 +502,8 @@ export const deallocateEmbalajeInventory = async (req: Request, res: Response) =
   }
 };
 
-// Handle pedido delivery for embalaje - subtract from both cant and apartados
+// Handle pedido delivery for embalaje - ONLY for ENTREGADO_Y_PAGADO status
+// Subtracts from quantity and apartados
 export const handlePedidoEmbalajeDelivery = async (pedido_id: number, client: any, status?: string) => {
   // Get all embalaje allocations for this pedido
   const allocations = await client.query(`
@@ -496,26 +513,54 @@ export const handlePedidoEmbalajeDelivery = async (pedido_id: number, client: an
     GROUP BY inventory_id
   `, [pedido_id]);
 
-  // For each inventory item, subtract from quantity
+  // For each inventory item, subtract from quantity and apartados
+  // Keep allocations for record-keeping instead of deleting them
   for (const allocation of allocations.rows) {
     await client.query(`
       UPDATE embalaje_inventory
       SET
         quantity = quantity - $1,
+        apartados = apartados - $1,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $2 AND quantity >= $1
+      WHERE id = $2 AND quantity >= $1 AND apartados >= $1
     `, [allocation.total_allocated, allocation.inventory_id]);
   }
 
-  // Delete allocations (trigger will automatically recalculate apartados)
+  // Keep allocations for record-keeping (don't delete them)
+  // This allows users to see which inventory was used even after delivery
+};
+
+// Handle pedido cancellation for embalaje - only remove apartados
+export const handlePedidoEmbalajeCancellation = async (pedido_id: number, client: any) => {
+  // Delete allocations (trigger will automatically update apartados)
   await client.query(`
     DELETE FROM ventas_pedido_embalaje_allocations
     WHERE pedido_id = $1
   `, [pedido_id]);
 };
 
-// Handle pedido cancellation for embalaje - only remove apartados
-export const handlePedidoEmbalajeCancellation = async (pedido_id: number, client: any) => {
+// Handle pedido cancellation from ENTREGADO_Y_PAGADO for embalaje - reverse the delivery
+export const handlePedidoEmbalajeCancellationFromEntregado = async (pedido_id: number, client: any) => {
+  // Get all embalaje allocations for this pedido
+  const allocations = await client.query(`
+    SELECT inventory_id, SUM(quantity_allocated) as total_allocated
+    FROM ventas_pedido_embalaje_allocations
+    WHERE pedido_id = $1
+    GROUP BY inventory_id
+  `, [pedido_id]);
+
+  // For each inventory item, add back to quantity
+  // (embalaje doesn't have vendidos column, so just restore quantity)
+  for (const allocation of allocations.rows) {
+    await client.query(`
+      UPDATE embalaje_inventory
+      SET
+        quantity = quantity + $1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+    `, [allocation.total_allocated, allocation.inventory_id]);
+  }
+
   // Delete allocations (trigger will automatically update apartados)
   await client.query(`
     DELETE FROM ventas_pedido_embalaje_allocations

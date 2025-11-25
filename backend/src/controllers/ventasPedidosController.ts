@@ -4,7 +4,9 @@ import {
   handlePedidoDelivery,
   handlePedidoCancellation,
   handlePedidoEmbalajeDelivery,
-  handlePedidoEmbalajeCancellation
+  handlePedidoEmbalajeCancellation,
+  handlePedidoCancellationFromEntregado,
+  handlePedidoEmbalajeCancellationFromEntregado
 } from './ventasInventoryController';
 
 // Get all pedidos
@@ -220,10 +222,9 @@ export const updatePedidoStatus = async (req: Request, res: Response) => {
     const currentStatus = currentResult.rows[0].status;
 
     // Handle inventory changes based on status transition
-    if ((status === 'DELIVERED' || status === 'ENTREGADO_Y_PAGADO') &&
-        (currentStatus !== 'DELIVERED' && currentStatus !== 'ENTREGADO_Y_PAGADO')) {
-      // Subtract inventory: both cant and apartados
-      // If ENTREGADO_Y_PAGADO, also add to vendidos
+    // ONLY ENTREGADO_Y_PAGADO should affect inventory (subtract cant, release apartados, add to vendidos)
+    if (status === 'ENTREGADO_Y_PAGADO' && currentStatus !== 'ENTREGADO_Y_PAGADO') {
+      // Subtract inventory: both cant and apartados, add to vendidos
       await handlePedidoDelivery(parseInt(id), client, status);
       await handlePedidoEmbalajeDelivery(parseInt(id), client, status);
 
@@ -234,9 +235,16 @@ export const updatePedidoStatus = async (req: Request, res: Response) => {
         WHERE id = $1
       `, [id]);
     } else if (status === 'CANCELLED' && currentStatus !== 'CANCELLED') {
-      // Release allocations: remove apartados only
-      await handlePedidoCancellation(parseInt(id), client);
-      await handlePedidoEmbalajeCancellation(parseInt(id), client);
+      // Check if cancelling from ENTREGADO_Y_PAGADO status
+      if (currentStatus === 'ENTREGADO_Y_PAGADO') {
+        // Reverse the delivery: add back to cant, subtract from vendidos, release apartados
+        await handlePedidoCancellationFromEntregado(parseInt(id), client);
+        await handlePedidoEmbalajeCancellationFromEntregado(parseInt(id), client);
+      } else {
+        // Normal cancellation: only release apartados
+        await handlePedidoCancellation(parseInt(id), client);
+        await handlePedidoEmbalajeCancellation(parseInt(id), client);
+      }
     }
 
     // Update pedido status
