@@ -1,8 +1,24 @@
 import { ProductCard } from '../components/ProductCard';
+import { useShopifyProduct } from '../hooks/useShopifyProduct';
+
+// Placeholder images for products without Shopify images
+const placeholderImages = (kitNumber: number) => [
+  `https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+${kitNumber}+-+1`,
+  `https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+${kitNumber}+-+2`,
+  `https://via.placeholder.com/600x600/977669/ffffff?text=Kit+${kitNumber}+-+3`,
+  `https://via.placeholder.com/600x600/846358/ffffff?text=Kit+${kitNumber}+-+4`,
+  `https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+${kitNumber}+-+5`,
+];
 
 export const Products: React.FC = () => {
+  // Fetch images from Shopify for all kits
+  const kit1 = useShopifyProduct('8299395809420');
+  const kit2 = useShopifyProduct('8299447058572');
+  const kit3 = useShopifyProduct('8299446042764');
+  const kit4 = useShopifyProduct('8299447222412');
+  const kit5 = useShopifyProduct('8299447517324');
+
   // Product data with IDs and images
-  // TODO: Replace placeholder images with actual product images
   const products = [
     {
       id: '8299395809420',
@@ -12,26 +28,16 @@ export const Products: React.FC = () => {
 • 1 bowl grande de 20 cm
 • 2 bowls chicos de 15 cm
 • 2 salseros de 100 ml`,
-      images: [
-        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+Botanero+1',
-        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+Botanero+2',
-        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+Botanero+3',
-        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+Botanero+4',
-        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+Botanero+5',
-      ],
+      images: kit1.images.length > 0 ? kit1.images : placeholderImages(1),
+      isLoading: kit1.isLoading,
     },
     {
       id: '8299447058572',
       name: 'Kit de tarros cerveceros',
       description: `El kit incluye 4 piezas:
 • 4 tarros de 450 ml`,
-      images: [
-        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+2+-+1',
-        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+2+-+2',
-        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+2+-+3',
-        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+2+-+4',
-        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+2+-+5',
-      ],
+      images: kit2.images.length > 0 ? kit2.images : placeholderImages(2),
+      isLoading: kit2.isLoading,
     },
     {
       id: '8299446042764',
@@ -39,13 +45,8 @@ export const Products: React.FC = () => {
       description: `El kit incluye 8 piezas:
 • 6 tequileros de 100 ml
 • 2 salseros de 100 ml`,
-      images: [
-        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+3+-+1',
-        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+3+-+2',
-        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+3+-+3',
-        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+3+-+4',
-        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+3+-+5',
-      ],
+      images: kit3.images.length > 0 ? kit3.images : placeholderImages(3),
+      isLoading: kit3.isLoading,
     },
     {
       id: '8299447222412',
@@ -53,13 +54,8 @@ export const Products: React.FC = () => {
       description: `El kit incluye 8 piezas:
 • 4 tazas de 240 ml
 • 4 platitos de 11 cm`,
-      images: [
-        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+4+-+1',
-        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+4+-+2',
-        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+4+-+3',
-        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+4+-+4',
-        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+4+-+5',
-      ],
+      images: kit4.images.length > 0 ? kit4.images : placeholderImages(4),
+      isLoading: kit4.isLoading,
     },
     {
       id: '8299447517324',
@@ -68,13 +64,8 @@ export const Products: React.FC = () => {
 • 2 tazas grandes de 240 ml
 • 2 tazas chicas de 120 ml
 • 4 platitos grandes de 11 cm`,
-      images: [
-        'https://via.placeholder.com/600x600/d2bab0/ffffff?text=Kit+5+-+1',
-        'https://via.placeholder.com/600x600/bfa094/ffffff?text=Kit+5+-+2',
-        'https://via.placeholder.com/600x600/977669/ffffff?text=Kit+5+-+3',
-        'https://via.placeholder.com/600x600/846358/ffffff?text=Kit+5+-+4',
-        'https://via.placeholder.com/600x600/43302b/ffffff?text=Kit+5+-+5',
-      ],
+      images: kit5.images.length > 0 ? kit5.images : placeholderImages(5),
+      isLoading: kit5.isLoading,
     },
   ];
 
