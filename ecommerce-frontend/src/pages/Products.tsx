@@ -17,6 +17,7 @@ export const Products: React.FC = () => {
   const kit3 = useShopifyProduct('8299446042764');
   const kit4 = useShopifyProduct('8299447222412');
   const kit5 = useShopifyProduct('8299447517324');
+  const kit6 = useShopifyProduct('8349929930892');
 
   // Product data with IDs and images
   const products = [
@@ -62,10 +63,18 @@ export const Products: React.FC = () => {
       name: 'Kit de tazas grandes y chicas para café',
       description: `El kit incluye 8 piezas:
 • 2 tazas grandes de 240 ml
-• 2 tazas chicas de 120 ml
+• 2 tazas chicas de 140 ml
 • 4 platitos grandes de 11 cm`,
       images: kit5.images.length > 0 ? kit5.images : placeholderImages(5),
       isLoading: kit5.isLoading,
+    },
+    {
+      id: '8349929930892',
+      name: 'Kit vasos',
+      description: `El kit incluye 4 piezas:
+• 4 vasos de 450 ml`,
+      images: kit6.images.length > 0 ? kit6.images : placeholderImages(6),
+      isLoading: kit6.isLoading,
     },
   ];
 
