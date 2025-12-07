@@ -35,6 +35,13 @@ export const SHOPIFY_UI_OPTIONS = {
       },
       price: {
         'font-size': '18px',
+        '::after': {
+          content: '" + IVA"',
+          'font-size': '14px',
+          'margin-left': '6px',
+          'color': '#666',
+          'font-weight': 'normal',
+        },
       },
       compareAt: {
         'font-size': '15.3px',
@@ -128,6 +135,13 @@ export const SHOPIFY_UI_OPTIONS = {
         'font-weight': '300',
         'font-size': '18px',
         color: '#4c4c4c',
+        '::after': {
+          content: '" + IVA"',
+          'font-size': '14px',
+          'margin-left': '6px',
+          'color': '#666',
+          'font-weight': 'normal',
+        },
       },
       compareAt: {
         'font-family': 'Roboto, sans-serif',
@@ -164,7 +178,7 @@ export const SHOPIFY_UI_OPTIONS = {
       title: 'Carrito de Compras',
       total: 'Subtotal',
       empty: 'Tu carrito está vacío.',
-      notice: 'Los productos son artesanales y pueden variar en tonos y forma.\nLos precios están en MXN.',
+      notice: 'Los productos son artesanales y pueden variar en tonos y forma. Los precios están en MXN. Máximo 4 kits por checkout.',
       button: 'Proceder al Pago',
     },
     popup: false,
