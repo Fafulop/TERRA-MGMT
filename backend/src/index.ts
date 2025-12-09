@@ -5,6 +5,12 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import passport from 'passport';
 import { configurePassport } from './config/passport';
+import crypto from 'node:crypto';
+
+// Fix for UploadThing "Invalid signing secret" error on older Node versions
+if (!globalThis.crypto) {
+  (globalThis as any).crypto = crypto;
+}
 
 dotenv.config();
 

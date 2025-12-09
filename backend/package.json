@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Backend API for task manager application",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "nodemon src/index.ts",
     "build": "tsc && node -e \"const fs=require('fs');const path=require('path');if(!fs.existsSync('dist/config'))fs.mkdirSync('dist/config',{recursive:true});fs.readdirSync('src/config').filter(f=>f.endsWith('.sql')).forEach(f=>fs.copyFileSync(path.join('src/config',f),path.join('dist/config',f)));\"",
