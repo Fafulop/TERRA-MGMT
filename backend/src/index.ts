@@ -71,9 +71,12 @@ import { uploadRouter } from './routes/uploadthing';
 import { initializeNotificationJobs } from './jobs/notificationJobs';
 
 // UploadThing routes - configured FIRST to avoid any middleware conflicts
-// Token is read automatically from UPLOADTHING_TOKEN environment variable
+// Explicitly pass the token to ensure it's loaded correctly
 app.use('/api/uploadthing', createRouteHandler({
   router: uploadRouter,
+  config: {
+    token: process.env.UPLOADTHING_TOKEN,
+  },
 }));
 
 // API routes
